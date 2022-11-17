@@ -40,7 +40,6 @@ else
 
         Plug('nvim-lualine/lualine.nvim')
         Plug('lukas-reineke/indent-blankline.nvim')
-        Plug('gorbit99/codewindow.nvim')
         -- Plug('p00f/nvim-ts-rainbow')
 
         -- Themes
@@ -89,12 +88,7 @@ else
 
     vim.call('plug#end')
 
-    -- 
-
-    --  SETUP 
-
-    -- Misc.
-    -- ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+    -- Setup
 
     require('impatient')
 
@@ -107,9 +101,6 @@ else
         }
 
     })
-
-    -- Editor
-    -- ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 
     -- Nvim Comment
     require('nvim_comment').setup()
@@ -142,15 +133,16 @@ else
     require('indent_blankline').setup {
         char = '┃',
         char_blankline = '┃',
+        indent_blankline_char = '┃',
         show_current_context = false,
         show_current_context_start = false,
         show_end_of_line = true,
         show_first_indent_level = true,
         show_foldtext = true,
         show_trailing_blankline_indent = true,
-        strict_tabs = true,
-        use_treesitter = false, -- Was causing some issues with .odin files.
-        use_treesitter_scope = true,
+        strict_tabs = false,
+        use_treesitter = true, -- Was causing some issues with .odin files.
+        use_treesitter_scope = false,
     }
 
     require('trouble').setup{
@@ -194,21 +186,21 @@ else
 
     -- Rust
 
-    require('rust-tools').setup({
-        server = {
-            on_attach = function(_, bufnr)
-                -- Hover actions
-                vim.keymap.set('n', '<C-space>', rt.hover_actions.hover_actions, { buffer = bufnr })
-                -- vim.api.nvim_buf_set_keymap(bufnr, 'n', '<C-space>', rt.hover_actions.hover_actions, {buffer = bufnr})
-                -- Code action groups
-                vim.keymap.set('n', '<leader>a', rt.code_action_group.code_action_group, { buffer = bufnr })
-            end,
-        },
-    })
+    -- require('rust-tools').setup({
+    --     server = {
+    --         on_attach = function(_, bufnr)
+    --             -- Hover actions
+    --             vim.keymap.set('n', '<C-space>', rt.hover_actions.hover_actions, { buffer = bufnr })
+    --             -- vim.api.nvim_buf_set_keymap(bufnr, 'n', '<C-space>', rt.hover_actions.hover_actions, {buffer = bufnr})
+    --             -- Code action groups
+    --             vim.keymap.set('n', '<leader>a', rt.code_action_group.code_action_group, { buffer = bufnr })
+    --         end,
+    --     },
+    -- })
 
     local util = require('lspconfig.util')
     local configs = require('lspconfig.configs')
-    local on_attach = function(client, bufnr) vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc') end
+    -- local on_attach = function(client, bufnr) vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc') end
 
     -- Odin
 
@@ -218,8 +210,6 @@ else
                 cmd = { 'ols' },
                 -- on_attach = on_attach,
                 on_attach = function(_, bufnr)
-                    -- vim.keymap.set('n', '<C-space>', rt.hover_actions.hover_actions, { buffer = bufnr })
-                    -- vim.keymap.set('n', '<leader>a', rt.code_action_group.code_action_group, { buffer = bufnr })
                 end,
                 filetypes = { 'odin' },
                 root_dir = util.root_pattern('ols.json'),
