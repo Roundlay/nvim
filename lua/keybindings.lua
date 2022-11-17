@@ -64,7 +64,6 @@ else
     -- Neovim
 
     -- Leader Key
-    -- 0 ―――――――――――――――――――――――――――― 40 
     vim.g.mapleader = ' ' -- `vim.g.mapleader = '<Space>'` doesn't work.
 
     -- Remap Esc Key
@@ -90,6 +89,9 @@ else
     normal('<leader>P', '"+P') -- Paste from Clipboard
     visual('<leader>p', '"+p') -- Paste from Clipboard
     visual('<leader>P', '"+P') -- Paste from Clipboard
+
+    -- OLS Formatter
+    au BufNewFile,BufRead *.odin map <C-P> :w<Return>:%!odinfmt %<Return>
 
     -- CoC
     -- ―――――――――――――――――――――――――――――――――
