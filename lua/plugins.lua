@@ -138,7 +138,7 @@ else
         },
         sections = {
             lualine_a = {{'mode', show_modified_status = true, mode = 2}},
-            lualine_b = {'branch', 'diff', 'diagnostics'},
+            lualine_b = {'diff', 'diagnostics'},
             lualine_c = {{'filename', file_status = true, newfile_status = true, path = 0, shorting_target = 20, symbols = {modified = ' MODIFIED', readonly = ' READONLY', unnamed = ' UNNAMED', newfile = ' NEW FILE'}}},
             -- lualine_x = {{'fileformat', symbols = {unix = '', dos = '', mac = '', odin = '', lua = '',}}, 'filetype'},
             lualine_y = {{"os.date('%I:%M %p')"}},
@@ -155,8 +155,8 @@ else
         show_end_of_line = true,
         show_first_indent_level = true,
         show_foldtext = true,
-        show_trailing_blankline_indent = false,
-        strict_tabs = false,
+        show_trailing_blankline_indent = true,
+        strict_tabs = true,
         use_treesitter = false, -- Was causing some issues with .odin files.
         use_treesitter_scope = true,
     }
@@ -224,7 +224,6 @@ else
         configs.ols = {
             default_config = {
                 cmd = { 'ols' },
-                -- on_attach = on_attach,
                 on_attach = function(_, bufnr)
                 end,
                 filetypes = { 'odin' },
