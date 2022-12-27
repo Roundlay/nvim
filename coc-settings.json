@@ -1,9 +1,10 @@
 {
-  "languageserver": {
-    "odin": {
-      "command": "ols",
-      "filetypes": ["odin"],
-      "rootPatterns": ["ols.json"]
+    // vim: filetype=jsonc
+    "languageserver": {
+      "odin": {
+        "command": "ols",
+        "filetypes": ["odin"],
+        "rootPatterns": ["ols.json"]
+      }
     }
-  }
 }

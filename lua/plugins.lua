@@ -41,6 +41,7 @@ else
         Plug('nvim-lualine/lualine.nvim')
         Plug('lukas-reineke/indent-blankline.nvim')
         -- Plug('p00f/nvim-ts-rainbow')
+        -- Plug('petertriho/nvim-scrollbar')
 
         -- Themes
         -- ――――――
@@ -69,7 +70,8 @@ else
         -- ―――――――――――――――――――――――――
 
         Plug('DanielGavin/ols')
-        Plug('ap29600/tree-sitter-odin')
+        Plug('DanielGavin/odin.vim')
+        -- Plug('ap29600/tree-sitter-odin')
         Plug('simrat39/rust-tools.nvim')
 
         -- Dependencies and Libraries
@@ -96,7 +98,9 @@ else
         overrides = {
             extensions = {
                 odin = 'odin',
-                rs = 'rust'
+                rs = 'rust',
+                py = 'python',
+                ipynb = 'python',
             }
         }
 
@@ -109,6 +113,18 @@ else
     require('leap').add_default_mappings()
 
     -- User Interface
+
+    -- require('scrollbar').setup({
+    --     marks = {
+    --         Cursor = {
+    --             text = "∙",
+    --             priority = 0,
+    --             color = nil,
+    --             cterm = nil,
+    --             highlight = "Normal",
+    --         }
+    --     }
+    -- })
 
     require('lualine').setup {
         options = {
@@ -133,16 +149,16 @@ else
     require('indent_blankline').setup {
         char = '┃',
         char_blankline = '┃',
-        indent_blankline_char = '┃',
+        -- indent_blankline_char = '┃',
         show_current_context = false,
         show_current_context_start = false,
         show_end_of_line = true,
         show_first_indent_level = true,
         show_foldtext = true,
-        show_trailing_blankline_indent = true,
+        show_trailing_blankline_indent = false,
         strict_tabs = false,
-        use_treesitter = true, -- Was causing some issues with .odin files.
-        use_treesitter_scope = false,
+        use_treesitter = false, -- Was causing some issues with .odin files.
+        use_treesitter_scope = true,
     }
 
     require('trouble').setup{
@@ -220,15 +236,19 @@ else
 
     configs.ols.setup{}
 
-    local parser_config = require('nvim-treesitter.parsers').get_parser_configs()
-    parser_config.odin = {
-        install_info = {
-            -- Files in the queries subdirectory are symlinked to the runtime queries/odin directory.
-            url = 'C:/Users/Christopher/.config/nvim/plugs/tree-sitter-odin',
-            files = { 'src/parser.c' },
-        },
-        filetype = 'odin',
-    }
+    -- local parser_config = require('nvim-treesitter.parsers').get_parser_configs()
+    -- parser_config.odin = {
+    --     install_info = {
+    --         -- Files in the queries subdirectory are symlinked to the runtime queries/odin directory.
+    --         url = 'C:/Users/Christopher/.config/nvim/plugs/tree-sitter-odin',
+    --         files = { 'src/parser.c' },
+    --     },
+    --     filetype = 'odin',
+    -- }
+
+    -- Pyright
+
+    require('lspconfig').pyright.setup({})
 
     require('kanagawa').setup({
         undercurl = true,
