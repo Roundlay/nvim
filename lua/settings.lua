@@ -90,7 +90,7 @@ else
     -- vim.wo.conceallevel = 1
     -- vim.wo.colorcolumn = "99999" -- Trying to solve issues with Indent Blankline
 
-    -- Highlight yanked text
+    -- Highlight yanked text on yank
     -- https://www.reddit.com/r/neovim/comments/ypvrwp/comment/ivnl294/
     vim.api.nvim_create_autocmd('TextYankPost', {
         group = vim.api.nvim_create_augroup('yank_highlight', {}),
@@ -108,7 +108,8 @@ else
     vim.cmd [[ highlight QuickScopeSecondary guifg='#afff00' ctermfg=154 ]] -- Set QuickScope secondary highlight colours.
     -- vim.cmd [[ au BufNewFile,BufRead *.odin set syntax=odin ]] -- Set Odin syntax highlighting for .odin files.
     -- vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files.
-    -- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]] -- Set Odin filetype for .odin files.
-    -- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]] -- Set Odin filetype for .odin files.
+    -- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]]
+    -- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]]
+    vim.cmd [[ au BufNewFile,BufRead *.odin map=<C-P> :w<Return>:%!odinfmt %<Return> ]]
 
 end

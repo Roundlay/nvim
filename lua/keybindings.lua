@@ -91,23 +91,40 @@ else
     visual('<leader>P', '"+P') -- Paste from Clipboard
 
     -- OLS Formatter
-    au BufNewFile,BufRead *.odin map <C-P> :w<Return>:%!odinfmt %<Return>
+    -- -------------------------------------------------------------------------
+    -- au BufNewFile,BufRead *.odin map <C-P> :w<Return>:%!odinfmt %<Return>
+    vim.cmd [[ au BufNewFile,BufRead *.odin map=<C-P> :w<Return>:%!odinfmt %<Return> ]]
 
     -- CoC
-    -- ―――――――――――――――――――――――――――――――――
+    -- -------------------------------------------------------------------------
     normal('gd', '<Plug>(coc-definition)')
+    normal('[g', '<Plug>(coc-diagnostic-prev)')
+    normal(']g', '<Plug>(coc-diagnostic-next)')
+    insert('<c-space>', 'coc#refresh()')
+
+    function _G.show_docs()
+        local cw = vim.fn.expand('<cword>')
+        if vim.fn.index({'vim', 'help'}, vim.bo.filetype) >= 0 then
+            vim.api.nvim_command('h ' .. cw)
+        elseif vim.api.nvim_eval('coc#rpc#ready()') then
+            vim.fn.CocActionAsync('doHover')
+        else
+            vim.api.nvim_command('!' .. vim.o.keywordprg .. ' ' .. cw)
+        end
+    end
+    normal('<C-k>', '<cmd>lua show_docs()<CR>')
 
     -- Leap
-    -- ―――――――――――――――――――――――――――――――――
+    -- -------------------------------------------------------------------------
     visual('g', '<Plug>(leap-forward-till)') -- Fixes leap's remapping of x in visual mode.
 
     -- HighStr
-    -- ―――――――――――――――――――――――――――――――――
+    -- -------------------------------------------------------------------------
     -- visual('<F3>', ':<c-u>HSHighlight 1<CR>')
     -- visual('<F4>', ':<c-u>HSRmHighlight 1<CR>')
 
     -- Trouble
-    -- ―――――――――――――――――――――――――――――――――    
+    -- -------------------------------------------------------------------------
     normal('<leader>-', '<cmd>Trouble<CR>')
     -- normal('<leader>xw', '<cmd>Trouble workspace_diagnostics<CR>')
     -- normal('<leader>xd', '<cmd>Trouble document_diagnostics<CR>')
@@ -116,7 +133,7 @@ else
     -- TODO normal('<leader>... '<cmd>Trouble lsp_reference<CR>')
 
     -- Toggle Term
-    -- ―――――――――――――――――――――――――――――――――    
+    -- -------------------------------------------------------------------------
     -- TODO Input mode not working as desired.
     -- normal('C-\\', '')
     -- function _G.set_terminal_keymaps()
