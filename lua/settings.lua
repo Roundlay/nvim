@@ -102,7 +102,7 @@ else
 
     vim.cmd [[ set mouse=a ]] -- Enables mouse scrolling.
     vim.cmd [[ set undofile ]] -- Keep undo history between sessions.
-    vim.cmd [[ let g:dracula_underline = 0 ]] -- Disable underlines in Dracula theme.
+    -- vim.cmd [[ let g:dracula_underline = 0 ]] -- Disable underlines in Dracula theme.
     vim.cmd [[ let g:qs_highlight_on_keys = ['f', 'F'] ]] -- Highlight search terms on 'f' and 'F' keypresses.
     vim.cmd [[ highlight QuickScopePrimary guifg='#c82491' gui=bold ctermfg=178 cterm=bold ]] -- Set QuickScope highlight colours.
     vim.cmd [[ highlight QuickScopeSecondary guifg='#afff00' ctermfg=154 ]] -- Set QuickScope secondary highlight colours.

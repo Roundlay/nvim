@@ -21,13 +21,13 @@ else
     vim.call('plug#begin', '~/.config/nvim/plugs')
 
         -- Misc.
-        -- ―――――
+        -- -----------------------------
 
         Plug('lewis6991/impatient.nvim')
         Plug('nathom/filetype.nvim')
 
         -- Editor
-        -- ――――――
+        -- -----------------------------
 
         Plug('unblevable/quick-scope')
         Plug('terrortylor/nvim-comment')
@@ -36,7 +36,7 @@ else
         Plug('tpope/vim-surround')
 
         -- User Interface
-        -- ――――――――――――――
+        -- -----------------------------
 
         Plug('nvim-lualine/lualine.nvim')
         Plug('lukas-reineke/indent-blankline.nvim')
@@ -44,7 +44,7 @@ else
         -- Plug('petertriho/nvim-scrollbar')
 
         -- Themes
-        -- ――――――
+        -- -----------------------------
 
         -- Plug('dracula/vim', { as = 'dracula' })
         -- Plug('mvpopuk/inspired-github.vim')
@@ -52,13 +52,13 @@ else
         Plug('rebelot/kanagawa.nvim')
 
         -- Tools
-        -- ―――――
+        -- -----------------------------
 
         Plug('folke/trouble.nvim')
         Plug('Pocco81/auto-save.nvim')
 
         -- LSP & Completion
-        -- ――――――――――――――――
+        -- -----------------------------
 
         Plug('neovim/nvim-lspconfig')
         Plug('williamboman/mason.nvim')
@@ -67,23 +67,24 @@ else
         Plug('neoclide/coc.nvim', { branch = 'release' }) -- DEPS: Node.js >= 14.14
 
         -- Language Servers & Syntax
-        -- ―――――――――――――――――――――――――
+        -- -----------------------------
 
         Plug('DanielGavin/ols')
         Plug('DanielGavin/odin.vim')
-        -- Plug('ap29600/tree-sitter-odin')
         Plug('simrat39/rust-tools.nvim')
+        -- Plug('ap29600/tree-sitter-odin')
 
         -- Dependencies and Libraries
-        -- ――――――――――――――――――――――――――
+        -- -----------------------------
 
         Plug('nvim-treesitter/nvim-treesitter', { ['do'] = ':TSUpdate' })
         -- Plug('nvim-telescope/telescope.nvim', {['tag'] = '0.1.0'})
+        Plug('nvim-treesitter/playground')
         Plug('nvim-lua/plenary.nvim')
         Plug('nvim-lua/popup.nvim')
 
         -- Todos
-        -- ―――――
+        -- -----------------------------
 
         -- Plug('akinsho/toggleterm.nvim', { ['tag'] = 'v2.2.1' })
         -- Plug('spywhere/tmux.nvim')
@@ -91,9 +92,25 @@ else
     vim.call('plug#end')
 
     -- Setup
+    -- ------------------------------------------------------------------------
 
+    -- Misc
+    -- ---------------------------------
+
+    -- impatient.nvim
     require('impatient')
 
+    -- Autosave
+    require('auto-save').setup({
+        enabled = true,
+        execution_message = {
+            message = function() return ('Auto-Saved at '..vim.fn.strftime('%H:%M:%S')) end,
+            dim = 0.33,
+        },
+        write_all_buffers = true,
+    })
+
+    -- filetype.nvim
     require('filetype').setup({
         overrides = {
             extensions = {
@@ -106,13 +123,14 @@ else
 
     })
 
-    -- Nvim Comment
+    -- nvim-comment
     require('nvim_comment').setup()
 
-    -- Leap
+    -- leap.nvim
     require('leap').add_default_mappings()
 
     -- User Interface
+    -- ---------------------------------
 
     -- require('scrollbar').setup({
     --     marks = {
@@ -156,7 +174,7 @@ else
         show_first_indent_level = true,
         show_foldtext = true,
         show_trailing_blankline_indent = true,
-        strict_tabs = true,
+        strict_tabs = false,
         use_treesitter = false, -- Was causing some issues with .odin files.
         use_treesitter_scope = true,
     }
@@ -165,19 +183,12 @@ else
         icons = false
     } -- NOTE: Disable underlines with `vim.diagnostic.config({ underline = false })`
 
+    -- LSPs
+    -- ---------------------------------
+
     -- Mason
     require('mason').setup()
     require('mason-lspconfig').setup()
-
-    -- Autosave
-    require('auto-save').setup({
-        enabled = true,
-        execution_message = {
-            message = function() return ('Auto-Saved at '..vim.fn.strftime('%H:%M:%S')) end,
-            dim = 0.25,
-        },
-        write_all_buffers = true,
-    })
 
     -- Treesitter
     require('nvim-treesitter.configs').setup {
@@ -189,37 +200,48 @@ else
         indent = {
             enable = false -- Experimental and broke indentation in Odin.
         },
-        rainbow = {
-            enable = false,
-            extended_mode = true,
-            max_file_lines = nil,
-            colors = {
+        playground = {
+            enable = true,
+            disable = {},
+            updatetime = 25,
+            persist_queries = false,
+            keybindings = {
+                toggle_query_editor = 'o',
+                toggle_hl_groups = 'i',
+                toggle_injected_languages = 't',
+                toggle_anonymous_nodes = 'a',
+                toggle_language_display = 'I',
+                focus_language = 'f',
+                unfocus_language = 'F',
+                update = 'R',
+                goto_node = '<cr>',
+                show_help = '?',
             },
         },
     }
 
+    -- TODO
     -- local telescope = require('telescope').setup{}
 
     -- Rust
-
-    -- require('rust-tools').setup({
-    --     server = {
-    --         on_attach = function(_, bufnr)
-    --             -- Hover actions
-    --             vim.keymap.set('n', '<C-space>', rt.hover_actions.hover_actions, { buffer = bufnr })
-    --             -- vim.api.nvim_buf_set_keymap(bufnr, 'n', '<C-space>', rt.hover_actions.hover_actions, {buffer = bufnr})
-    --             -- Code action groups
-    --             vim.keymap.set('n', '<leader>a', rt.code_action_group.code_action_group, { buffer = bufnr })
-    --         end,
-    --     },
-    -- })
+    -- TODO
+    require('rust-tools').setup({
+        server = {
+            on_attach = function(_, bufnr)
+                -- Hover actions
+                vim.keymap.set('n', '<C-space>', rt.hover_actions.hover_actions, { buffer = bufnr })
+                -- vim.api.nvim_buf_set_keymap(bufnr, 'n', '<C-space>', rt.hover_actions.hover_actions, {buffer = bufnr})
+                -- Code action groups
+                vim.keymap.set('n', '<leader>a', rt.code_action_group.code_action_group, { buffer = bufnr })
+            end,
+        },
+    })
 
     local util = require('lspconfig.util')
     local configs = require('lspconfig.configs')
     -- local on_attach = function(client, bufnr) vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc') end
 
     -- Odin
-
     if not configs.ols then
         configs.ols = {
             default_config = {
@@ -235,6 +257,7 @@ else
 
     configs.ols.setup{}
 
+    -- Treesitter Odin
     -- local parser_config = require('nvim-treesitter.parsers').get_parser_configs()
     -- parser_config.odin = {
     --     install_info = {
@@ -246,9 +269,9 @@ else
     -- }
 
     -- Pyright
-
     require('lspconfig').pyright.setup({})
 
+    -- Kanagawa
     require('kanagawa').setup({
         undercurl = true,
         typeStyle = {bold = true},
@@ -256,46 +279,6 @@ else
         terminalColors = true,
         dimInactive = false,
     })
-
-
-    -- TODO
-
-    -- Toggle Term
-    -- require('toggleterm').setup {
-    --     close_on_exit = true,
-    --     direction = 'horizontal',
-    --     hide_numbers = true,
-    --     open_mapping = [[<C-t>]],
-    --     shade_terminals = false,
-    --     start_in_insert = true,
-    --     terminal_mappings = true,
-    -- }
-
-    -- Tmux
-    -- require('tmux').start()
-    -- {
-    --     config = function ()
-    --     local tmux = require('tmux')
-    --     local cmds = require('tmux.commands')
-    --     -- Configuration goes here.
-    --     -- Bindings
-    --     -- tmux.prefix('<C-a>')
-    --     -- Custom Bindings
-    --     -- tmux.bind('|', cmds.split_window {'v'})
-    --     -- tmux.bind('-', cmds.split_window {'h'})
-    --     tmux.start()
-    -- end
-    -- }
-
-    -- Codewindow
-    -- local codewindow = require('codewindow')
-    --
-    -- codewindow.setup({
-    --     width_multiplier = 1,
-    --     show_cursor = true,
-    -- })
-    --
-    -- codewindow.apply_default_keybinds()
 
     vim.cmd("colorscheme kanagawa")
 

@@ -62,7 +62,7 @@ if (vim.g.vscode) then
 else
 
     -- Neovim
-
+    
     -- Leader Key
     vim.g.mapleader = ' ' -- `vim.g.mapleader = '<Space>'` doesn't work.
 
