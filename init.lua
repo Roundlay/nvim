@@ -1,3 +1,4 @@
 require('settings')
-require('keybindings')
 require('plugins')
+require('keybindings')
+require('highlights')
