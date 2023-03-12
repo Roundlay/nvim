@@ -1,21 +1,7 @@
--- ========================================================================== --
 -- plugins.lua
--- ========================================================================== --
-
--- NOTES
 -- -------------------------------------------------------------------------- --
 
--- Guide
-
--- Guide to writing init.vim in lua: https://dev.to/vonheikemen/neovim-using-vim-plug-in-lua-3oom
--- https://youtu.be/Ku-m7eEbWas
-
--- Wed 08/02/2023 -- 'Client 1 quit with exit code 3221225477 and signal 0'
--- appearing when closing `.odin` files in `Advent`.
-
--- -------------------------------------------------------------------------- --
-
-local roundlay = require("roundlay")
+local scripts = require("scripts")
 local Plug = vim.fn["plug#"]
 
 if (vim.g.vscode) then
@@ -42,31 +28,31 @@ else
         -- Meta
         -- ------------------------------------------------------------------ --
 
-        Plug("lewis6991/impatient.nvim") -- Speed up startup time; TODO Benchmark this
-        Plug("nathom/filetype.nvim") -- Filetype detection; TODO Benchmark this
-        Plug("Pocco81/auto-save.nvim")
+        Plug("lewis6991/impatient.nvim")
         Plug("dstein64/vim-startuptime")
+        Plug("nathom/filetype.nvim")
+        Plug("Pocco81/auto-save.nvim")
 
         -- Editing
         -- ------------------------------------------------------------------ --
 
+        Plug("ggandor/leap.nvim")
         Plug("numToStr/Comment.nvim")
         Plug("unblevable/quick-scope")
-        Plug("ggandor/leap.nvim")
-        Plug("folke/trouble.nvim") -- TODO 
-        Plug("tpope/vim-surround") -- TODO Learn it!
-        Plug("ThePrimeagen/harpoon")
-        -- Plug("terrortylor/nvim-comment")
-        -- Plug("tpope/vim-repeat") -- TODO
+        Plug("echasnovski/mini.align")
+        -- Plug("echasnovski/mini.bracketed") -- TODO
+        Plug("echasnovski/mini.pairs")
+        -- Plug("echasnovski/mini.surround")
+        -- Plug("tpope/vim-surround")
+        -- Plug("tpope/vim-repeat")
 
         -- User Interface
         -- ------------------------------------------------------------------ --
 
         Plug("nvim-lualine/lualine.nvim")
         Plug("lukas-reineke/indent-blankline.nvim")
-        -- Plug("kdheepak/tabline.nvim") -- Seems to be bad for perf./startup time.
         -- Plug("nvim-tree/nvim-tree.lua") -- Pretty bad for startup time, possibly perf.
-        -- Plug("nvim-telescope/telescope.nvim", {["tag"] = "0.1.1"}) 
+        Plug("nvim-telescope/telescope.nvim", {["tag"] = "0.1.1"}) 
 
         -- Themes
         -- ------------------------------------------------------------------ --
@@ -74,7 +60,7 @@ else
         Plug("rebelot/kanagawa.nvim")
         -- Plug("dracula/vim", { as = "dracula" })
         -- Plug("mvpopuk/inspired-github.vim")
-        Plug("tomasiser/vim-code-dark")
+        -- Plug("tomasiser/vim-code-dark")
 
         -- Language Support
         -- ------------------------------------------------------------------ --
@@ -83,18 +69,17 @@ else
         Plug("williamboman/mason.nvim")
         Plug("williamboman/mason-lspconfig.nvim")
         Plug("github/copilot.vim") -- DEPS: Node.js >= 16
-        -- Plug("zbirenbaum/copilot.lua")
         Plug("neoclide/coc.nvim", { ["branch"] = "release" }) -- DEPS: Node.js >= 14.14
 
         -- Language Servers & Syntax
         -- ------------------------------------------------------------------ --
 
-        Plug("DanielGavin/ols")
-        Plug("DanielGavin/odin.vim")
-        Plug("ap29600/tree-sitter-odin")
-        -- Plug("simrat39/rust-tools.nvim")
+        Plug("DanielGavin/ols", { ft = "odin" })
+        Plug("DanielGavin/odin.vim", { ft = "odin" })
+        -- Plug("ap29600/tree-sitter-odin", { ft = "odin" })
+        -- Plug("simrat39/rust-tools.nvim", { ft = "rs" })
         Plug("nvim-treesitter/nvim-treesitter", { ["do"] = ":TSUpdate" })
-        Plug("nvim-treesitter/playground")
+        Plug("nvim-treesitter/playground") -- Couldn't get this to lazy load
 
         -- Dependencies
         -- ------------------------------------------------------------------ --
@@ -115,78 +100,21 @@ else
     -- Setup
     -- ====================================================================== --
 
-    -- Harpoon
+    -- mini.nvim
     -- ---------------------------------------------------------------------- --
 
-    require("harpoon").setup({})
-
-    -- Copilot (Lua)
-    -- https://github.com/zbirenbaum/copilot.lua
-    -- ---------------------------------------------------------------------- --
-
-    -- TODO: This seems much slower than the original copilot.nvim?
-    -- TODO: Fix keymaps.
-
-    -- require("copilot").setup({
-    --     panel = {
-    --         enabled = true,
-    --         auto_refresh = true,
-    --         -- keymap = {
-    --         --   jump_prev = "[[",
-    --         --   jump_next = "]]",
-    --         --   accept = "<CR>",
-    --         --   refresh = "gr",
-    --         --   open = "<M-CR>"
-    --         -- },
-    --         layout = {
-    --         },
-    --     },
-    --     suggestion = {
-    --         enabled = true,
-    --         auto_trigger = true,
-    --         debounce = 10,
-    --         keymap = { 
-    --             -- accept = "<CR>",
-    --         },
-    --     },
-    --     copilot_node_command = "node",
-    --     server_opts_overrides = {},
-    -- })
-
-    -- Tabline
-    -- ---------------------------------------------------------------------- --
-
-    -- require("tabline").setup({
-    --     enable = true,
-
-    --     options = {
-    --         section_separators = { "", "" },
-    --         component_separators = { "", "" },
-    --         -- max_bufferline_percent = 66,
-    --         show_tabs_always = true,
-    --         show_devicons = false,
-    --         show_bufnr = true, -- Appends buffer number to the tabs themselves
-    --         show_filename_only = false,
-    --         modified_icon = "+ ",
-    --         modified_italic = false,
-    --         show_tabs_only = false,
-    --     },
-    -- })
-    --
-    -- vim.cmd [[ set guioptions-=e ]]
-    -- vim.cmd [[ set sessionoptions +=tabpages,globals ]]
+    require("mini.align").setup({})
+    require("mini.pairs").setup({})
+    -- require("mini.bracketed").setup({})
+    -- require("mini.surround").setup({})
 
     -- Impatient
     -- ---------------------------------------------------------------------- --
-
-    -- [x] Error not caused by impatient
 
     require("impatient")
 
     -- Filetype
     -- ---------------------------------------------------------------------- --
-
-    -- [x] Error caused by Filetype?
 
     require("filetype").setup({
         overrides = {
@@ -203,9 +131,9 @@ else
 
     -- TODO: Hard to keep track of buffers; flashing statusline is annoying.
 
-    -- roundlay.vsplit_preview()
-    -- roundlay.edit_or_open()
-    -- roundlay.collapse_all()
+    -- scripts.vsplit_preview()
+    -- scripts.edit_or_open()
+    -- scripts.collapse_all()
 
     -- TODO: Fix padding around buffers.
 
@@ -274,7 +202,7 @@ else
     --     },
     -- })
 
-    -- Close tree if it"s the last open window (naive solution)
+    -- Close tree if it's the last open window (naive solution)
     -- vim.api.nvim_create_autocmd("BufEnter", {
     --     group = vim.api.nvim_create_augroup("NvimTreeClose", {clear = true}),
     --     pattern = "NvimTree_*",
@@ -288,19 +216,12 @@ else
     -- Lualine
     -- ---------------------------------------------------------------------- --
 
-    -- [x] Added to Lazy
-    -- [ ] Fix local imports in separate file
-
     -- Re-render the statusline and window bar every second.
-
-    -- roundlay.rerender_lualine()
+    -- scripts.rerender_lualine()
 
     -- Return the currently active and inactive buffer numbers.
-
-    -- roundlay.get_inactive_buffer_numbers()
-    -- roundlay.get_active_buffer_number()
-
-    -- Section Definitions
+    -- scripts.get_inactive_buffer_numbers()
+    -- scripts.get_active_buffer_number()
 
     local mode_section = {"mode", fmt = function(str) return str:sub(1,1) end}
     local filename_section = {"filename", file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = "MO", readonly = "RO", unnamed = "UN", newfile = "NF"}}
@@ -336,17 +257,14 @@ else
     }
 
     -- Turn off lualine inside nvim-tree
-
     -- vim.cmd [[ au BufEnter,BufWinEnter,WinEnter,CmdwinEnter * if bufname("%") == "NvimTree_1" | set bufname("%") == "" | endif ]]
 
     -- Autosave
     -- ---------------------------------------------------------------------- --
 
-    -- [x] Added to Lazy
-
     require("auto-save").setup({
         enabled = true,
-        -- trigger_events = {"InsertLeave", "TextChanged"},
+        trigger_events = {"TextChanged"},
         execution_message = {
             message = function() return ("Auto-Saved at "..vim.fn.strftime("%H:%M:%S")) end,
             dim = 0.33,
@@ -357,23 +275,21 @@ else
     -- comment.nvim
     -- ---------------------------------------------------------------------- --
 
-    -- [x] Added to Lazy
-
-    require("Comment").setup()
+    require("Comment").setup({
+        padding = true,
+        sticky = true,
+        mappings = { basic = true },
+    })
     local ft = require("Comment.ft")
     ft.odin = {"//%s", "/*%s*/"}
 
     -- leap.nvim
     -- ---------------------------------------------------------------------- --
 
-    -- [x] Added to Lazy
-
     require("leap").add_default_mappings()
 
-    -- indent-blankline.nvim
+    -- Indent Blankline
     -- ---------------------------------------------------------------------- --
-
-    -- [x] Added to Lazy
 
     require("indent_blankline").setup {
         char = "┃",
@@ -389,39 +305,46 @@ else
         use_treesitter_scope = true,
     }
 
-    -- trouble.nvim
-    -- ---------------------------------------------------------------------- --
-
-    -- [x] Added to Lazy
-
-    require("trouble").setup{
-        icons = false
-    } -- NOTE: Disable underlines with `vim.diagnostic.config({ underline = false })`
-
     -- telescope 
     -- ---------------------------------------------------------------------- --
 
-    -- [x] Added to Lazy
+    local telescope_height = scripts.Golden("height")
+    local telescope_width = scripts.Golden("width")
 
-    -- local telescope = require("telescope").setup{}
+    local telescope = require("telescope").setup({
+        defaults = {
+            layout_strategy = "bottom_pane",
+            borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
+            -- borderchars = { "", "", "", "", "", "", "", "" },
+            results_title = false,
+            layout_config = {
+                -- height = telescope_height - 2,
+                -- height = telescope_height,
+                -- width = telescope_width,
+                prompt_position = "bottom",
+                -- preview_height = 0.4,
+            },
+        },
+        pickers = {
+            find_files = {
+                -- theme = "ivy",
+                -- theme = "dropdown",
+            },
+        }
+    })
 
     -- lspconfig
     -- ---------------------------------------------------------------------- --
 
-    -- [\] Added to Lazy
-    -- [ ] Add local defines to Lazy
-
     local util = require("lspconfig.util")
     local configs = require("lspconfig.configs")
 
-    local on_attach = function(client, bufnr)
-        vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc") 
-    end
+    -- local on_attach = function(client, bufnr)
+    --     vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc") 
+    -- end
 
-    -- mason.nvim
+    -- Mason
     -- ---------------------------------------------------------------------- --
-
-    -- [x] Added to Lazy
 
     require("mason").setup()
     require("mason-lspconfig").setup()
@@ -448,7 +371,7 @@ else
             enable = true,
             disable = {},
             updatetime = 25,
-            persist_queries = false,
+            persist_queries = true,
             keybindings = {
                 toggle_query_editor = "o",
                 toggle_hl_groups = "i",
@@ -462,14 +385,12 @@ else
                 show_help = "?",
             },
         },
+        -- query_linter = {
+        --     enable = true,
+        --     use_virtual_text = true,
+        --     lint_events = {"BufWrite", "CursorHold"}
+        -- },
     }
-
-    -- pyright
-    -- ---------------------------------------------------------------------- --
-
-    -- [x] Added to Lazy
-
-    -- require("lspconfig").pyright.setup({})
 
     -- Rust Tools
     -- ---------------------------------------------------------------------- --
@@ -486,22 +407,30 @@ else
     --     },
     -- })
 
-    -- ols 
+    -- OLS
     -- ---------------------------------------------------------------------- --
 
     if not configs.ols then
         configs.ols = {
             default_config = {
                 cmd = { "ols" },
-                on_attach = function(client, bufnr)
-                end,
                 filetypes = { "odin" },
-                root_dir = util.root_pattern("ols.json"),
+                root_dir = util.root_pattern("ols.json", ".git"),
+                single_file_support = true,
+                on_attach = function(client, bufnr)
+                    -- vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.MiniCompletion.completefunc_lsp") 
+                    vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc") 
+                end,
                 settings = {},
             }
         }
     end
     configs.ols.setup{}
+
+    -- Pyright
+    -- ---------------------------------------------------------------------- --
+
+    require("lspconfig").pyright.setup{}
 
     -- Treesitter Odin
     -- ---------------------------------------------------------------------- --
@@ -519,13 +448,7 @@ else
     -- ---------------------------------------------------------------------- --
 
     local kanagawa = require("kanagawa.colors").setup()
-    -- local personal = {
-    --     shizuoka = "teal"
-    -- }
-    local overrides = {
-        WinSeparator = { fg = kanagawa.bg_dark, bg = NONE },
-        -- StatusLine = { fg = kanagawa.bg, bg = personal.shizuoka },
-    }
+    local overrides = { WinSeparator = { fg = kanagawa.bg_dark, bg = NONE }, }
 
     require("kanagawa").setup({
         colors = kanagawa,
@@ -543,17 +466,7 @@ else
         transparent = false , -- Do not set background color.
         terminalColors = true, -- Define vim.g.terminal_color_{0,17}.
         globalStatus = false,
-        dimInactive = true,
-    })
-
-    vim.opt.fillchars:append({
-        horiz = '━',
-        horizup = '┻',
-        horizdown = '┳',
-        vert = '┃',
-        vertleft = '┨',
-        vertright = '┣',
-        verthoriz = '╋',
+        dimInactive = false,
     })
 
     vim.cmd("colorscheme kanagawa")

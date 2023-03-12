@@ -1,20 +1,15 @@
--- KEYBINDINGS
-
--- `opts` Helpers
--- `noremap`: Ensures that your mapping will always take precedence over any other attempts to remap it. Note: this only applies to the mode defined in the mapping.
--- `silent`: This tells Vim to not display any error messages if the key mapping fails.
--- `expr`: This tells Vim to execute the right-hand side of the mapping as an expression. This means that the right-hand side can be any valid Vimscript expression, and it will be evaluated and executed when the key sequence is pressed. *Todo This is useful for mapping keys to functions that return a string.
--- `replace_keycodes`: This tells Vim to not replace key codes in the key sequence with the corresponding characters. This can be useful in situations where you want to map a key sequence that includes special key codes, such as <C-a> for Control+a.
-
--- ------------------------------------------------------------------------  --
+-- keybindings.lua
+-- -------------------------------------------------------------------------- --
 
 -- Helper Functions
+-- -------------------------------------------------------------------------- --
 
 function map(mode, new, old, opts)
     -- map("n", ";f", ":Telescope find_files<CR>", {expr = true})
     local default_opts = {}
     if opts then
-        options = vim.tbl_extend("force", default_opts, opts) -- Merges the `default_opts` and `opts` tables
+        -- Merges the `default_opts` and `opts` tables
+        options = vim.tbl_extend("force", default_opts, opts)
     end
     vim.api.nvim_set_keymap(mode, new, old, options)
 end
@@ -35,38 +30,24 @@ function terminal(new, old)
     vim.api.nvim_set_keymap('t', new, old, {buffer = 0})
 end
 
--- -------------------------------------------------------------------------- --
-
 if (vim.g.vscode) then
-
-    -- VISUAL STUDIO CODE
     
-    -- TODO: Leader key doesn't seem to work in Code.
-    -- vim.g.mapleader = ','
+    -- Visual Studio Code
+    -- ---------------------------------------------------------------------- --
 
     normal('J', '}') -- Jump n paragraphs backwards.
     normal('K', '{') -- Jump n paragraphs forwards.
     normal('L', '$') -- Jump to the end of the active line.
     normal('H', '_') -- Jump to the beginning of the active line.
-
     visual('J', '}') -- Jump n paragraphs backwards in visual mode.
     visual('K', '{') -- Jump n paragraphs forwards in visual mode.
-
     -- normal('<n>', '<C-v>') -- WIN: Fixes paste overlap w/ Visual Command Mode.
 
 else
 
-    -- ---------------------------------------------------------------------- --
     -- NEOVIM
-    -- ---------------------------------------------------------------------- --
-
-    -- Huh?
-    -- ---------------------------------------------------------------------- --
 
     normal('<n>', '<C-v>') -- WIN: Fixes paste overlap w/ Visual Command Mode.
-
-    -- Leader Key
-    -- ---------------------------------------------------------------------- --
 
     -- normal(' ', '<Nop>')
     vim.g.mapleader = ' ' -- `vim.g.mapleader = '<Space>'` doesn't work.
@@ -97,28 +78,29 @@ else
     normal('L', '$')
     normal('H', '_')
 
-    -- Yank & Paste
+    -- Yank & Put
     -- ---------------------------------------------------------------------- --
 
-    -- Paste & Re-yank Original Selection
+    -- Put & Re-yank Original Selection
 
     visual('p', 'pgvy')
 
-    -- Copy to System Clipboard
+    -- Yank to System Clipboard
 
     normal('<leader>y', '"+y')
     normal('<leader>yy', '"+yy')
     normal('<leader>Y', '"+Y')
     visual('<leader>y', '"+y')
 
-    -- Paste from System Clipboard
+    -- Put from System Clipboard
 
     normal('<leader>p', '"+p')
     normal('<leader>P', '"+P')
     visual('<leader>p', '"+p')
     visual('<leader>P', '"+P')
 
-    -- PLUGINS
+    -- ---------------------------------------------------------------------- --
+    -- Plugins 
     -- ---------------------------------------------------------------------- --
 
     -- CoC
@@ -135,12 +117,11 @@ else
         expr=true, 
         replace_keycodes=false
     }
- 
-    map('i', '<CR>', [[coc#pum#visible() ? coc#pum#confirm() : "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"]], coc_opts) -- This seems irrelevant... I can just space out of the selection...
+
+    map('i', '<C-l>', [[coc#pum#visible() ? coc#pum#confirm() : "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR><Esc>"]], coc_opts) -- This seems irrelevant... I can just space out of the selection...
     normal('gd', '<Plug>(coc-definition)') -- CoC: Go to definition
     -- normal('[g', '<Plug>(coc-diagnostic-prev)') -- CoC: Go to previous diagnostic
     -- normal(']g', '<Plug>(coc-diagnostic-next)') -- CoC: Go to next diagnostic
-
 
     -- Your language server must support hover for this to work.
 
@@ -159,13 +140,20 @@ else
     -- Leap
     -- ---------------------------------------------------------------------- --
 
-    -- Leap is a died-in-the-wool never-x-er so I'm deleting x here so that
-    -- Leap's overriding of x doesn't get in the way of my x-ing.
-
+    -- Deleting x so Leap's overriding of x doesn't get in the way of my x-ing.
     vim.keymap.del({'x', 'o'}, 'x')
     vim.keymap.del({'x', 'o'}, 'X')
 
-    visual('g', '<Plug>(leap-forward-till)') -- Fixes leap's remapping of x in visual mode.
+    -- Fixes leap's remapping of x in visual mode.
+    visual('g', '<Plug>(leap-forward-till)')
+
+    -- Telescope
+    -- ---------------------------------------------------------------------- --
+
+    normal(';f', ':Telescope find_files<CR>')
+    normal(';g', ':Telescope live_grep<CR>')
+    normal(';b', ':Telescope buffers<CR>')
+    normal(';;', ':Telescope help_tags<CR>')
 
     -- Nvim Tree
     -- ---------------------------------------------------------------------- --
@@ -176,13 +164,13 @@ else
     -- ---------------------------------------------------------------------- --
 
     -- Open Trouble window with `<Leader>-`
-    normal('<leader>-', '<cmd>Trouble<CR>')
+    -- normal('<leader>-', '<cmd>TroubleToggle<CR>')
     -- Open Trouble workspace diagnostics with `<Leader>xw`
-    normal('<leader>xw', '<cmd>Trouble workspace_diagnostics<CR>')
+    -- normal('<leader>xw', '<cmd>Trouble workspace_diagnostics<CR>')
     -- Open Trouble document diagnostics with `<Leader>xd`
-    normal('<leader>xd', '<cmd>Trouble document_diagnostics<CR>')
+    -- normal('<leader>xd', '<cmd>Trouble document_diagnostics<CR>')
     -- Open Trouble loclist with `<Leader>xl`
-    normal('<leader>xl', '<cmd>Trouble loclist<CR>')
+    -- normal('<leader>xl', '<cmd>Trouble loclist<CR>')
 
     -- TO-DO normal('<leader>... '<cmd>Trouble quickfix<CR>')
     -- TO-DO normal('<leader>... '<cmd>Trouble lsp_reference<CR>')
@@ -196,19 +184,20 @@ else
     -- Harpoon
     -- ---------------------------------------------------------------------- --
 
-    local harpoon_mark = require("harpoon.mark")
-    local harpoon_ui = require("harpoon.ui")
+    -- local harpoon_mark = require("harpoon.mark")
+    -- local harpoon_ui = require("harpoon.ui")
+    --
+    -- vim.keymap.set("n", "<leader>a", harpoon_mark.add_file)
+    -- vim.keymap.set("n", "<C-e>", harpoon_ui.toggle_quick_menu)
+    --
+    -- vim.keymap.set("n", "<C-h>", function() harpoon_ui.nav_file(1) end)
+    -- vim.keymap.set("n", "<C-t>", function() harpoon_ui.nav_file(2) end)
+    -- vim.keymap.set("n", "<C-n>", function() harpoon_ui.nav_file(3) end)
+    -- vim.keymap.set("n", "<C-s>", function() harpoon_ui.nav_file(4) end)
 
-    vim.keymap.set("n", "<leader>a", harpoon_mark.add_file)
-    vim.keymap.set("n", "<C-e>", harpoon_ui.toggle_quick_menu)
-
-    vim.keymap.set("n", "<C-h>", function() harpoon_ui.nav_file(1) end)
-    vim.keymap.set("n", "<C-t>", function() harpoon_ui.nav_file(2) end)
-    vim.keymap.set("n", "<C-n>", function() harpoon_ui.nav_file(3) end)
-    vim.keymap.set("n", "<C-s>", function() harpoon_ui.nav_file(4) end)
-
+    -- ====================================================================== --
     -- TO-DO
-    -- ---------------------------------------------------------------------- --
+    -- ====================================================================== --
 
     -- HighStr
     -- ---------------------------------------------------------------------- --
@@ -216,12 +205,10 @@ else
     -- visual('<F3>', ':<c-u>HSHighlight 1<CR>')
     -- visual('<F4>', ':<c-u>HSRmHighlight 1<CR>')
 
-    -- Telescope
+    -- Odin
     -- ---------------------------------------------------------------------- --
 
-    -- normal(';f', ':Telescope find_files<CR>')
-    -- normal(';g', ':Telescope live_grep<CR>')
-    -- normal(';b', ':Telescope buffers<CR>')
-    -- normal(';;', ':Telescope help_tags<CR>')
+    normal('<leader>O', ':lua RunOrf()<CR>')
+
 
 end

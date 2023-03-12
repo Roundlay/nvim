@@ -1,15 +1,14 @@
--- ========================================================================== --
--- Neovim Settings
--- ========================================================================== --
+-- settings.lua
+-- -------------------------------------------------------------------------- --
 
 -- Notes
 -- -------------------------------------------------------------------------- --
 
 -- https://github.com/mukeshsoni/config/blob/master/.config/nvim/init.lua
--- Echo Neovim's runtimepath variables.
--- print(vim.inspect(vim.api.nvim_list_runtime_paths()))
--- Primer on highlighting in Vimscript:
--- https://gist.github.com/romainl/379904f91fa40533175dfaec4c833f2f
+-- Echo Neovim's runtimepath variables: print(vim.inspect(vim.api.nvim_list_runtime_paths()))
+-- Primer on highlighting in Vimscript: https://gist.github.com/romainl/379904f91fa40533175dfaec4c833f2f
+
+-- -------------------------------------------------------------------------- --
 
 if (vim.g.vscode) then
 
@@ -38,7 +37,7 @@ else
     -- Netrw
     -- ---------------------------------------------------------------------- --
 
-    -- NOTE: :Lexplore opens a netrw window to the left of the current window.
+    -- Lexplore opens a netrw window to the left of the current window.
 
     vim.g.loaded_netrw = 1 -- Set to 1 to disable netrw completely.
     vim.g.loaded_netrwPlugin = 1 -- Set to 1 to disable netrw plugins.
@@ -48,15 +47,14 @@ else
     vim.g.netrw_altv = 1 -- ...
     vim.g.netrw_winsize = 20
 
-    vim.g.redrawtime = 2000 -- Time in ms to redraw the screen. (Default: 2000)
-
     -- Misc
     -- ---------------------------------------------------------------------- --
 
     vim.o.encoding = 'utf-8'
     vim.o.background = 'dark'
-    vim.o.hidden = true -- Retain undo information when a buffer is unloaded (incl. ToggleTerm)
+    vim.o.hidden = true -- Retain undo information when a buffer is unloaded. Required for CoC.
     vim.o.termguicolors = true -- Enable true 24bit colour support; required for custom Neovim theme.
+    vim.g.redrawtime = 3000 -- Time in ms to redraw the screen. (Default: 2000)
 
     -- Syntax
     -- --------------------------------------------------------------------- --
@@ -74,8 +72,6 @@ else
     vim.o.showmatch = true -- Show matching braces, etc.
     vim.o.syntax = 'on' -- Enable syntax highlighting.
     -- vim.o.filetype = 'on' -- Enables filetype detection. NOTE: Handled by filetype plugin now to avoid autocmds?
-
-    -- TODO: Global statusline is nice, but need better way to identify individual buffers.
     vim.o.laststatus = 2 -- 2 ensures that all windows have a status line. 3 enables the global status line. -- This needs to be called before fillchars...
 
     vim.o.fillchars = 'eob: ' -- Remove empty buffer symbols.
@@ -108,12 +104,13 @@ else
     vim.o.expandtab = true
     vim.o.smarttab = true
 
-    -- Timings
+    -- Timing
     -- --------------------------------------------------------------------- --
 
-    vim.o.updatetime = 150 -- Length of time Vim waits after you stop typing before it triggers plugin.
-    vim.o.ttimeoutlen = 30 -- Timeout in ms for key codes.
-    vim.o.nottimeout = true
+    vim.o.updatetime = 3000 -- Length of time Vim waits after you stop typing before it writes the swap file to disk.
+    vim.o.timeoutlen = 500 -- Timeout in milliseconds to wait for maps to complete.
+    vim.o.ttimeoutlen = 50 -- Timeout in milliseconds to wait for for key codes to complete.
+    -- vim.o.nottimeout = true
     -- vim.o.shadafile = 'NONE' -- Doesn't work?
     -- vim.o.lazyredraw = false -- Tried for perf.
 
@@ -124,13 +121,14 @@ else
     vim.o.foldmethod = 'syntax'
     vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
     vim.o.foldlevel = 99
+    vim.w.foldcolumn = 1 -- How many columns to use when drawing a fold.
 
-    vim.o.inccommand = 'nosplit' --Shows the effects of a command incrementally in the buffer.
 
     -- Window Options
     -- --------------------------------------------------------------------- --
     
-    vim.w.foldcolumn = 1
+    vim.wo.conceallevel = 1 -- Highlighted with "Conceal" highlight group, meaning dimmed windows may appear to have chunks missing in locations where text is concealed. 
+    vim.o.inccommand = 'nosplit' --Shows the effects of a command incrementally in the buffer.
 
     -- Hacks
     -- Coc specific flags; 'Some servers have issues with backup files'
@@ -140,7 +138,6 @@ else
     vim.opt.writebackup = false
 
     vim.diagnostic.config({underline = false})
-    -- vim.wo.conceallevel = 1
     -- vim.wo.colorcolumn = "99999" -- Trying to solve issues with Indent Blankline
 
     -- Highlight yanked text on yank
@@ -170,5 +167,6 @@ else
     -- vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files.
     -- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]]
     -- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]]
+    -- vim.cmd [[ autocmd VimResized * wincmd = ]] -- Glitchy AF. -- Resize splits when Vim window is resized.
 
 end
