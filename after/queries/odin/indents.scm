@@ -1,0 +1,1 @@
+(block "}" @indent_end)
