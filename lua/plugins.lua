@@ -40,7 +40,6 @@ else
         Plug("numToStr/Comment.nvim")
         Plug("unblevable/quick-scope")
         Plug("echasnovski/mini.align")
-        -- Plug("echasnovski/mini.bracketed") -- TODO
         Plug("echasnovski/mini.pairs")
         -- Plug("echasnovski/mini.surround")
         -- Plug("tpope/vim-surround")
@@ -66,20 +65,20 @@ else
         -- ------------------------------------------------------------------ --
 
         Plug("neovim/nvim-lspconfig")
-        Plug("williamboman/mason.nvim")
+        Plug("williamboman/mason.nvim", { on = 'Mason' })
         Plug("williamboman/mason-lspconfig.nvim")
         Plug("github/copilot.vim") -- DEPS: Node.js >= 16
-        Plug("neoclide/coc.nvim", { ["branch"] = "release" }) -- DEPS: Node.js >= 14.14
+        Plug("neoclide/coc.nvim", { branch = "release" }) -- DEPS: Node.js >= 14.14
 
         -- Language Servers & Syntax
         -- ------------------------------------------------------------------ --
 
-        Plug("DanielGavin/ols", { ft = "odin" })
-        Plug("DanielGavin/odin.vim", { ft = "odin" })
+        Plug("DanielGavin/ols", { ["for"] = "odin" }) -- { ft = "odin" }
+        Plug("DanielGavin/odin.vim", { ["for"] = "odin" }) -- { ft = "odin" }
         -- Plug("ap29600/tree-sitter-odin", { ft = "odin" })
         -- Plug("simrat39/rust-tools.nvim", { ft = "rs" })
-        Plug("nvim-treesitter/nvim-treesitter", { ["do"] = ":TSUpdate" })
-        Plug("nvim-treesitter/playground") -- Couldn't get this to lazy load
+        Plug("nvim-treesitter/nvim-treesitter", { ["do"] = "TSUpdate" })
+        Plug("nvim-treesitter/playground", { on = 'TSPlaygroundToggle' }) -- Couldn't get this to lazy load
 
         -- Dependencies
         -- ------------------------------------------------------------------ --
@@ -105,8 +104,6 @@ else
 
     require("mini.align").setup({})
     require("mini.pairs").setup({})
-    -- require("mini.bracketed").setup({})
-    -- require("mini.surround").setup({})
 
     -- Impatient
     -- ---------------------------------------------------------------------- --
@@ -217,7 +214,7 @@ else
     -- ---------------------------------------------------------------------- --
 
     -- Re-render the statusline and window bar every second.
-    -- scripts.rerender_lualine()
+    scripts.rerender_lualine()
 
     -- Return the currently active and inactive buffer numbers.
     -- scripts.get_inactive_buffer_numbers()

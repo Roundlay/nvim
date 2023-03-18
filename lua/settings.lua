@@ -127,7 +127,7 @@ else
     -- Window Options
     -- --------------------------------------------------------------------- --
     
-    vim.wo.conceallevel = 1 -- Highlighted with "Conceal" highlight group, meaning dimmed windows may appear to have chunks missing in locations where text is concealed. 
+    vim.wo.conceallevel = 0 -- Highlighted with "Conceal" highlight group, meaning dimmed windows may appear to have chunks missing in locations where text is concealed. 
     vim.o.inccommand = 'nosplit' --Shows the effects of a command incrementally in the buffer.
 
     -- Hacks
