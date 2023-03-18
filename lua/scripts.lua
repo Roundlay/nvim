@@ -217,18 +217,17 @@ end
 -- Trigger re-render of status line every second. 
 -- -------------------------------------------------------------------------- --
 
--- function M.rerender_lualine()
---     if _G.Statusline_timer == nil then
---         _G.Statusline_timer = vim.loop.new_timer()
---     else
---         _G.Statusline_timer:stop()
---         vim.api.nvim_command("echo 'Statusline timer stopped.'")
---     end
---     -- `redraws the status line and window bar of the current window, or all
---     -- status lines and window bars if "!" is included.
---     _G.Statusline_timer:start(0, 1000, vim.schedule_wrap(function() vim.api.nvim_command("redrawstatus!") end))
---     vim.api.nvim_command("echo 'Statusline timer started.'")
--- end
+function M.rerender_lualine()
+    if _G.Statusline_timer == nil then
+        _G.Statusline_timer = vim.loop.new_timer()
+    else
+        _G.Statusline_timer:stop()
+        vim.api.nvim_command("echo 'Statusline timer stopped.'")
+    end
+    -- Redraws *all* statuslines and window bars if "!" is included after `redrawstatus`.
+    _G.Statusline_timer:start(0, 1000, vim.schedule_wrap(function() vim.api.nvim_command("redrawstatus!") end))
+    -- vim.api.nvim_command("echo 'Statusline timer started.'")
+end
 
 -- Get inactive buffer numbers
 -- -------------------------------------------------------------------------- --
