@@ -29,7 +29,7 @@ else
         -- ------------------------------------------------------------------ --
 
         Plug("lewis6991/impatient.nvim")
-        Plug("dstein64/vim-startuptime")
+        -- Plug("dstein64/vim-startuptime")
         Plug("nathom/filetype.nvim")
         Plug("Pocco81/auto-save.nvim")
 
@@ -52,6 +52,7 @@ else
         Plug("lukas-reineke/indent-blankline.nvim")
         -- Plug("nvim-tree/nvim-tree.lua") -- Pretty bad for startup time, possibly perf.
         Plug("nvim-telescope/telescope.nvim", {["tag"] = "0.1.1"}) 
+        Plug("beauwilliams/focus.nvim")
 
         -- Themes
         -- ------------------------------------------------------------------ --
@@ -74,8 +75,8 @@ else
         -- ------------------------------------------------------------------ --
 
         Plug("DanielGavin/ols", { ["for"] = "odin" }) -- { ft = "odin" }
-        Plug("DanielGavin/odin.vim", { ["for"] = "odin" }) -- { ft = "odin" }
-        -- Plug("ap29600/tree-sitter-odin", { ft = "odin" })
+        -- Plug("DanielGavin/odin.vim", { ["for"] = "odin" }) -- { ft = "odin" }
+        Plug("ap29600/tree-sitter-odin", { ft = "odin" })
         -- Plug("simrat39/rust-tools.nvim", { ft = "rs" })
         Plug("nvim-treesitter/nvim-treesitter", { ["do"] = "TSUpdate" })
         Plug("nvim-treesitter/playground", { on = 'TSPlaygroundToggle' }) -- Couldn't get this to lazy load
@@ -95,14 +96,22 @@ else
 
     vim.call("plug#end")
 
-    -- ====================================================================== --
-    -- Setup
-    -- ====================================================================== --
+    -- ---------------------------------------------------------------------- --
+    -- SETUP
+    -- ---------------------------------------------------------------------- --
+
+    -- focus.nvim
+    -- ---------------------------------------------------------------------- --
+
+    require("focus").setup({
+        cursorline = false,
+        signcolumn = false,
+    })
 
     -- mini.nvim
     -- ---------------------------------------------------------------------- --
 
-    require("mini.align").setup({})
+    require("mini.align").setup({}) -- TODO Add custom alignment rules.
     require("mini.pairs").setup({})
 
     -- Impatient
@@ -214,42 +223,42 @@ else
     -- ---------------------------------------------------------------------- --
 
     -- Re-render the statusline and window bar every second.
-    scripts.rerender_lualine()
+    -- scripts.rerender_lualine()
 
     -- Return the currently active and inactive buffer numbers.
     -- scripts.get_inactive_buffer_numbers()
     -- scripts.get_active_buffer_number()
 
-    local mode_section = {"mode", fmt = function(str) return str:sub(1,1) end}
+    -- local mode_section = {"mode", fmt = function(str) return str:sub(1,1) end}
     local filename_section = {"filename", file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = "MO", readonly = "RO", unnamed = "UN", newfile = "NF"}}
     local windows_section = {"windows", mode = 1}
 
     require("lualine").setup {
         options = {
-            always_divide_middle = true,
-            component_separators = { left = "", right = "" },
-            section_separators = { left = "", right = "" },
-            globalstatus = false,
-            icons_enabled = false,
-            theme = "kanagawa",
-            -- theme = "codedark",
-            extensions = {"nvim-tree"},
+            always_divide_middle  = true,
+            component_separators  = { left = "", right = "" },
+            section_separators    = { left = "", right = "" },
+            globalstatus          = false,
+            icons_enabled         = false,
+            theme                 = "kanagawa",
+            -- theme              = "codedark",
+            extensions            = {"nvim-tree"},
             -- disabled_filetypes = { "NvimTree", "netrw" },
         }, 
         sections = {
-            lualine_a = {mode_section},
-            -- lualine_a = {{"mode", show_modified_status = true, mode = 2},},
-            lualine_b = {"diagnostics"},
+            lualine_a    = {mode_section},
+            -- lualine_a = {{"mode", show_modified_status=true, mode=2},},
+            lualine_b    = {"diagnostics"},
             -- lualine_b = {"diff", "diagnostics"},
-            lualine_c = {filename_section},
-            lualine_x = {"filetype"},
-            -- lualine_x = {{"buffers", mode = 1, show_modified_status = false, max_length = 3, padding = {left = 1, right = 0} },},
-            -- lualine_x = {{active_buffer_number, color = {fg = "#7E9CD8"}}, {inactive_buffer_numbers, color = {fg = "#717C7C"}, padding = {left = 0, right = 1}}},
+            lualine_c    = {filename_section},
+            lualine_x    = {"filetype"},
+            -- lualine_x = {{"buffers", mode=1, show_modified_status=false, max_length=3, padding={left=1, right=0} },},
+            -- lualine_x = {{active_buffer_number, color={fg="#7E9CD8"}}, {inactive_buffer_numbers, color={fg="#717C7C"}, padding={left=0, right=1}}},
             -- lualine_y = {"progress"},
-            lualine_y = {"progress"},
-            -- lualine_y = {{"fileformat", symbols = {unix = "UNIX", dos = "DOS", mac = "Mac", odin = "ODIN", lua = "LUA"}}, "filetype"},
+            lualine_y    = {"progress"},
+            -- lualine_y = {{"fileformat", symbols={unix="UNIX", dos="DOS", mac="Mac", odin="ODIN", lua="LUA"}}, "filetype"},
             -- lualine_y = {{"os.date("%I:%M:%S %p")"}}, -- Need to uncomment render update time block below for seconds to update properly
-            lualine_z = {{"location"}},
+            lualine_z    = {{"location"}},
         },  
     }
 
@@ -290,13 +299,13 @@ else
 
     require("indent_blankline").setup {
         char = "┃",
-        char_blankline = "┃",
+        char_blankline = "┋",
         show_current_context = false,
         show_current_context_start = false,
         show_end_of_line = false,
         show_first_indent_level = true,
         show_foldtext = true,
-        show_trailing_blankline_indent = false,
+        show_trailing_blankline_indent = true,
         strict_tabs = false,
         use_treesitter = true, -- Was causing some issues with .odin files.
         use_treesitter_scope = true,
@@ -312,7 +321,6 @@ else
         defaults = {
             layout_strategy = "bottom_pane",
             borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
-            -- borderchars = { "", "", "", "", "", "", "", "" },
             results_title = false,
             layout_config = {
                 -- height = telescope_height - 2,
@@ -322,40 +330,12 @@ else
                 -- preview_height = 0.4,
             },
         },
-        pickers = {
-            find_files = {
-                -- theme = "ivy",
-                -- theme = "dropdown",
-            },
-        }
     })
 
-    -- lspconfig
-    -- ---------------------------------------------------------------------- --
-
-    local util = require("lspconfig.util")
-    local configs = require("lspconfig.configs")
-
-    -- local on_attach = function(client, bufnr)
-    --     vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc") 
-    -- end
-
-    -- Mason
-    -- ---------------------------------------------------------------------- --
-
-    require("mason").setup()
-    require("mason-lspconfig").setup()
-
-    -- nvim-treesitter 
-    -- ---------------------------------------------------------------------- --
-
-    -- TODO Check utils in help.
-    -- [x] Added to Lazy
-
     require("nvim-treesitter.configs").setup {
-        ensure_installed = "all", -- Only use parsers that are maintained.
+        ensure_installed = {'c', 'lua', 'python', 'rust', 'help', 'cmake'}, -- Only use parsers that are maintained.
         sync_install = false,
-        auto_install = true,
+        auto_install = false,
         highlight = {
             enable = true,
             additional_vim_regex_highlighting = false, -- Slow.
@@ -389,6 +369,15 @@ else
         -- },
     }
 
+    -- LSPs
+
+    -- LSPConfig
+
+    -- Mason
+
+    require("mason").setup()
+    require("mason-lspconfig").setup()
+
     -- Rust Tools
     -- ---------------------------------------------------------------------- --
 
@@ -404,15 +393,12 @@ else
     --     },
     -- })
 
-    -- OLS
-    -- ---------------------------------------------------------------------- --
-
-    if not configs.ols then
-        configs.ols = {
+    if not require("lspconfig.configs").ols then
+        require("lspconfig.configs").ols = {
             default_config = {
                 cmd = { "ols" },
                 filetypes = { "odin" },
-                root_dir = util.root_pattern("ols.json", ".git"),
+                root_dir = require("lspconfig.util").root_pattern("ols.json", ".git"),
                 single_file_support = true,
                 on_attach = function(client, bufnr)
                     -- vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.MiniCompletion.completefunc_lsp") 
@@ -422,7 +408,7 @@ else
             }
         }
     end
-    configs.ols.setup{}
+    require("lspconfig.configs").ols.setup{}
 
     -- Pyright
     -- ---------------------------------------------------------------------- --
@@ -444,26 +430,26 @@ else
     -- Kanagawa
     -- ---------------------------------------------------------------------- --
 
-    local kanagawa = require("kanagawa.colors").setup()
-    local overrides = { WinSeparator = { fg = kanagawa.bg_dark, bg = NONE }, }
+    -- local kanagawa = require("kanagawa.colors").setup()
+    -- local overrides = { WinSeparator = { fg = kanagawa.bg_dark, bg = NONE }, }
 
     require("kanagawa").setup({
         colors = kanagawa,
-        overrides = overrides,
+        -- overrides = overrides,
         theme = "default", -- Load "default" theme or the experimental "light" theme
         undercurl = true,
-        commentStyle = { italic = false },
+        commentStyle = { italic = true },
         functionStyle = { bold = true },
         keywordStyle = { italic = false },
         statementStyle = { bold = true },
-        typeStyle = { bold = false },
-        variablebuiltinStyle = { italic = false },
+        typeStyle = { bold = true },
+        variablebuiltinStyle = { italic = true },
         specialReturn = true, -- Special highlight for the return keyword.
         specialException = true, -- Special highlight for exception handling keywords.
         transparent = false , -- Do not set background color.
         terminalColors = true, -- Define vim.g.terminal_color_{0,17}.
-        globalStatus = false,
-        dimInactive = false,
+        globalStatus = true,
+        dimInactive = false, 
     })
 
     vim.cmd("colorscheme kanagawa")
@@ -474,3 +460,4 @@ else
     -- vim.cmd("colorscheme codedark")
 
 end
+

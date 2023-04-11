@@ -30,22 +30,18 @@ else
     -- Neovim Settings
     -- ====================================================================== --
 
-    -- ---------------------------------------------------------------------- --
-    -- Global
-    -- ---------------------------------------------------------------------- --
-
     -- Netrw
     -- ---------------------------------------------------------------------- --
 
     -- Lexplore opens a netrw window to the left of the current window.
 
     vim.g.loaded_netrw = 1 -- Set to 1 to disable netrw completely.
-    vim.g.loaded_netrwPlugin = 1 -- Set to 1 to disable netrw plugins.
-    vim.g.netrw_banner = 0 -- Remove the banner that appears when opening netrw.
-    vim.g.netrw_liststyle = 3
-    vim.g.netrw_browse_split = 4 -- 2: horizontal split, 2: vertical split, 3: tab, 4: previous window
-    vim.g.netrw_altv = 1 -- ...
-    vim.g.netrw_winsize = 20
+    -- vim.g.loaded_netrwPlugin = 1 -- Set to 1 to disable netrw plugins.
+    -- vim.g.netrw_banner = 0 -- Remove the banner that appears when opening netrw.
+    -- vim.g.netrw_liststyle = 3
+    -- vim.g.netrw_browse_split = 4 -- 2: horizontal split, 2: vertical split, 3: tab, 4: previous window
+    -- vim.g.netrw_altv = 1 -- ...
+    -- vim.g.netrw_winsize = 20
 
     -- Misc
     -- ---------------------------------------------------------------------- --
@@ -54,7 +50,7 @@ else
     vim.o.background = 'dark'
     vim.o.hidden = true -- Retain undo information when a buffer is unloaded. Required for CoC.
     vim.o.termguicolors = true -- Enable true 24bit colour support; required for custom Neovim theme.
-    vim.g.redrawtime = 3000 -- Time in ms to redraw the screen. (Default: 2000)
+    vim.g.redrawtime = 2000 -- Time in ms to redraw the screen. (Default: 2000)
 
     -- Syntax
     -- --------------------------------------------------------------------- --
@@ -62,7 +58,7 @@ else
     vim.o.ignorecase = true -- Ignore case when searching.
     vim.o.smartcase = true -- Don't ignore case with capitals.
     vim.o.hlsearch = true -- Highlight search results.
-    vim.o.synmaxcol = 0 -- Max columns (letters) to search for syntax items. 0 == infinity. https://stackoverflow.com/questions/11873767/using-folds-with-synmaxcol-in-vim
+    vim.o.synmaxcol = 3000 -- Max columns to search for syntax items. 0 = infinity.
 
     -- UI
     -- --------------------------------------------------------------------- --
@@ -94,13 +90,15 @@ else
     vim.o.smartindent = true
     vim.o.breakindent = true -- Indent wrapped lines.
     vim.o.shiftwidth = 4 -- Num. spaces to use for each step of autoindent.
-    -- vim.o.showbreak = '␤'
-    -- vim.o.breakindentopt = 'shift:1'
+
+    -- TODO Get this working for Markdown and TXT files.
+    -- vim.o.showbreak = '␤ '
+    -- vim.o.breakindentopt = 'shift:-3'
 
     -- Tabs
     -- --------------------------------------------------------------------- --
 
-    vim.o.tabstop = 4
+    vim.o.tabstop = 8
     vim.o.expandtab = true
     vim.o.smarttab = true
 

@@ -58,53 +58,54 @@ local M = {}
 --     vim.cmd('redraw')
 -- end
 
+-- This is an experiment in creating a code compilation watch window in Lua for Neovim.
 
-function bsop(buffer, name, value)
-    vim.api.nvim_buf_set_option(buffer, name, value)
-end
-
-local bufnr = nil
-function on_save()
-    local filepath = vim.fn.expand('%:p:h')
-    local tempdir = filepath .. '/temp'
-    if not vim.fn.isdirectory(tempdir) then
-        os.execute("mkdir " .. tempdir)
-        -- vim.fn.mkdir(tempdir)
-    end
-    local timestamp = os.time(os.date("!*t"))
-    local tempname = tempdir .. '/' .. vim.fn.expand('%:t:r') .. '_temp_' .. timestamp .. '.odin'
-    vim.api.nvim_command('silent w! ' .. tempname)
-    local output = vim.fn.systemlist('odin run ' .. tempname .. ' -file')
-    if not bufnr then
-        bufnr = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
-        vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'wipe')
-        vim.api.nvim_buf_set_option(bufnr, 'filetype', 'odin')
-        vim.api.nvim_buf_set_option(bufnr, 'syntax', 'odin')
-        vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
-        vim.cmd('split')
-        local winid = vim.fn.win_getid()
-        vim.api.nvim_win_set_buf(winid,bufnr)
-        vim.api.nvim_win_set_option(winid,'wrap',true)
-        vim.api.nvim_win_set_height(winid,10)
-    end
-    local current_win = vim.fn.win_getid()
-    local winids = vim.fn.win_findbuf(bufnr) 
-    for _, winid in ipairs(winids) do 
-        if winid ~= current_win then 
-            pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',true) 
-            pcall(vim.api.nvim_win_call,
-            winid,
-            function()
-                pcall(vim.api.nvim_buf_set_lines,bufnr,0,-1,false,output) 
-            end) 
-            pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',false)  
-        end  
-    end  
-end
-function odin_live()
-    vim.cmd('autocmd BufWritePost <buffer> lua on_save()') 
-end
+-- function bsop(buffer, name, value)
+--     vim.api.nvim_buf_set_option(buffer, name, value)
+-- end
+--
+-- local bufnr = nil
+-- function on_save()
+--     local filepath = vim.fn.expand('%:p:h')
+--     local tempdir = filepath .. '/temp'
+--     if not vim.fn.isdirectory(tempdir) then
+--         os.execute("mkdir " .. tempdir)
+--         -- vim.fn.mkdir(tempdir)
+--     end
+--     local timestamp = os.time(os.date("!*t"))
+--     local tempname = tempdir .. '/' .. vim.fn.expand('%:t:r') .. '_temp_' .. timestamp .. '.odin'
+--     vim.api.nvim_command('silent w! ' .. tempname)
+--     local output = vim.fn.systemlist('odin run ' .. tempname .. ' -file')
+--     if not bufnr then
+--         bufnr = vim.api.nvim_create_buf(false, true)
+--         vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
+--         vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'wipe')
+--         vim.api.nvim_buf_set_option(bufnr, 'filetype', 'odin')
+--         vim.api.nvim_buf_set_option(bufnr, 'syntax', 'odin')
+--         vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
+--         vim.cmd('split')
+--         local winid = vim.fn.win_getid()
+--         vim.api.nvim_win_set_buf(winid,bufnr)
+--         vim.api.nvim_win_set_option(winid,'wrap',true)
+--         vim.api.nvim_win_set_height(winid,10)
+--     end
+--     local current_win = vim.fn.win_getid()
+--     local winids = vim.fn.win_findbuf(bufnr) 
+--     for _, winid in ipairs(winids) do 
+--         if winid ~= current_win then 
+--             pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',true) 
+--             pcall(vim.api.nvim_win_call,
+--             winid,
+--             function()
+--                 pcall(vim.api.nvim_buf_set_lines,bufnr,0,-1,false,output) 
+--             end) 
+--             pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',false)  
+--         end  
+--     end  
+-- end
+-- function odin_live()
+--     vim.cmd('autocmd BufWritePost <buffer> lua on_save()') 
+-- end
 
 -- local bufnr = nil
 -- function on_save()
@@ -157,10 +158,22 @@ end
 --       end  
 --     end  
 -- end
---
+
 -- function odin_live()
 --   -- Register autocommand to run on_save function when the current buffer is written 
 --   vim.cmd('autocmd BufWritePost <buffer> lua on_save()') 
+-- end
+
+-- This is a temporary function for calling `ebert.bat` on the Eebs folder for ebook testing.
+
+-- local M = {}
+-- function M.Ebert()
+--     local folder_name = vim.fn.input('Enter folder name: ')
+--     if folder_name ~= '' then
+--         local folder_path = "C:\\Users\\Christopher\\Projects\\Eebs\\" .. folder_name
+--         local output = vim.fn.system('ebert.bat "' .. folder_path .. '"')
+--         print(output)
+--     end
 -- end
 
 -- ========================================================================== --

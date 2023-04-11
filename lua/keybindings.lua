@@ -1,3 +1,5 @@
+local scripts = require("scripts")
+
 -- keybindings.lua
 -- -------------------------------------------------------------------------- --
 
@@ -32,9 +34,6 @@ end
 
 if (vim.g.vscode) then
     
-    -- Visual Studio Code
-    -- ---------------------------------------------------------------------- --
-
     normal('J', '}') -- Jump n paragraphs backwards.
     normal('K', '{') -- Jump n paragraphs forwards.
     normal('L', '$') -- Jump to the end of the active line.
@@ -45,11 +44,8 @@ if (vim.g.vscode) then
 
 else
 
-    -- NEOVIM
-
     normal('<n>', '<C-v>') -- WIN: Fixes paste overlap w/ Visual Command Mode.
 
-    -- normal(' ', '<Nop>')
     vim.g.mapleader = ' ' -- `vim.g.mapleader = '<Space>'` doesn't work.
 
     -- Escape
@@ -98,6 +94,20 @@ else
     normal('<leader>P', '"+P')
     visual('<leader>p', '"+p')
     visual('<leader>P', '"+P')
+
+    -- ---------------------------------------------------------------------- --
+    -- Custom
+    -- ---------------------------------------------------------------------- --
+
+    -- Odin
+    -- ---------------------------------------------------------------------- --
+
+    -- normal('<leader>O', ':lua RunOrf()<CR>')
+
+    -- Ebert
+    -- ---------------------------------------------------------------------- --
+
+    vim.api.nvim_set_keymap('n', '<leader>eb', ':lua require("scripts").Ebert()<CR>', {noremap = true, silent = false})
 
     -- ---------------------------------------------------------------------- --
     -- Plugins 
@@ -175,25 +185,13 @@ else
     -- TO-DO normal('<leader>... '<cmd>Trouble quickfix<CR>')
     -- TO-DO normal('<leader>... '<cmd>Trouble lsp_reference<CR>')
 
-    -- Tabline
+    -- Focus
     -- ---------------------------------------------------------------------- --
 
-    -- Move to the next buffer in the tabline with `tn`
-    -- normal('tn', '<cmd>TablineBufferNext<CR>')
-
-    -- Harpoon
-    -- ---------------------------------------------------------------------- --
-
-    -- local harpoon_mark = require("harpoon.mark")
-    -- local harpoon_ui = require("harpoon.ui")
-    --
-    -- vim.keymap.set("n", "<leader>a", harpoon_mark.add_file)
-    -- vim.keymap.set("n", "<C-e>", harpoon_ui.toggle_quick_menu)
-    --
-    -- vim.keymap.set("n", "<C-h>", function() harpoon_ui.nav_file(1) end)
-    -- vim.keymap.set("n", "<C-t>", function() harpoon_ui.nav_file(2) end)
-    -- vim.keymap.set("n", "<C-n>", function() harpoon_ui.nav_file(3) end)
-    -- vim.keymap.set("n", "<C-s>", function() harpoon_ui.nav_file(4) end)
+    normal('<leader>h', ':FocusSplitLeft<CR>')
+    normal('<leader>j', ':FocusSplitDown<CR>')
+    normal('<leader>k', ':FocusSplitUp<CR>')
+    normal('<leader>l', ':FocusSplitRight<CR>')
 
     -- ====================================================================== --
     -- TO-DO
@@ -204,11 +202,5 @@ else
 
     -- visual('<F3>', ':<c-u>HSHighlight 1<CR>')
     -- visual('<F4>', ':<c-u>HSRmHighlight 1<CR>')
-
-    -- Odin
-    -- ---------------------------------------------------------------------- --
-
-    normal('<leader>O', ':lua RunOrf()<CR>')
-
 
 end
