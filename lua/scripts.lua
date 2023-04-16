@@ -239,7 +239,7 @@ function M.rerender_lualine()
     end
     -- Redraws *all* statuslines and window bars if "!" is included after `redrawstatus`.
     _G.Statusline_timer:start(0, 1000, vim.schedule_wrap(function() vim.api.nvim_command("redrawstatus!") end))
-    -- vim.api.nvim_command("echo 'Statusline timer started.'")
+    vim.api.nvim_command("echo 'Statusline timer started.'")
 end
 
 -- Get inactive buffer numbers

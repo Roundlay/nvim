@@ -67,7 +67,7 @@ else
     vim.o.incsearch = true -- Show search results as you type.
     vim.o.showmatch = true -- Show matching braces, etc.
     vim.o.syntax = 'on' -- Enable syntax highlighting.
-    -- vim.o.filetype = 'on' -- Enables filetype detection. NOTE: Handled by filetype plugin now to avoid autocmds?
+    vim.o.filetype = 'on' -- Enables filetype detection. NOTE: Handled by filetype plugin now to avoid autocmds?
     vim.o.laststatus = 2 -- 2 ensures that all windows have a status line. 3 enables the global status line. -- This needs to be called before fillchars...
 
     vim.o.fillchars = 'eob: ' -- Remove empty buffer symbols.
@@ -87,7 +87,7 @@ else
     -- --------------------------------------------------------------------- --
 
     vim.o.autoindent = true
-    vim.o.smartindent = true
+    vim.o.smartindent = false -- NOTE Setting this to false fixed incorrect indentation in Odin files.
     vim.o.breakindent = true -- Indent wrapped lines.
     vim.o.shiftwidth = 4 -- Num. spaces to use for each step of autoindent.
 
@@ -98,7 +98,7 @@ else
     -- Tabs
     -- --------------------------------------------------------------------- --
 
-    vim.o.tabstop = 8
+    vim.o.tabstop = 4
     vim.o.expandtab = true
     vim.o.smarttab = true
 
@@ -161,8 +161,8 @@ else
     -- vim.cmd [[ let g:dracula_underline = 0 ]] -- Disable underlines in Dracula theme.
     -- vim.cmd [[ highlight QuickScopePrimary guifg='#c82491' gui=bold ctermfg=178 cterm=bold ]] -- Set QuickScope highlight colours.
     -- vim.cmd [[ highlight QuickScopeSecondary guifg='#afff00' ctermfg=154 ]] -- Set QuickScope secondary highlight colours.
-    -- vim.cmd [[ au BufNewFile,BufRead *.odin set syntax=odin ]] -- Set Odin syntax highlighting for .odin files.
-    -- vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files.
+    vim.cmd [[ au BufNewFile,BufRead *.odin set syntax=odin ]] -- Set Odin syntax highlighting for .odin files.
+    vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files.
     -- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]]
     -- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]]
     -- vim.cmd [[ autocmd VimResized * wincmd = ]] -- Glitchy AF. -- Resize splits when Vim window is resized.

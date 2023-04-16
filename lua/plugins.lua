@@ -29,11 +29,10 @@ else
         -- ------------------------------------------------------------------ --
 
         Plug("lewis6991/impatient.nvim")
-        -- Plug("dstein64/vim-startuptime")
-        Plug("nathom/filetype.nvim")
+        -- Plug("nathom/filetype.nvim")
         Plug("Pocco81/auto-save.nvim")
 
-        -- Editing
+        -- Editor
         -- ------------------------------------------------------------------ --
 
         Plug("ggandor/leap.nvim")
@@ -50,9 +49,9 @@ else
 
         Plug("nvim-lualine/lualine.nvim")
         Plug("lukas-reineke/indent-blankline.nvim")
-        -- Plug("nvim-tree/nvim-tree.lua") -- Pretty bad for startup time, possibly perf.
-        Plug("nvim-telescope/telescope.nvim", {["tag"] = "0.1.1"}) 
         Plug("beauwilliams/focus.nvim")
+        Plug("nvim-telescope/telescope.nvim", {["tag"] = "0.1.1"}) 
+        -- Plug("nvim-tree/nvim-tree.lua") -- Pretty bad for startup time, possibly perf.
 
         -- Themes
         -- ------------------------------------------------------------------ --
@@ -62,24 +61,24 @@ else
         -- Plug("mvpopuk/inspired-github.vim")
         -- Plug("tomasiser/vim-code-dark")
 
-        -- Language Support
+        -- Language Servers & Completion
         -- ------------------------------------------------------------------ --
 
         Plug("neovim/nvim-lspconfig")
-        Plug("williamboman/mason.nvim", { on = 'Mason' })
+        Plug("williamboman/mason.nvim", { on = "Mason" })
         Plug("williamboman/mason-lspconfig.nvim")
         Plug("github/copilot.vim") -- DEPS: Node.js >= 16
         Plug("neoclide/coc.nvim", { branch = "release" }) -- DEPS: Node.js >= 14.14
+        Plug("nvim-treesitter/nvim-treesitter", { ["do"] = "TSUpdate" })
+        Plug("nvim-treesitter/playground")
 
-        -- Language Servers & Syntax
+        -- Language Support
         -- ------------------------------------------------------------------ --
 
-        Plug("DanielGavin/ols", { ["for"] = "odin" }) -- { ft = "odin" }
-        -- Plug("DanielGavin/odin.vim", { ["for"] = "odin" }) -- { ft = "odin" }
+        Plug("DanielGavin/ols", { ["for"] = "odin", ft = "odin"}) -- { ft = "odin" }
+        -- Plug("DanielGavin/odin.vim", { ft = "odin" }) -- { ft = "odin" }
         Plug("ap29600/tree-sitter-odin", { ft = "odin" })
         -- Plug("simrat39/rust-tools.nvim", { ft = "rs" })
-        Plug("nvim-treesitter/nvim-treesitter", { ["do"] = "TSUpdate" })
-        Plug("nvim-treesitter/playground", { on = 'TSPlaygroundToggle' }) -- Couldn't get this to lazy load
 
         -- Dependencies
         -- ------------------------------------------------------------------ --
@@ -108,10 +107,14 @@ else
         signcolumn = false,
     })
 
-    -- mini.nvim
+    -- mini.align
     -- ---------------------------------------------------------------------- --
 
     require("mini.align").setup({}) -- TODO Add custom alignment rules.
+
+    -- mini.pairs
+    -- ---------------------------------------------------------------------- --
+
     require("mini.pairs").setup({})
 
     -- Impatient
@@ -119,18 +122,265 @@ else
 
     require("impatient")
 
-    -- Filetype
+    -- filetype.nvim
     -- ---------------------------------------------------------------------- --
 
-    require("filetype").setup({
-        overrides = {
-            extensions = {
-                odin = "odin",
-                rs = "rust",
-                lua = "lua",
+    -- TODO Document this.
+    -- require("filetype").setup({
+    --     overrides = {
+    --         extensions = {
+    --             odin = "odin",
+    --             rs = "rust",
+    --             lua = "lua",
+    --         }
+    --     }
+    -- })
+
+
+    -- lualine.nvim
+    -- ---------------------------------------------------------------------- --
+
+    -- Re-render the statusline and window bar every second.
+    -- scripts.rerender_lualine()
+
+    -- Return the currently active and inactive buffer numbers.
+    -- scripts.get_inactive_buffer_numbers()
+    -- scripts.get_active_buffer_number()
+
+    -- local mode_section = {"mode", fmt = function(str) return str:sub(1,1) end}
+    -- local filename_section = {"filename", file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = "MO", readonly = "RO", unnamed = "UN", newfile = "NF"}}
+    -- local windows_section = {"windows", mode = 1}
+
+    require("lualine").setup {
+        options = {
+            always_divide_middle  = true,
+            component_separators  = { left = "", right = "" },
+            section_separators    = { left = "", right = "" },
+            globalstatus          = false,
+            icons_enabled         = false,
+            theme                 = "kanagawa",
+            -- theme              = "codedark",
+            extensions            = {"nvim-tree"},
+            -- disabled_filetypes = { "NvimTree", "netrw" },
+        }, 
+        sections = {
+            lualine_a = {{'mode', show_modified_status = true, mode = 2},},
+            lualine_b = {{'diagnostics'}},
+            lualine_c = {{'filename', file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = 'MO', readonly = 'RO', unnamed = 'UN', newfile = 'NF'}}},
+            -- lualine_a = {{'mode', fmt = function(str) return str:sub(1,1) end}}, -- Display the mode as a single character.
+            -- lualine_b = {'diff', 'diagnostics'},
+            lualine_x = {},
+            -- lualine_x = {{'buffers', mode = 1, show_modified_status = false, max_length = 3, padding = {left = 1, right = 0} },},
+            lualine_y = {},
+            -- lualine_y = {{"os.date('%I:%M:%S %p')"}}, -- Doesn't update consistently.
+            lualine_z = {{'location'}},
+            -- lualine_x = {{active_buffer_number, color = {fg = '#7E9CD8'}}, {inactive_buffer_numbers, color = {fg = '#717C7C'}, padding = {left = 0, right = 1}}},
+            -- lualine_y = {{'progress'}},
+            -- lualine_y = {{'fileformat', symbols = {unix = 'UNIX', dos = 'DOS', mac = 'Mac', odin = 'ODIN', lua = 'LUA'}}, 'filetype'},
+        },  
+    }
+
+    -- Turn off lualine inside nvim-tree
+    -- vim.cmd [[ au BufEnter,BufWinEnter,WinEnter,CmdwinEnter * if bufname("%") == "NvimTree_1" | set bufname("%") == "" | endif ]]
+
+    -- auto-save
+    -- ---------------------------------------------------------------------- --
+
+    require("auto-save").setup({
+        enabled = true,
+        trigger_events = {"TextChanged"},
+        execution_message = {
+            message = function() return ("Auto-Saved at "..vim.fn.strftime("%H:%M:%S")) end,
+            dim = 0.55,
+        },
+        write_all_buffers = false,
+    })
+
+    -- comment.nvim
+    -- ---------------------------------------------------------------------- --
+
+    require("Comment").setup({
+        padding = true,
+        sticky = true,
+        mappings = { basic = true },
+    })
+    local ft = require("Comment.ft")
+    ft.odin = {"//%s", "/*%s*/"}
+
+    -- leap.nvim
+    -- ---------------------------------------------------------------------- --
+
+    require("leap").add_default_mappings()
+
+    -- Indent Blankline
+    -- ---------------------------------------------------------------------- --
+
+    require("indent_blankline").setup {
+        char = "┃",
+        char_blankline = "┋",
+        show_current_context = false,
+        show_current_context_start = false,
+        show_end_of_line = true,
+        show_first_indent_level = true,
+        show_foldtext = true,
+        show_trailing_blankline_indent = true,
+        strict_tabs = false,
+        use_treesitter = false, -- Was causing some issues with .odin files.
+        use_treesitter_scope = true,
+    }
+
+    -- telescope 
+    -- ---------------------------------------------------------------------- --
+
+    local telescope_height = scripts.Golden("height")
+    local telescope_width = scripts.Golden("width")
+
+    local telescope = require("telescope").setup({
+        defaults = {
+            layout_strategy = "bottom_pane",
+            borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
+            results_title = false,
+            layout_config = {
+                prompt_position = "bottom",
+            },
+        },
+    })
+
+    -- nvim-treesitter
+    -- ---------------------------------------------------------------------- --
+
+    require("nvim-treesitter.configs").setup {
+        ensure_installed = {'c', 'lua', 'python', 'rust', 'help', 'cmake', 'odin'},
+        sync_install = false,
+        auto_install = false,
+        highlight = {
+            enable = true,
+            additional_vim_regex_highlighting = false, -- Slow.
+        },
+        -- text_objects = { enable = true },
+        indent = {
+            enable = false -- Experimental and broke indentation in Odin.
+        },
+        -- Neovim includes a built-in playground in >0.9.0
+        playground = {
+            enable = true,
+            disable = {},
+            updatetime = 25,
+            persist_queries = true,
+            keybindings = {
+                toggle_query_editor = "o",
+                toggle_hl_groups = "i",
+                toggle_injected_languages = "t",
+                toggle_anonymous_nodes = "a",
+                toggle_language_display = "I",
+                focus_language = "f",
+                unfocus_language = "F",
+                update = "R",
+                goto_node = "<cr>",
+                show_help = "?",
+            },
+        },
+        -- query_linter = {
+        --     enable = true,
+        --     use_virtual_text = true,
+        --     lint_events = {"BufWrite", "CursorHold"}
+        -- },
+    }
+
+    -- mason.nvim
+    -- ---------------------------------------------------------------------- --
+
+    require("mason").setup()
+    require("mason-lspconfig").setup()
+
+    -- rust-tools
+    -- ---------------------------------------------------------------------- --
+
+    -- require("rust-tools").setup({
+    --     server = {
+    --         on_attach = function(_, bufnr)
+    --             -- Hover actions
+    --             vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
+    --             -- vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-space>", rt.hover_actions.hover_actions, {buffer = bufnr})
+    --             -- Code action groups
+    --             vim.keymap.set("n", "<leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
+    --         end,
+    --     },
+    -- })
+
+    -- ols
+    -- ---------------------------------------------------------------------- --
+
+    if not require("lspconfig.configs").ols then
+        require("lspconfig.configs").ols = {
+            default_config = {
+                cmd = { "ols" },
+                filetypes = { "odin" },
+                root_dir = require("lspconfig.util").root_pattern("ols.json", ".git"),
+                single_file_support = true,
+                on_attach = function(client, bufnr)
+                    -- vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.MiniCompletion.completefunc_lsp") 
+                    -- vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc") 
+                end,
+                settings = {},
             }
         }
+    end
+    require("lspconfig.configs").ols.setup{}
+
+    -- pyright
+    -- ---------------------------------------------------------------------- --
+
+    -- Installed using npm.
+    -- require("lspconfig").pyright.setup{}
+
+    -- tree-sitter-odin
+    -- ---------------------------------------------------------------------- --
+
+    local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+    parser_config.odin = {
+        install_info = {
+            -- Files in the queries subdirectory of this plugin (C:\Users\Christopher\.config\nvim\plugs\tree-sitter-odin\queries\) are symlinked to Neovim's runtime directory: `~\scoop\apps\neovim\current\share\nvim\runtime\queries\odin`
+            url = "C:/Users/Christopher/.config/nvim/plugs/tree-sitter-odin",
+            files = { "src/parser.c" },
+        },
+    }
+
+    -- kanagawa.nvim
+    -- ---------------------------------------------------------------------- --
+
+    -- local kanagawa = require("kanagawa.colors").setup()
+    -- local overrides = { WinSeparator = { fg = kanagawa.bg_dark, bg = NONE }, }
+
+    require("kanagawa").setup({
+        -- colors = kanagawa,
+        -- overrides = overrides,
+        theme = "default", -- Load "default" theme or the experimental "light" theme
+        undercurl = true,
+        commentStyle = { italic = true },
+        functionStyle = { bold = true },
+        keywordStyle = { italic = false },
+        statementStyle = { bold = true },
+        typeStyle = { bold = true },
+        variablebuiltinStyle = { italic = true },
+        specialReturn = true, -- Special highlight for the return keyword.
+        specialException = true, -- Special highlight for exception handling keywords.
+        transparent = false , -- Do not set background color.
+        terminalColors = true, -- Define vim.g.terminal_color_{0,17}.
+        globalStatus = true,
+        dimInactive = false, 
     })
+
+    vim.cmd("colorscheme kanagawa")
+
+    -- Vim Code Dark
+    -- ---------------------------------------------------------------------- --
+
+    -- vim.cmd("colorscheme codedark")
+
+    -- ---------------------------------------------------------------------- --
+    -- Todos
+    -- ---------------------------------------------------------------------- --
 
     -- Nvim Tree 
     -- ---------------------------------------------------------------------- --
@@ -217,247 +467,6 @@ else
     --         if layout[1] == "leaf" and vim.api.nvim_buf_get_option(vim.api.nvim_win_get_buf(layout[2]), "filetype") == "NvimTree" and layout[3] == nil then vim.cmd("confirm quit") end
     --     end
     -- })
-
-    -- ---------------------------------------------------------------------- --
-    -- Lualine
-    -- ---------------------------------------------------------------------- --
-
-    -- Re-render the statusline and window bar every second.
-    -- scripts.rerender_lualine()
-
-    -- Return the currently active and inactive buffer numbers.
-    -- scripts.get_inactive_buffer_numbers()
-    -- scripts.get_active_buffer_number()
-
-    -- local mode_section = {"mode", fmt = function(str) return str:sub(1,1) end}
-    local filename_section = {"filename", file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = "MO", readonly = "RO", unnamed = "UN", newfile = "NF"}}
-    local windows_section = {"windows", mode = 1}
-
-    require("lualine").setup {
-        options = {
-            always_divide_middle  = true,
-            component_separators  = { left = "", right = "" },
-            section_separators    = { left = "", right = "" },
-            globalstatus          = false,
-            icons_enabled         = false,
-            theme                 = "kanagawa",
-            -- theme              = "codedark",
-            extensions            = {"nvim-tree"},
-            -- disabled_filetypes = { "NvimTree", "netrw" },
-        }, 
-        sections = {
-            lualine_a    = {mode_section},
-            -- lualine_a = {{"mode", show_modified_status=true, mode=2},},
-            lualine_b    = {"diagnostics"},
-            -- lualine_b = {"diff", "diagnostics"},
-            lualine_c    = {filename_section},
-            lualine_x    = {"filetype"},
-            -- lualine_x = {{"buffers", mode=1, show_modified_status=false, max_length=3, padding={left=1, right=0} },},
-            -- lualine_x = {{active_buffer_number, color={fg="#7E9CD8"}}, {inactive_buffer_numbers, color={fg="#717C7C"}, padding={left=0, right=1}}},
-            -- lualine_y = {"progress"},
-            lualine_y    = {"progress"},
-            -- lualine_y = {{"fileformat", symbols={unix="UNIX", dos="DOS", mac="Mac", odin="ODIN", lua="LUA"}}, "filetype"},
-            -- lualine_y = {{"os.date("%I:%M:%S %p")"}}, -- Need to uncomment render update time block below for seconds to update properly
-            lualine_z    = {{"location"}},
-        },  
-    }
-
-    -- Turn off lualine inside nvim-tree
-    -- vim.cmd [[ au BufEnter,BufWinEnter,WinEnter,CmdwinEnter * if bufname("%") == "NvimTree_1" | set bufname("%") == "" | endif ]]
-
-    -- Autosave
-    -- ---------------------------------------------------------------------- --
-
-    require("auto-save").setup({
-        enabled = true,
-        trigger_events = {"TextChanged"},
-        execution_message = {
-            message = function() return ("Auto-Saved at "..vim.fn.strftime("%H:%M:%S")) end,
-            dim = 0.33,
-        },
-        write_all_buffers = false,
-    })
-
-    -- comment.nvim
-    -- ---------------------------------------------------------------------- --
-
-    require("Comment").setup({
-        padding = true,
-        sticky = true,
-        mappings = { basic = true },
-    })
-    local ft = require("Comment.ft")
-    ft.odin = {"//%s", "/*%s*/"}
-
-    -- leap.nvim
-    -- ---------------------------------------------------------------------- --
-
-    require("leap").add_default_mappings()
-
-    -- Indent Blankline
-    -- ---------------------------------------------------------------------- --
-
-    require("indent_blankline").setup {
-        char = "┃",
-        char_blankline = "┋",
-        show_current_context = false,
-        show_current_context_start = false,
-        show_end_of_line = false,
-        show_first_indent_level = true,
-        show_foldtext = true,
-        show_trailing_blankline_indent = true,
-        strict_tabs = false,
-        use_treesitter = true, -- Was causing some issues with .odin files.
-        use_treesitter_scope = true,
-    }
-
-    -- telescope 
-    -- ---------------------------------------------------------------------- --
-
-    local telescope_height = scripts.Golden("height")
-    local telescope_width = scripts.Golden("width")
-
-    local telescope = require("telescope").setup({
-        defaults = {
-            layout_strategy = "bottom_pane",
-            borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
-            results_title = false,
-            layout_config = {
-                -- height = telescope_height - 2,
-                -- height = telescope_height,
-                -- width = telescope_width,
-                prompt_position = "bottom",
-                -- preview_height = 0.4,
-            },
-        },
-    })
-
-    require("nvim-treesitter.configs").setup {
-        ensure_installed = {'c', 'lua', 'python', 'rust', 'help', 'cmake'}, -- Only use parsers that are maintained.
-        sync_install = false,
-        auto_install = false,
-        highlight = {
-            enable = true,
-            additional_vim_regex_highlighting = false, -- Slow.
-        },
-        -- text_objects = { enable = true },
-        indent = {
-            enable = false -- Experimental and broke indentation in Odin.
-        },
-        playground = {
-            enable = true,
-            disable = {},
-            updatetime = 25,
-            persist_queries = true,
-            keybindings = {
-                toggle_query_editor = "o",
-                toggle_hl_groups = "i",
-                toggle_injected_languages = "t",
-                toggle_anonymous_nodes = "a",
-                toggle_language_display = "I",
-                focus_language = "f",
-                unfocus_language = "F",
-                update = "R",
-                goto_node = "<cr>",
-                show_help = "?",
-            },
-        },
-        -- query_linter = {
-        --     enable = true,
-        --     use_virtual_text = true,
-        --     lint_events = {"BufWrite", "CursorHold"}
-        -- },
-    }
-
-    -- LSPs
-
-    -- LSPConfig
-
-    -- Mason
-
-    require("mason").setup()
-    require("mason-lspconfig").setup()
-
-    -- Rust Tools
-    -- ---------------------------------------------------------------------- --
-
-    -- require("rust-tools").setup({
-    --     server = {
-    --         on_attach = function(_, bufnr)
-    --             -- Hover actions
-    --             vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
-    --             -- vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-space>", rt.hover_actions.hover_actions, {buffer = bufnr})
-    --             -- Code action groups
-    --             vim.keymap.set("n", "<leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
-    --         end,
-    --     },
-    -- })
-
-    if not require("lspconfig.configs").ols then
-        require("lspconfig.configs").ols = {
-            default_config = {
-                cmd = { "ols" },
-                filetypes = { "odin" },
-                root_dir = require("lspconfig.util").root_pattern("ols.json", ".git"),
-                single_file_support = true,
-                on_attach = function(client, bufnr)
-                    -- vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.MiniCompletion.completefunc_lsp") 
-                    vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc") 
-                end,
-                settings = {},
-            }
-        }
-    end
-    require("lspconfig.configs").ols.setup{}
-
-    -- Pyright
-    -- ---------------------------------------------------------------------- --
-
-    require("lspconfig").pyright.setup{}
-
-    -- Treesitter Odin
-    -- ---------------------------------------------------------------------- --
-
-    local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-    parser_config.odin = {
-        install_info = {
-            -- Files in the queries subdirectory are symlinked to the runtime queries/odin directory; ~\scoop\apps\neovim\current\share\nvim\runtime
-            url = "C:/Users/Christopher/.config/nvim/plugs/tree-sitter-odin",
-            files = { "src/parser.c" },
-        },
-    }
-
-    -- Kanagawa
-    -- ---------------------------------------------------------------------- --
-
-    -- local kanagawa = require("kanagawa.colors").setup()
-    -- local overrides = { WinSeparator = { fg = kanagawa.bg_dark, bg = NONE }, }
-
-    require("kanagawa").setup({
-        colors = kanagawa,
-        -- overrides = overrides,
-        theme = "default", -- Load "default" theme or the experimental "light" theme
-        undercurl = true,
-        commentStyle = { italic = true },
-        functionStyle = { bold = true },
-        keywordStyle = { italic = false },
-        statementStyle = { bold = true },
-        typeStyle = { bold = true },
-        variablebuiltinStyle = { italic = true },
-        specialReturn = true, -- Special highlight for the return keyword.
-        specialException = true, -- Special highlight for exception handling keywords.
-        transparent = false , -- Do not set background color.
-        terminalColors = true, -- Define vim.g.terminal_color_{0,17}.
-        globalStatus = true,
-        dimInactive = false, 
-    })
-
-    vim.cmd("colorscheme kanagawa")
-
-    -- Vim Code Dark
-    -- ---------------------------------------------------------------------- --
-
-    -- vim.cmd("colorscheme codedark")
 
 end
 

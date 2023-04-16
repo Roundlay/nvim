@@ -13,15 +13,15 @@ return {
                 theme = 'kanagawa',
             }, 
             sections = {
-                lualine_a = {'mode', fmt = function(str) return str:sub(1,1) end}
+                lualine_a = {{'mode', fmt = function(str) return str:sub(1,1) end}},
                 -- lualine_a = {{'mode', show_modified_status = true, mode = 2},},
-                lualine_b = {'diagnostics'},
+                lualine_b = {{'diagnostics'}},
                 -- lualine_b = {'diff', 'diagnostics'},
-                lualine_c = {'filename', file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = 'MO', readonly = 'RO', unnamed = 'UN', newfile = 'NF'}},
+                lualine_c = {{'filename', file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = 'MO', readonly = 'RO', unnamed = 'UN', newfile = 'NF'}}},
                 lualine_x = {{require("lazy.status").updates, cond = require("lazy.status").has_updates, color = {fg = "#FF9E64"},}},
                 -- lualine_x = {{'buffers', mode = 1, show_modified_status = false, max_length = 3, padding = {left = 1, right = 0} },},
                 -- lualine_x = {{active_buffer_number, color = {fg = '#7E9CD8'}}, {inactive_buffer_numbers, color = {fg = '#717C7C'}, padding = {left = 0, right = 1}}},
-                lualine_y = {'progress'},
+                lualine_y = {{'progress'}},
                 -- lualine_y = {{'fileformat', symbols = {unix = 'UNIX', dos = 'DOS', mac = 'Mac', odin = 'ODIN', lua = 'LUA'}}, 'filetype'},
                 -- lualine_y = {{"os.date('%I:%M:%S %p')"}}, -- Need to uncomment render update time block below for seconds to update properly
                 lualine_z = {{'location'}},

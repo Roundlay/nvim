@@ -1,9 +1,8 @@
 return {
     'numToStr/Comment.nvim',
     lazy = true,
-    config = function()
-        local ft = require("Comment.ft")
-        ft.odin = { "//%s", "/*%s*/" }
+    config = function(_, opts)
+        require("Comment.ft").odin = { "//%s", "/*%s*/" }
         require("Comment").setup()
     end,
 }
