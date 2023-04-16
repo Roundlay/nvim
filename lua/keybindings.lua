@@ -151,11 +151,11 @@ else
     -- ---------------------------------------------------------------------- --
 
     -- Deleting x so Leap's overriding of x doesn't get in the way of my x-ing.
-    vim.keymap.del({'x', 'o'}, 'x')
-    vim.keymap.del({'x', 'o'}, 'X')
+    -- vim.keymap.del({'x', 'o'}, 'x')
+    -- vim.keymap.del({'x', 'o'}, 'X')
 
     -- Fixes leap's remapping of x in visual mode.
-    visual('g', '<Plug>(leap-forward-till)')
+    -- visual('g', '<Plug>(leap-forward-till)')
 
     -- Telescope
     -- ---------------------------------------------------------------------- --

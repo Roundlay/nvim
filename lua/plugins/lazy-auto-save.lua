@@ -9,6 +9,6 @@ return {
                     dim = 0.33,
             },
             write_all_buffers = false,
-        },
+        }
     end,
 }

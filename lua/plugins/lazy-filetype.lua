@@ -2,7 +2,7 @@ return {
     'nathom/filetype.nvim',
     enabled = true,
     lazy = false,
-    config = require("filetype").setup({
+    opts = {
         overrides = {
             extensions = {
                 odin = 'odin',
@@ -12,5 +12,8 @@ return {
                 lua = 'lua',
             },
         },
-    })
+    },
+    config = function(_, opts)
+        require("filetype").setup(opts)
+    end
 }

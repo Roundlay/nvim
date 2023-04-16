@@ -53,15 +53,16 @@ else
     -- Treesitter
     -- ---------------------------------------------------------------------- --
 
-    vim.api.nvim_set_hl(0, "@procOpeningBrace",          {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@procClosingBrace",          {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@nestedOpeningBrace",        {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@nestedClosingBrace",        {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@nestedIfTrueOpeningBrace",  {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@nestedIfTrueClosingBrace",  {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@nestedIfFalseOpeningBrace", {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@nestedIfFalseClosingBrace", {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@forStatementSemicolon",     {fg = oniViolet})
+    vim.api.nvim_set_hl(0, "@procOpeningBrace",             {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@procClosingBrace",             {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@nestedOpeningBrace",           {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@nestedClosingBrace",           {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@nestedIfTrueOpeningBrace",     {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@nestedIfTrueClosingBrace",     {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@nestedIfFalseOpeningBrace",    {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@nestedIfFalseClosingBrace",    {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@forStatementSemicolon",        {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@switchStatement",             {fg = sumiInk2})
 
     -- Todos
     -- ---------------------------------------------------------------------- --
