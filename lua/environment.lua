@@ -1,15 +1,20 @@
 -- environment.lua
+-- -------------------------------------------------------------------------- --
 
--- This file defines a `global` Lua module that provides various global variables
--- and settings for Neovim, including information about the operating system,
--- file paths, and directories. This helps in making the Neovim configuration
--- more portable and easier to maintain.
+-- This file defines a Lua module (`global`) that surfaces various
+-- Neovim settings, including information about the operating system, file paths,
+-- and directories. This helps make the Neovim configuratio more portable
+-- and easier to maintain.
 
-local global = {} -- Create an empty table to store the global variables and settings
-local os_name = vim.loop.os_uname().sysname -- Get the operating system name using Neovim's LibUV bindings.
+ -- Create an empty table to store the global variables and settings
+local global = {}
+
+ -- Get the operating system name using Neovim's LibUV bindings.
+local os_name = vim.loop.os_uname().sysname
 
 -- Initialise various global variables and settings based on the detected
--- operating system and environment.
+-- operating system and environment. Could probably include Neovim's runtime
+-- path in here too.
 function global:load_variables()
     self.is_mac = os_name == "Darwin" -- Set to true if the operating system is macOS, otherwise false.
     self.is_linux = os_name == "Linux" -- Set to true if the operating system is Linux, otherwise false.
@@ -25,6 +30,8 @@ function global:load_variables()
     -- self.cache_dir = home .. path_sep .. ".cache" .. path_sep .. "nvim" .. path_sep  -- Set the Neovim cache directory path.
 end
 
-global:load_variables() -- Call the `load_variables` function to initialize the global variables and settings
+ -- Call the `load_variables` function to initialize the global variables and settings
+global:load_variables()
 
-return global -- Return the global table, so it can be used by other Lua modules
+ -- Return the global table, so it can be used by other Lua modules
+return global

@@ -1,0 +1,4 @@
+- [\] Configure CoC floating windows/popups.
+    - Switched to cmp.
+- Consider moving plugins to separate files and using this to enable dynamic reloading:
+`vim.keymap.set("n", "<leader><leader>s", "<cmd>source .../after/plugin/....lua<CR>")`

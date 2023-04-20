@@ -50,7 +50,7 @@ else
     vim.o.background = 'dark'
     vim.o.hidden = true -- Retain undo information when a buffer is unloaded. Required for CoC.
     vim.o.termguicolors = true -- Enable true 24bit colour support; required for custom Neovim theme.
-    vim.g.redrawtime = 2000 -- Time in ms to redraw the screen. (Default: 2000)
+    vim.g.redrawtime = 100 -- Time in ms to redraw the screen. (Default: 2000)
 
     -- Syntax
     -- --------------------------------------------------------------------- --
@@ -87,7 +87,7 @@ else
     -- --------------------------------------------------------------------- --
 
     vim.o.autoindent = true
-    vim.o.smartindent = false -- NOTE Setting this to false fixed incorrect indentation in Odin files.
+    vim.o.smartindent = true
     vim.o.breakindent = true -- Indent wrapped lines.
     vim.o.shiftwidth = 4 -- Num. spaces to use for each step of autoindent.
 
@@ -100,12 +100,12 @@ else
 
     vim.o.tabstop = 4
     vim.o.expandtab = true
-    vim.o.smarttab = true
+    vim.o.smarttab = true 
 
     -- Timing
     -- --------------------------------------------------------------------- --
 
-    vim.o.updatetime = 3000 -- Length of time Vim waits after you stop typing before it writes the swap file to disk.
+    vim.o.updatetime = 150
     vim.o.timeoutlen = 500 -- Timeout in milliseconds to wait for maps to complete.
     vim.o.ttimeoutlen = 50 -- Timeout in milliseconds to wait for for key codes to complete.
     -- vim.o.nottimeout = true
@@ -124,7 +124,7 @@ else
 
     -- Window Options
     -- --------------------------------------------------------------------- --
-    
+
     vim.wo.conceallevel = 0 -- Highlighted with "Conceal" highlight group, meaning dimmed windows may appear to have chunks missing in locations where text is concealed. 
     vim.o.inccommand = 'nosplit' --Shows the effects of a command incrementally in the buffer.
 
@@ -166,5 +166,11 @@ else
     -- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]]
     -- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]]
     -- vim.cmd [[ autocmd VimResized * wincmd = ]] -- Glitchy AF. -- Resize splits when Vim window is resized.
+    -- vim.cmd [[ autocmd CompleteChanged * call coc#float#close_all() ]]
+
+    -- Disable virtual text for diagnostics.
+    -- vim.diagnostic.config({
+    --     virtual_text = false,
+    -- })
 
 end
