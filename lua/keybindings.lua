@@ -121,41 +121,41 @@ else
     --     return col == 0 or vim.fn.getline('.'):sub(col, col):match('%s') ~= nil
     -- end
 
-    local coc_opts = {
-        silent=true,
-        noremap=true,
-        expr=true, 
-        replace_keycodes=false
-    }
+    -- local coc_opts = {
+    --     silent=true,
+    --     noremap=true,
+    --     expr=true, 
+    --     replace_keycodes=false
+    -- }
 
-    map('i', '<C-l>', [[coc#pum#visible() ? coc#pum#confirm() : "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR><Esc>"]], coc_opts) -- This seems irrelevant... I can just space out of the selection...
-    normal('gd', '<Plug>(coc-definition)') -- CoC: Go to definition
+    -- map('i', '<C-l>', [[coc#pum#visible() ? coc#pum#confirm() : "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR><Esc>"]], coc_opts) -- This seems irrelevant... I can just space out of the selection...
+    -- normal('gd', '<Plug>(coc-definition)') -- CoC: Go to definition
     -- normal('[g', '<Plug>(coc-diagnostic-prev)') -- CoC: Go to previous diagnostic
     -- normal(']g', '<Plug>(coc-diagnostic-next)') -- CoC: Go to next diagnostic
 
     -- Your language server must support hover for this to work.
 
-    function _G.show_docs()
-        local cw = vim.fn.expand('<cword>')
-        if vim.fn.index({'vim', 'help'}, vim.bo.filetype) >= 0 then
-            vim.api.nvim_command('h ' .. cw)
-        elseif vim.api.nvim_eval('coc#rpc#ready()') then
-            vim.fn.CocActionAsync('doHover')
-        else
-            vim.api.nvim_command('!' .. vim.o.keywordprg .. ' ' .. cw)
-        end
-    end
-    normal('<leader>d', '<cmd>lua show_docs()<CR>')
+    -- function _G.show_docs()
+    --     local cw = vim.fn.expand('<cword>')
+    --     if vim.fn.index({'vim', 'help'}, vim.bo.filetype) >= 0 then
+    --         vim.api.nvim_command('h ' .. cw)
+    --     elseif vim.api.nvim_eval('coc#rpc#ready()') then
+    --         vim.fn.CocActionAsync('doHover')
+    --     else
+    --         vim.api.nvim_command('!' .. vim.o.keywordprg .. ' ' .. cw)
+    --     end
+    -- end
+    -- normal('<leader>d', '<cmd>lua show_docs()<CR>')
 
     -- Leap
     -- ---------------------------------------------------------------------- --
 
     -- Deleting x so Leap's overriding of x doesn't get in the way of my x-ing.
-    -- vim.keymap.del({'x', 'o'}, 'x')
-    -- vim.keymap.del({'x', 'o'}, 'X')
+    vim.keymap.del({'x', 'o'}, 'x')
+    vim.keymap.del({'x', 'o'}, 'X')
 
     -- Fixes leap's remapping of x in visual mode.
-    -- visual('g', '<Plug>(leap-forward-till)')
+    visual('g', '<Plug>(leap-forward-till)')
 
     -- Telescope
     -- ---------------------------------------------------------------------- --
@@ -174,13 +174,15 @@ else
     -- ---------------------------------------------------------------------- --
 
     -- Open Trouble window with `<Leader>-`
-    -- normal('<leader>-', '<cmd>TroubleToggle<CR>')
+    normal('<leader>-', '<cmd>TroubleToggle<CR>')
     -- Open Trouble workspace diagnostics with `<Leader>xw`
-    -- normal('<leader>xw', '<cmd>Trouble workspace_diagnostics<CR>')
+    normal('<leader>xw', '<cmd>Trouble workspace_diagnostics<CR>')
     -- Open Trouble document diagnostics with `<Leader>xd`
-    -- normal('<leader>xd', '<cmd>Trouble document_diagnostics<CR>')
+    normal('<leader>xd', '<cmd>Trouble document_diagnostics<CR>')
     -- Open Trouble loclist with `<Leader>xl`
-    -- normal('<leader>xl', '<cmd>Trouble loclist<CR>')
+    normal('<leader>xl', '<cmd>Trouble loclist<CR>')
+    -- Open Trouble LSP References of the word under the cursor with `<Leader>--`
+    normal('<leader>--', '<cmd>TroubleToggle lsp_references<CR>')
 
     -- TO-DO normal('<leader>... '<cmd>Trouble quickfix<CR>')
     -- TO-DO normal('<leader>... '<cmd>Trouble lsp_reference<CR>')
@@ -192,6 +194,10 @@ else
     normal('<leader>j', ':FocusSplitDown<CR>')
     normal('<leader>k', ':FocusSplitUp<CR>')
     normal('<leader>l', ':FocusSplitRight<CR>')
+
+    -- Luasnip
+
+    -- ---------------------------------------------------------------------- --
 
     -- ====================================================================== --
     -- TO-DO

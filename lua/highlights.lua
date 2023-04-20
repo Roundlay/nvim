@@ -1,39 +1,11 @@
 -- highlights.lua
 
--- ========================================================================== --
 -- Kanagawa Colours
--- ========================================================================== --
 
-local background = "#1f1f28"
-local fg = "#dcd7ba"
+local kanagawa = require("kanagawa.colors").setup().theme
+
 local fujiWhite = "#DCD7BA"
-local fujiGray = "#727169"
 local sumiInk2 = "#2A2A37"
-local sumiInk4 = "#54546D"
-local waveBlue2 = "#2D4F67"
-local winterRed = "#43242B"
-local winterBlue = "#252535"
-local winterYellow = "#49443C"
-local winterGreen = "#2B3328"
-local oniViolet = "#957FB8"
-local black = "#090618"
-local red = "#c34043"
-local green = "#76946a"
-local yellow = "#c0a36e"
-local blue = "#7e9cd8"
-local magenta = "#957fb8"
-local cyan = "#6a9589"
-local white = "#c8c093"
-local bright_black = "#727169"
-local bright_red = "#e82424"
-local bright_green = "#98bb6c"
-local bright_yellow = "#e6c384"
-local bright_blue = "#7fb4ca"
-local bright_magenta = "#938aa9"
-local bright_cyan = "#7aa89f"
-local bright_white = "#dcd7ba"
-local selection_background = "#2d4f67"
-local selection_foreground = "#c8c093"
 
 if vim.g.vscode then
 
@@ -41,17 +13,24 @@ if vim.g.vscode then
 
 else
 
-    vim.api.nvim_set_hl(0, "LineNr", {fg = sumiInk2, bg = NONE, gui = NONE})
-
-    -- Mini
+    -- Neovim
     -- ---------------------------------------------------------------------- --
 
-    -- vim.api.nvim_set_hl(0, "MiniCursorword", {fg = NONE, underline = true})
-    -- vim.api.nvim_set_hl(0, "MiniCursorwordCurrent", {fg = NONE, underline = false,})
-    -- vim.api.nvim_set_hl(0, "MiniTrailspace", {fg = bright_cyan, bg = blue})
+    vim.api.nvim_set_hl(0, "LineNr", {fg = kanagawa.sumiInk2, bg = NONE, gui = NONE})
+    vim.cmd [[ highlight WinSeparator guifg=bg guibg=bg cterm=NONE ]]
 
-    -- Treesitter
+    -- Kanagawa-styled Popups
+
+    vim.api.nvim_set_hl(0, "Pmenu",      { fg = kanagawa.ui.shade0, bg = kanagawa.ui.bg_p1})
+    vim.api.nvim_set_hl(0, "PmenuSel",   { fg = "NONE", bg = kanagawa.ui.bg_p2 })
+    vim.api.nvim_set_hl(0, "PmenuSbar",  { bg = kanagawa.ui.bg_m1 })
+    vim.api.nvim_set_hl(0, "PmenuThumb", { bg = kanagawa.ui.bg_p2 })
+
+    -- Custom Treesitter Highlights for Odin
     -- ---------------------------------------------------------------------- --
+
+    -- These dim braces and semicolons in Odin files.
+    -- Could probably do with a refactor to make it more DRY. <- Copilot.
 
     vim.api.nvim_set_hl(0, "@procOpeningBrace",             {fg = sumiInk2})
     vim.api.nvim_set_hl(0, "@procClosingBrace",             {fg = sumiInk2})
@@ -62,7 +41,7 @@ else
     vim.api.nvim_set_hl(0, "@nestedIfFalseOpeningBrace",    {fg = sumiInk2})
     vim.api.nvim_set_hl(0, "@nestedIfFalseClosingBrace",    {fg = sumiInk2})
     vim.api.nvim_set_hl(0, "@forStatementSemicolon",        {fg = sumiInk2})
-    vim.api.nvim_set_hl(0, "@switchStatement",             {fg = sumiInk2})
+    vim.api.nvim_set_hl(0, "@switchStatement",              {fg = sumiInk2})
 
     -- Todos
     -- ---------------------------------------------------------------------- --
@@ -79,7 +58,7 @@ else
     -- ---------------------------------------------------------------------- --
 
     -- TODO: Figure out a way to check which theme is currently active so that
-    -- you can set the indent blankline colours to match the theme.
+    -- you can set the indent blankline colours to match dynamically.
 
     vim.api.nvim_set_hl(0, "IndentBlanklineChar", {fg = "#252535"}) -- Kanagawa
     -- vim.api.nvim_set_hl(0, "IndentBlanklineChar", {fg = "#252535"}) -- Code Dark

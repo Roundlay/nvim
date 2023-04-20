@@ -16,5 +16,6 @@ return {
     dependencies = {
         "mason.nvim", -- Defined in mason.nvim.lua
         "mason-lspconfig.nvim",
+        "hrsh7th/cmp-nvim-lsp",
     },
 }

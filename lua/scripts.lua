@@ -183,25 +183,25 @@ local M = {}
 -- Get the Golden Ratio of the current window by passing in width or height
 -- -------------------------------------------------------------------------- --
 
-function M.Golden(dimension)
-  local win_height = vim.api.nvim_win_get_height(0)
-  local win_width = vim.api.nvim_win_get_width(0)
-  local golden_ratio = (1 + math.sqrt(5)) / 2
-  local value
-  if dimension == "height" then
-    value = math.floor(win_width / golden_ratio)
-  elseif dimension == "width" then
-    value = math.floor(win_height * golden_ratio)
-  else
-    error("Invalid dimension. Must be 'height' or 'width'")
-  end
-  if value > win_height and dimension == "height" then
-    value = win_height
-  elseif value > win_width and dimension == "width" then
-    value = win_width
-  end
-  return value
-end
+-- function M.Golden(dimension)
+--   local win_height = vim.api.nvim_win_get_height(0)
+--   local win_width = vim.api.nvim_win_get_width(0)
+--   local golden_ratio = (1 + math.sqrt(5)) / 2
+--   local value
+--   if dimension == "height" then
+--     value = math.floor(win_width / golden_ratio)
+--   elseif dimension == "width" then
+--     value = math.floor(win_height * golden_ratio)
+--   else
+--     error("Invalid dimension. Must be 'height' or 'width'")
+--   end
+--   if value > win_height and dimension == "height" then
+--     value = win_height
+--   elseif value > win_width and dimension == "width" then
+--     value = win_width
+--   end
+--   return value
+-- end
 
 -- Reload Lua Packages
 -- ------------------------------------------------------------------------- --
@@ -230,17 +230,17 @@ end
 -- Trigger re-render of status line every second. 
 -- -------------------------------------------------------------------------- --
 
-function M.rerender_lualine()
-    if _G.Statusline_timer == nil then
-        _G.Statusline_timer = vim.loop.new_timer()
-    else
-        _G.Statusline_timer:stop()
-        vim.api.nvim_command("echo 'Statusline timer stopped.'")
-    end
-    -- Redraws *all* statuslines and window bars if "!" is included after `redrawstatus`.
-    _G.Statusline_timer:start(0, 1000, vim.schedule_wrap(function() vim.api.nvim_command("redrawstatus!") end))
-    vim.api.nvim_command("echo 'Statusline timer started.'")
-end
+-- function M.rerender_lualine()
+--     if _G.Statusline_timer == nil then
+--         _G.Statusline_timer = vim.loop.new_timer()
+--     else
+--         _G.Statusline_timer:stop()
+--         vim.api.nvim_command("echo 'Statusline timer stopped.'")
+--     end
+--     -- Redraws *all* statuslines and window bars if "!" is included after `redrawstatus`.
+--     _G.Statusline_timer:start(0, 1000, vim.schedule_wrap(function() vim.api.nvim_command("redrawstatus!") end))
+--     vim.api.nvim_command("echo 'Statusline timer started.'")
+-- end
 
 -- Get inactive buffer numbers
 -- -------------------------------------------------------------------------- --
