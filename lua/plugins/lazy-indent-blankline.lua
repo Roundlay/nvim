@@ -1,5 +1,6 @@
 return {
     'lukas-reineke/indent-blankline.nvim',
+    name = "Indent Blankline",
     enabled = true,
     lazy = false,
     config = function ()

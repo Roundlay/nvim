@@ -1,15 +1,19 @@
+-- filetype.nvim
+
 return {
-    'nathom/filetype.nvim',
+    "nathom/filetype.nvim",
+    name = "Filetype",
     enabled = true,
     lazy = false,
     opts = {
         overrides = {
             extensions = {
-                odin = 'odin',
-                rs = 'rust',
-                py = 'python',
-                ipynb = 'python',
-                lua = 'lua',
+                c = "c",
+                odin = "odin",
+                rs = "rust",
+                py = "python",
+                ipynb = "python",
+                lua = "lua",
             },
         },
     },

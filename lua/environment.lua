@@ -6,8 +6,12 @@
 -- and directories. This helps make the Neovim configuratio more portable
 -- and easier to maintain.
 
+-- TODO
+-- system vimrc file: "$VIM\sysinit.vim"
+-- fall-back for $VIM: "C:/Program Files (x86)/nvim/share/nvim"
+
  -- Create an empty table to store the global variables and settings
-local global = {}
+E = {}
 
  -- Get the operating system name using Neovim's LibUV bindings.
 local os_name = vim.loop.os_uname().sysname
@@ -15,7 +19,7 @@ local os_name = vim.loop.os_uname().sysname
 -- Initialise various global variables and settings based on the detected
 -- operating system and environment. Could probably include Neovim's runtime
 -- path in here too.
-function global:load_variables()
+function E:load_variables()
     self.is_mac = os_name == "Darwin" -- Set to true if the operating system is macOS, otherwise false.
     self.is_linux = os_name == "Linux" -- Set to true if the operating system is Linux, otherwise false.
     self.is_windows = os_name == "Windows_NT" -- Set to true if the operating system is Windows, otherwise false.
@@ -31,7 +35,7 @@ function global:load_variables()
 end
 
  -- Call the `load_variables` function to initialize the global variables and settings
-global:load_variables()
+E:load_variables()
 
  -- Return the global table, so it can be used by other Lua modules
-return global
+return E
