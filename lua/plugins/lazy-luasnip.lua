@@ -1,7 +1,14 @@
 return {
     "L3MON4D3/LuaSnip",
-    enabled = false,
-    version = "v1.*",
-    -- build = "make install_jsregexp" -- Optional
-    -- Setup example here: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/plugins/coding.lua#L5-L31
+    name = "LuaSnip",
+    enabled = true,
+    event = "VimEnter",
+    config = function()
+        local luasnip = require("luasnip")
+        luasnip.config.set_config {
+            history = true, -- Keep the last snipped around.
+            updateevents = "TextChanged,TextChanged", -- Update dynamic snippets as you type
+            enable_autosnippets = true,
+        }
+    end
 }

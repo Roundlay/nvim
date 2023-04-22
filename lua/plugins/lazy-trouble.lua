@@ -1,11 +1,30 @@
+-- trouble.nvim
+
 return {
-    'folke/trouble.nvim',
+    "folke/trouble.nvim",
+    name = "Trouble",
     enabled = true,
     lazy = true,
-    config = function()
-        -- NOTE: Disable underlines with `vim.diagnostic.config({ underline = false })`
-        require('trouble').setup {
-            icons = false,
-        }
+    event = "InsertEnter",
+    keys = {
+    },
+    opts = {
+        position = "bottom",
+        padding = true,
+        icons = false,
+        height = 10,
+        fold_open = "v",
+        fold_closed = ">",
+        indent_lines = true,
+        signs = {
+            error = "  ERROR",
+            warning = "",
+            hint = "",
+            information = ""
+        },
+        use_diagnostic_signs = false -- Use the signs defined in LSP client.
+    },
+    config = function(_, opts)
+        require("trouble").setup(opts)
     end,
 }

@@ -1,11 +1,11 @@
+-- -------------------------------------------------------------------------- --
 -- plugins.lua
 -- -------------------------------------------------------------------------- --
 
--- local scripts = require("scripts")
 local Plug = vim.fn["plug#"]
 
 -- -------------------------------------------------------------------------- --
--- Visual Studio Code
+-- Code
 -- -------------------------------------------------------------------------- --
 
 if (vim.g.vscode) then
@@ -27,22 +27,22 @@ end
 
 vim.call("plug#begin", "~/.config/nvim/plugs")
 
-    -- Meta
     -- ---------------------------------------------------------------------- --
+    -- Meta
 
     Plug("lewis6991/impatient.nvim")
     Plug("Pocco81/auto-save.nvim")
-    -- Plug("nathom/filetype.nvim")
+    Plug("nathom/filetype.nvim")
 
-    -- Editor
+    -- Editing
     -- ---------------------------------------------------------------------- --
 
     Plug("ggandor/leap.nvim")
     Plug("numToStr/Comment.nvim")
-    Plug("unblevable/quick-scope")
     Plug("echasnovski/mini.align")
     Plug("echasnovski/mini.pairs")
     -- Plug("echasnovski/mini.surround")
+    -- Plug("unblevable/quick-scope")
     -- Plug("tpope/vim-surround")
     -- Plug("tpope/vim-repeat")
 
@@ -52,7 +52,7 @@ vim.call("plug#begin", "~/.config/nvim/plugs")
     Plug("beauwilliams/focus.nvim")
     Plug("nvim-lualine/lualine.nvim")
     Plug("lukas-reineke/indent-blankline.nvim")
-    Plug("nvim-telescope/telescope.nvim", {["tag"] = "0.1.1"}) -- DEPS: plenary
+    Plug("nvim-telescope/telescope.nvim")
     -- Plug("nvim-tree/nvim-tree.lua") -- Pretty bad for startup time, possibly perf.
 
     -- Language Parsing
@@ -64,28 +64,30 @@ vim.call("plug#begin", "~/.config/nvim/plugs")
     -- LSP Support
     -- ---------------------------------------------------------------------- --
 
+    -- Plug("VonHeikemen/lsp-zero.nvim", { branch = "v2.x" })
     Plug("neovim/nvim-lspconfig")
     Plug("williamboman/mason.nvim", { on = "Mason", ["do"] = "MasonUpdate"})
     Plug("williamboman/mason-lspconfig.nvim")
 
-    -- Completion
+    -- Completion and Snippets
     -- ---------------------------------------------------------------------- --
 
-    Plug("github/copilot.vim") -- DEPS: Node.js >= 16
+    -- Plug("github/copilot.vim") -- DEPS: Node.js >= 16
+    Plug("zbirenbaum/copilot.lua")
     Plug("hrsh7th/nvim-cmp")
     Plug("hrsh7th/cmp-path")
-    Plug("hrsh7th/cmp-nvim-lsp") -- A nvim-cmp source for Neovim's built-in LSP client. Allows for e.g. ols to pass completion candidates on to nvim-cmp.
-    Plug("hrsh7th/cmp-nvim-lsp-signature-help") -- A nvim-cmp source for Neovim's built-in LSP client. Allows for e.g. ols to pass completion candidates on to nvim-cmp.
+    Plug("hrsh7th/cmp-nvim-lsp")
+    Plug("hrsh7th/cmp-nvim-lsp-signature-help")
     Plug("L3MON4D3/LuaSnip")
-    Plug("VonHeikemen/lsp-zero.nvim", { branch = "v2.x" })
     -- Plug("neoclide/coc.nvim", { branch = "release" }) -- DEPS: Node.js >= 14.14
 
     -- Language Servers
     -- ---------------------------------------------------------------------- --
 
-    -- Plug("DanielGavin/ols", { ft = "odin"})
-    -- Plug("DanielGavin/odin.vim", { ft = "odin" })
-    Plug("ap29600/tree-sitter-odin", { ft = "odin" })
+    Plug("DanielGavin/ols", { ft = "odin"})
+    Plug("DanielGavin/odin.vim", { ft = "odin" })
+    -- Has issues with correct indentation level. Remedied by disabling this and enabling odin.vim.
+    -- Plug("ap29600/tree-sitter-odin", { ft = "odin" })
     -- Plug("simrat39/rust-tools.nvim", { ft = "rs" })
 
     -- Diagnostics
@@ -103,8 +105,6 @@ vim.call("plug#begin", "~/.config/nvim/plugs")
     -- ---------------------------------------------------------------------- --
 
     Plug("rebelot/kanagawa.nvim")
-    -- Plug("dracula/vim", { as = "dracula" })
-    -- Plug("mvpopuk/inspired-github.vim")
     -- Plug("tomasiser/vim-code-dark")
 
     -- Todos
@@ -120,13 +120,60 @@ vim.call("plug#end")
 -- SETUP
 -- -------------------------------------------------------------------------- --
 
+-- copilot.lua
+-- -------------------------------------------------------------------------- --
+
+require("copilot").setup({
+    copilot_node_command = 'node',
+    server_opts_verrides = {},
+    suggestion = {
+        enabled = true,
+        auto_trigger = true,
+        debounce = 75,
+        keymap = {
+            accept = "<TAB>",
+        },
+    },
+    panel = {
+        enabled = true,
+        auto_refresh = true,
+    },
+    layout = {
+        position = "bottom",
+        ratio = 0.4,
+    },
+})
+
+
+-- lewis6991/impatient.nvim
+-- -------------------------------------------------------------------------- --
+
+require("impatient")
+
+
+-- filetype.nvim
+-- -------------------------------------------------------------------------- --
+
+require("filetype").setup({
+    overrides = {
+        extensions = {
+            odin = "odin",
+            rs = "rust",
+            lua = "lua",
+            c = "c",
+        }
+    }
+})
+
 -- folke/trouble.nvim
 -- -------------------------------------------------------------------------- --
+
+-- TODO Fix signs UI padding.
 
 require("trouble").setup {
     position = "bottom",
     padding = true,
-    icons = false,
+    icons = true,
     height = 10,
     fold_open = "v", -- icon used for open folds
     fold_closed = ">", -- icon used for closed folds
@@ -139,7 +186,6 @@ require("trouble").setup {
         information = ""
     },
     use_diagnostic_signs = false -- enabling this will use the signs defined in your lsp client
-
 }
 
 -- focus.nvim
@@ -172,34 +218,10 @@ else
     mini_pairs.setup({})
 end
 
--- lewis6991/impatient.nvim
--- -------------------------------------------------------------------------- --
-
-require("impatient")
-
--- filetype.nvim
--- -------------------------------------------------------------------------- --
-
--- TODO Document this.
--- require("filetype").setup({
---     overrides = {
---         extensions = {
---             odin = "odin",
---             rs = "rust",
---             lua = "lua",
---         }
---     }
--- })
-
 -- lualine.nvim
 -- -------------------------------------------------------------------------- --
 
--- Re-render the statusline and window bar every second.
--- scripts.rerender_lualine()
-
--- Return the currently active and inactive buffer numbers.
--- scripts.get_inactive_buffer_numbers()
--- scripts.get_active_buffer_number()
+-- Check scripts.lua for some unused experiments.
 
 require("lualine").setup {
     options = {
@@ -209,22 +231,16 @@ require("lualine").setup {
         globalstatus          = false,
         icons_enabled         = false,
         theme                 = "kanagawa",
-        extensions            = {"nvim-tree"},
+        -- extensions            = {"nvim-tree"},
     },
     sections = {
-        lualine_a = {{'mode', show_modified_status = true, mode = 2},},
+        lualine_a = {{'mode', fmt = function(str) return str:sub(1,1) end}}, -- Display the mode as a single character.
         lualine_b = {{'diagnostics'}},
         lualine_c = {{'filename', file_status = true, newfile_status = true, path = 1, shorting_target = 10, symbols = {modified = 'MO', readonly = 'RO', unnamed = 'UN', newfile = 'NF'}}},
-        -- lualine_a = {{'mode', fmt = function(str) return str:sub(1,1) end}}, -- Display the mode as a single character.
-        -- lualine_b = {'diff', 'diagnostics'},
         lualine_x = {},
-        -- lualine_x = {{'buffers', mode = 1, show_modified_status = false, max_length = 3, padding = {left = 1, right = 0} },},
-        lualine_y = {},
-        -- lualine_y = {{"os.date('%I:%M:%S %p')"}}, -- Doesn't update consistently.
+        -- lualine_y = {{"os.date('%I:%M %p')"}}, -- Doesn't update consistently.
+        lualine_y = {}, -- Doesn't update consistently.
         lualine_z = {{'location'}},
-        -- lualine_x = {{active_buffer_number, color = {fg = '#7E9CD8'}}, {inactive_buffer_numbers, color = {fg = '#717C7C'}, padding = {left = 0, right = 1}}},
-        -- lualine_y = {{'progress'}},
-        -- lualine_y = {{'fileformat', symbols = {unix = 'UNIX', dos = 'DOS', mac = 'Mac', odin = 'ODIN', lua = 'LUA'}}, 'filetype'},
     },
 }
 
@@ -234,21 +250,15 @@ require("lualine").setup {
 -- Pocco81/auto-save.nvim
 -- -------------------------------------------------------------------------- --
 
-local auto_save_ok, auto_save = pcall(require, "auto-save")
-
-if not auto_save_ok then
-    print("Issue loading 'Pocco81/auto-save.nvim'.")
-else
-    auto_save.setup({
-        enabled = true,
-        trigger_events = {"TextChanged"},
-        execution_message = {
-            message = function() return ("Auto-Saved at "..vim.fn.strftime("%H:%M:%S")) end,
-            dim = 0.50,
-        },
-        write_all_buffers = false,
-    })
-end
+require("auto-save").setup({
+    enabled = true,
+    trigger_events = {"TextChanged"},
+    execution_message = {
+        message = function() return ("Auto-Saved at "..vim.fn.strftime("%H:%M:%S")) end,
+        dim = 0.50,
+    },
+    write_all_buffers = false,
+})
 
 -- numToStr/Comment.nvim
 -- -------------------------------------------------------------------------- --
@@ -258,8 +268,11 @@ require("Comment").setup({
     sticky = true,
     mappings = { basic = true },
 })
-local ft = require("Comment.ft")
-ft.odin = {"//%s", "/*%s*/"}
+
+require("comment.ft").odin = {
+    "//%s",
+    "/*%s*/",
+}
 
 -- ggandor/leap.nvim
 -- -------------------------------------------------------------------------- --
@@ -270,36 +283,31 @@ require("leap").add_default_mappings()
 -- -------------------------------------------------------------------------- --
 
 require("indent_blankline").setup {
-
     char = "┃",
     char_blankline = "┋",
     show_end_of_line = true,
     show_first_indent_level = true,
     show_trailing_blankline_indent = true,
-    -- max_indent_increase = 1,
     strict_tabs = true,
-    viewport_buffer = 50,
+    -- viewport_buffer = 50,
     filetype_exclude = {"txt", "help", "md", "yaml"},
-    use_treesitter = false,
-    use_treesitter_scope = true,
-
+    use_treesitter = true, -- Results in empty indent lines in Odin files when set to true.
+    use_treesitter_scope = false,
 }
 
 -- nvim-telescope/telescope.nvim
 -- -------------------------------------------------------------------------- --
 
-local telescope = require("telescope").setup({
+require("telescope").setup({
     defaults = {
         layout_strategy = "bottom_pane",
+        border = true,
         borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
         results_title = false,
         layout_config = {
             prompt_position = "bottom",
-
         },
-
     },
-
 })
 
 -- nvim-treesitter
@@ -313,29 +321,29 @@ require("nvim-treesitter.configs").setup {
         enable = true,
         additional_vim_regex_highlighting = false, -- Slow.
     },
-    -- text_objects = { enable = true },
-    -- indent = {
-    --     enable = false -- Experimental and broke indentation in Odin.
-    -- },
-    -- Neovim includes a built-in playground in >0.9.0
-    playground = {
-        enable = true,
-        disable = {},
-        updatetime = 25,
-        persist_queries = true,
-        keybindings = {
-            toggle_query_editor = "o",
-            toggle_hl_groups = "i",
-            toggle_injected_languages = "t",
-            toggle_anonymous_nodes = "a",
-            toggle_language_display = "I",
-            focus_language = "f",
-            unfocus_language = "F",
-            update = "R",
-            goto_node = "<cr>",
-            show_help = "?",
-        },
+    text_objects = { enable = true },
+    indent = {
+        enable = false -- Experimental and broke indentation in Odin.
     },
+    -- Neovim includes a built-in playground in >0.9.0
+    -- playground = {
+    --     enable = true,
+    --     disable = {},
+    --     updatetime = 25,
+    --     persist_queries = true,
+    --     keybindings = {
+    --         toggle_query_editor = "o",
+    --         toggle_hl_groups = "i",
+    --         toggle_injected_languages = "t",
+    --         toggle_anonymous_nodes = "a",
+    --         toggle_language_display = "I",
+    --         focus_language = "f",
+    --         unfocus_language = "F",
+    --         update = "R",
+    --         goto_node = "<cr>",
+    --         show_help = "?",
+    --     },
+    -- },
     -- query_linter = {
     --     enable = true,
     --     use_virtual_text = true,
@@ -346,179 +354,17 @@ require("nvim-treesitter.configs").setup {
 -- tree-sitter-odin
 -- -------------------------------------------------------------------------- --
 
-local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-parser_config.odin = {
-    install_info = {
-        -- Files in the queries subdirectory of this plugin (C:\Users\Christopher\.config\nvim\plugs\tree-sitter-odin\queries\) are symlinked to Neovim's runtime directory: `~\scoop\apps\neovim\current\share\nvim\runtime\queries\odin`
-        url = "C:/Users/Christopher/.config/nvim/plugs/tree-sitter-odin",
-        files = { "src/parser.c" },
-    },
-}
-
--- luasnip
--- -------------------------------------------------------------------------- --
-
-local ls = require("luasnip")
-local types = require("luasnip.util.types")
-ls.config.set_config {
-    history = true, -- Keep the last snipped around.
-    updateevents = "TextChanged,TextChangedI", -- Update dynamic snippets as you type
-    enable_autosnippets = true,
-}
-
--- -------------------------------------------------------------------------- --
--- LSP Setup
--- -------------------------------------------------------------------------- --
-
--- mason.nvim
--- -------------------------------------------------------------------------- --
-
-require("mason").setup({
-    ui = {
-        border = "none",
-    }
-})
-require("mason-lspconfig").setup({
-    -- ensure_installed = {
-    --     -- ...
-    -- }
-})
-
--- lsp-zero.nvim
--- -------------------------------------------------------------------------- --
-
-local lspzero = require('lsp-zero').preset({
-    float_border = "none", -- Remove borders to diagnostics windows.
-    configure_diagnostics = true,
-})
-
-
-lspzero.on_attach(function(client, bufnr)
-    lspzero.default_keymaps({buffer = bufnr})
-end)
-
--- lspzero.ensure_installed({"",})
-
--- nvim-lspconfig
--- -------------------------------------------------------------------------- --
-
-local lspconfig    = require("lspconfig")
-local lsp_configs  = require("lspconfig.configs") -- This is where servers that aren't supported by lspconfig are stored.
-local lsp_util     = require("lspconfig.util")
-
-local lsp_defaults = lspconfig.util.default_config
-
--- nvim-cmp
--- -------------------------------------------------------------------------- --
-
-local cmp = require("cmp")
-
--- local on_attach = function(_, bufnr)
---     vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
---     vim.api.nvim_buf_set_keymap(0, 'n', 'gd', '<cmd>lua vim.lsp.buf.definition()<CR>', {noremap = true, silent = true}) -- Go-to-definition
--- end
-
-cmp.setup({
-    performance = { debounce = 0, throttle = 0, fetching_timeout = 0, },
-    window = {
-        completion    = { scrollbar = false, },
-        documentation = { scrollbar = false, side_padding = 2, max_height = 80, },
-    },
-    view = {
-        entries = "custom",
-    },
-    formatting = {
-        format = function(entry, item)
-            item.menu = ({
-                buffer = "[Buffer]",
-                nvim_lsp = "[LSP]",
-            })[entry.source.name]
-            if entry.source.source.client then
-                item.menu = ("%s - %s"):format(item.menu, entry.source.source.client.name)
-            end
-
-            return item
-        end
-    },
-    -- Only really relevant when luasnip is setup. Probably pretty powerful though.
-    snippet = {
-        expand = function(args) require("luasnip").lsp_expand(args.body) end,
-    },
-    sources = {
-        { name = "luasnip", options = {}, },
-        { name = "path", options = {}, },
-        { name = "nvim_lsp", options = {}, },
-        { name = "nvim_lsp_signature_help" },
-    },
-    mapping = {
-        ["<CR>"] = cmp.mapping.confirm({select = false}),
-        ["<C-Space>"] = cmp.mapping.complete(),
-    },
-})
-
-
--- luals
--- -------------------------------------------------------------------------- --
-
-lspconfig.lua_ls.setup(lspzero.nvim_lua_ls())
-
--- ols
--- -------------------------------------------------------------------------- --
-
-local capabilities = require("cmp_nvim_lsp").default_capabilities()
-
--- This is the default schema for adding custom servers to nvim-lspconfig.
-
-if not lsp_configs.ols then
-    lsp_configs.ols = {
-        default_config = {
-            cmd = { "ols" },
-            filetypes = { "odin" },
-            root_dir = lsp_util.root_pattern("ols.json", ".git"),
-            single_file_support = true,
-            on_attach = function(client, bufnr)
-                -- Stuff to do when the server attaches.
-            end,
-            settings = {},
-        }
-    }
-end
-
-lsp_configs.ols.setup{
-    capabilities = capabilities,
-}
-
--- Finish lsp-zero setup
-lspzero.setup()
-
--- rust-tools
--- -------------------------------------------------------------------------- --
-
--- require("rust-tools").setup({
---     server = {
---         on_attach = function(_, bufnr)
---             -- Hover actions
---             vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
---             -- vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-space>", rt.hover_actions.hover_actions, {buffer = bufnr})
---             -- Code action groups
---             vim.keymap.set("n", "<leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
---         end,
+-- local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+-- parser_config.odin = {
+--     install_info = {
+--         -- Files in the queries subdirectory of this plugin (C:\Users\Christopher\.config\nvim\plugs\tree-sitter-odin\queries\) are symlinked to Neovim's runtime directory: `~\scoop\apps\neovim\current\share\nvim\runtime\queries\odin`
+--         url = "C:/Users/Christopher/.config/nvim/plugs/tree-sitter-odin",
+--         files = { "src/parser.c" },
 --     },
--- })
-
--- pyright
--- -------------------------------------------------------------------------- --
-
--- Installed using npm.
--- require("lspconfig").pyright.setup{}
+-- }
 
 -- kanagawa.nvim
 -- -------------------------------------------------------------------------- --
-
--- local kanagawa = require("kanagawa.colors").setup()
--- local overrides = { WinSeparator = { fg = kanagawa.bg_dark, bg = NONE }, }
--- local colors = require("kanagawa.colors").setup()
--- local theme = colors.theme
 
 require("kanagawa").setup({
     theme = "wave",
@@ -539,17 +385,226 @@ require("kanagawa").setup({
 
 vim.cmd("colorscheme kanagawa")
 
--- vim.cmd("colorscheme kanagawa")
-
 -- Vim Code Dark
 -- -------------------------------------------------------------------------- --
 
 -- vim.cmd("colorscheme codedark")
 
+-- -------------------------------------------------------------------------- --
+-- LSP CONFIGURATION
+-- -------------------------------------------------------------------------- --
 
+-- mason.nvim
 -- -------------------------------------------------------------------------- --
+
+require("mason").setup({
+    ui = {
+        border = "none",
+    }
+})
+
+require("mason-lspconfig").setup({
+    -- ensure_installed = {
+    --     -- ...
+    -- }
+})
+
+-- lsp-zero.nvim
+-- -------------------------------------------------------------------------- --
+
+-- local lspzero = require('lsp-zero').preset({
+--     float_border = "none", -- Remove borders to diagnostics windows.
+--     configure_diagnostics = true,
+-- })
+
+-- lspzero.on_attach(function(client, bufnr)
+--     lspzero.default_keymaps({buffer = bufnr})
+-- end)
+
+-- lspzero.ensure_installed({"",})
+
+-- nvim-lspconfig
+-- -------------------------------------------------------------------------- --
+
+local lspconfig = require("lspconfig")
+local lsp_configs = require("lspconfig.configs") -- This is where servers that aren't supported by lspconfig are stored.
+local lsp_util = require("lspconfig.util")
+local cmp_nvim_lsp = require("cmp_nvim_lsp")
+
+local lsp_defaults = lspconfig.util.default_config
+
+local capabilities = cmp_nvim_lsp.default_capabilities()
+
+local on_attach = function(client, bufnr)
+    vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
+    local opts = { silent = true, buffer = bufnr }
+    vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+    vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+end
+
+-- nvim-cmp
+-- -------------------------------------------------------------------------- --
+
+-- Completion engine
+local cmp_ok, cmp = pcall(require, "cmp")
+if not cmp_ok then
+  return
+end
+
+-- Snippet engine
+local luasnip_ok, luasnip = pcall(require, "luasnip")
+if not luasnip_ok then
+  return
+end
+
+cmp.setup({
+    completion = {
+        -- See: `:help completeopt`.
+        -- `noselect` avoids inserting text until it is explicitly selected from the completion menu.
+        completeopt = "menu, preview, menuone, noinsert, noselect"
+    },
+    performance = {
+        debounce = 0,
+        throttle = 0,
+        fetching_timeout = 0,
+    },
+    window = {
+        completion = {
+            scrollbar = false
+        },
+        documentation = {
+            scrollbar = false,
+            side_padding = 2,
+            max_height = 80,
+        },
+    },
+    formatting = {
+        fields = { "abbr", "menu", "kind" },
+        format = function(entry, item)
+            local menu_icon = {
+                nvim_lsp = "Nl",
+                luasnip = "Ls",
+                buffer = "Bf",
+                path = "Ph",
+                nvim_lua = "Lu",
+            }
+            item.menu = menu_icon[entry.source.name]
+            return item
+        end,
+        -- format = function(entry, item)
+        --     item.menu = ({ buffer = "[Buffer]", nvim_lsp = "[LSP]", })[entry.source.name]
+        --     if entry.source.source.client then
+        --         item.menu = ("%s - %s"):format(item.menu, entry.source.source.client.name)
+        --     end
+        --     return item
+        -- end
+    },
+    snippet = {
+        -- TODO Document this.
+        expand = function(args) require("luasnip").lsp_expand(args.body) end,
+    },
+    preselect = {
+        cmp.PreselectMode.None,
+    },
+    view = {
+        entries = {
+            name = "custom",
+            selection_order = "near_cursor"
+        },
+    },
+    mapping = cmp.mapping.preset.insert({
+        ["<CR>"]  = cmp.mapping.confirm({select = false}),
+        ["<C-n>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+        ["<C-p>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+    }),
+    sources = cmp.config.sources({
+        { name = "path", options = {}, priority = 100 },
+        { name = "nvim_lsp", options = {}, priority = 100 },
+        { name = "nvim_lsp_signature_help", priority = 80 },
+        { name = "luasnip", options = {}, priority = 20 },
+    }),
+})
+
+-- luasnip
+-- -------------------------------------------------------------------------- --
+
+local luasnip = require("luasnip")
+luasnip.config.set_config {
+    history = true, -- Keep the last snipped around.
+    updateevents = "TextChanged,TextChanged", -- Update dynamic snippets as you type
+    enable_autosnippets = true,
+}
+
+--------------------------------------------------------------------------------
+-- Language Servers
+--------------------------------------------------------------------------------
+
+-- luals
+-- -------------------------------------------------------------------------- --
+
+-- TODO Document this.
+-- lspconfig.lua_ls.setup(lspzero.nvim_lua_ls())
+
+lspconfig.lua_ls.setup ({
+    on_attach = on_attach,
+    capabilities = capabilities,
+    settings = {
+        Lua = {
+            diagnostics = {
+                globals = { 'vim' },
+            },
+        },
+    },
+})
+
+-- ols
+-- -------------------------------------------------------------------------- --
+
+if not lsp_configs.ols then
+    lsp_configs.ols = {
+        default_config = {
+            cmd = { "ols" },
+            filetypes = { "odin" },
+            root_dir = lsp_util.root_pattern("ols.json", ".git"),
+            single_file_support = true,
+            settings = {},
+        }
+    }
+end
+
+lsp_configs.ols.setup{
+    on_attach = on_attach,
+    capabilities = capabilities,
+}
+
+-- rust-tools
+-- -------------------------------------------------------------------------- --
+
+-- require("rust-tools").setup({
+--     server = {
+--         on_attach = function(_, bufnr)
+--             -- Hover actions
+--             vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
+--             -- vim.api.nvim_buf_set_keymap(bufnr, "n", "<C-space>", rt.hover_actions.hover_actions, {buffer = bufnr})
+--             -- Code action groups
+--             vim.keymap.set("n", "<leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
+--         end,
+--     },
+-- })
+
+-- pyright
+-- -------------------------------------------------------------------------- --
+
+require("lspconfig").pyright.setup{} -- Installed using NPM.
+
+-- lsp-zero setup
+-- -------------------------------------------------------------------------- --
+
+-- lspzero.setup()
+
+--------------------------------------------------------------------------------
 -- Graveyard
--- -------------------------------------------------------------------------- --
+--------------------------------------------------------------------------------
 
 -- Nvim Tree 
 -- -------------------------------------------------------------------------- --
@@ -636,4 +691,3 @@ vim.cmd("colorscheme kanagawa")
 --         if layout[1] == "leaf" and vim.api.nvim_buf_get_option(vim.api.nvim_win_get_buf(layout[2]), "filetype") == "NvimTree" and layout[3] == nil then vim.cmd("confirm quit") end
 --     end
 -- })
-

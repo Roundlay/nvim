@@ -2,12 +2,12 @@
 
 ;; (#set! conceal "⦃")
 ;; [ "(" ")" "[" "]" "{" "}"] @braces
-;; [ "{" "}"] @curlybraces
+; [ "{" "}"] @curlybraces
 ;; (if_statement condition:(binary_expression(operator) @andSymbol (#eq? @andSymbol "&&"))(#set! conceal "∆"))
 ;; (if_statement condition:(binary_expression(operator) @orSymbol (#eq? @orSymbol "||"))(#set! conceal "∨"))
 
-; Load Procedures
 ; Procedure Declarations
+; main :: proc() { ... }
 
 (const_declaration name:(const_identifier) value:(proc_literal (block("{") @procOpeningBrace)))
 (const_declaration name:(const_identifier) value:(proc_literal (block("}") @procClosingBrace)))
@@ -31,3 +31,8 @@
 
 (switch_statement body:(("{") @switchStatement) (#eq? @switchStatement "{"))
 (switch_statement body:(("}") @switchStatement) (#eq? @switchStatement "}"))
+
+; Structs
+
+(const_declaration name:(const_identifier) value:(struct_type("{") @structOpeningBrace))
+(const_declaration name:(const_identifier) value:(struct_type("}") @structClosingBrace))

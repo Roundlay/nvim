@@ -1,7 +1,13 @@
+-- mini.pairs
+
 return {
 	"echasnovski/mini.pairs",
-	event = "VeryLazy",
-	config = function(_, opts)
-		require("mini.pairs").setup(opts)
+    name = "Mini-Pairs",
+    version = false,
+    enabled = true,
+    lazy = true,
+    event = "InsertEnter",
+	config = function()
+		require("mini.pairs").setup()
 	end,
 }

@@ -3,6 +3,63 @@
 local M = {}
 
 -- ========================================================================== --
+-- Source Plugins
+-- ========================================================================== --
+
+-- local installed_plugins = {
+--     -- ["lukas-reineke/indent-blankline.nvim"] = "lukas-reineke/indent-blankline.nvim",
+--     -- ["lukas-reineke/indent-blankline.nvim"] = "indent-blankline",
+-- }
+--
+-- local function case_insensitive_compare(str1, str2)
+--     return str1:lower() == str2:lower()
+-- end
+--
+-- function M.PopulateInstalledPlugins()
+--     local plug_dirs = vim.fn.globpath("C:/Users/Christopher/.config/nvim/plugs", "*", true, true)
+--     for _, dir in ipairs(plug_dirs) do
+--         local plugin_name = vim.fn.fnamemodify(dir, ":t")
+--         installed_plugins[plugin_name] = dir
+--     end
+-- end
+--
+-- function M.PrintInstalledPlugins()
+--     for plugin_name, plugin_path in pairs(installed_plugins) do
+--         print(plugin_name .. " => " .. plugin_path)
+--     end
+-- end
+--
+-- function M.SourcePlugin(plugin_name)
+--     plugin_name = plugin_name:gsub("^%s*(.-)%s*$", "%1") -- Trim leading/trailing spaces
+--     for installed_plugin_name, plugin_path in pairs(installed_plugins) do
+--         if case_insensitive_compare(installed_plugin_name, plugin_name) then
+--             local sourced = pcall(dofile, plugin_path)
+--             if sourced then
+--                 print("Sourced " .. plugin_name)
+--             else
+--                 print("Failed to source " .. plugin_name)
+--             end
+--             return
+--         end
+--     end
+--     print(plugin_name .. " not found.")
+-- end
+--
+-- function M.PromptAndSourcePlugin()
+--     local plugin_name = vim.fn.input("input", "Enter plugin name: ")
+--     SourcePlugin(plugin_name)
+-- end
+--
+-- function M.SetPluginSourcingKeybinding()
+--     vim.api.nvim_set_keymap("n", "<leader>z", ":SourcePlugin<CR>", {noremap = true, silent = false})
+-- end
+--
+-- vim.cmd("command! SourcePlugin lua PromptAndSourcePlugin()")
+
+-- Call this in init.lua or plugins.lua.
+-- PopulateInstalledPlugins()
+
+-- ========================================================================== --
 -- Keybinding Helpers
 -- ========================================================================== --
 
