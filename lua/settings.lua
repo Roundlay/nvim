@@ -96,7 +96,7 @@ vim.o.ttimeoutlen = 0 -- Time in ms to wait for for key-code sequences to comple
 
 vim.o.foldmethod = 'syntax' -- Line folds are specified by syntax highlighting.
 -- vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
--- vim.o.foldlevel = 99 -- Zero closes all folds. Lower numbers close more folds, higher numbers open more folds.
+vim.o.foldlevel = 99 -- Zero closes all folds. Lower numbers close more folds, higher numbers open more folds. Keeping this at 99 to ensure folds don't appear.
 -- vim.w.foldcolumn = 1 -- How many columns to use when drawing a fold.
 
 -- Autocmds
