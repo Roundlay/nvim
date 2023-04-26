@@ -3,7 +3,7 @@ return {
     name = "leap",
     enabled = true,
     lazy = true,
-    event = "InsertEnter",
+    -- event = "InsertEnter",
     keys = {
         { "s", mode = { "n", "x", "o" }, desc = "Leap forwards to" },
         { "S", mode = { "n", "x", "o" }, desc = "Leap backwards to" },
