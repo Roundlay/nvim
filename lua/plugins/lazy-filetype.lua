@@ -13,6 +13,7 @@ return {
                 py = "python",
                 rs = "rust",
                 lua = "lua",
+                nim = "nim",
                 txt = "text",
                 odin = "odin",
                 ipynb = "python",
