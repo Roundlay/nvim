@@ -1,6 +1,8 @@
+-- quick-scope
+
 return {
     "unblevable/quick-scope",
-    name = "Quick Scope",
+    name = "quick-scope",
     enabled = false,
     lazy = true,
     event = "InsertEnter",

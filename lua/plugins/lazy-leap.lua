@@ -1,6 +1,6 @@
 return {
     "ggandor/leap.nvim",
-    name = "Leap",
+    name = "leap",
     enabled = true,
     lazy = true,
     event = "InsertEnter",

@@ -1,6 +1,8 @@
+-- ols
+
 return {
     "DanielGavin/ols",
-    name = "OLS",
+    name = "ols",
     enabled = true,
     lazy = true,
     ft = "odin",

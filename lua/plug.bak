@@ -1,11 +1,14 @@
--- -------------------------------------------------------------------------- --
 -- plugins.lua
+
 -- -------------------------------------------------------------------------- --
+
+-- [ ] Update Vim-Plug with changes made in Lazy.
+-- [ ] Make plugin setup more concise.
 
 local Plug = vim.fn["plug#"]
 
 -- -------------------------------------------------------------------------- --
--- Code
+-- VS Code
 -- -------------------------------------------------------------------------- --
 
 if (vim.g.vscode) then
@@ -41,10 +44,6 @@ vim.call("plug#begin", "~/.config/nvim/plugs")
     Plug("numToStr/Comment.nvim")
     Plug("echasnovski/mini.align")
     Plug("echasnovski/mini.pairs")
-    -- Plug("echasnovski/mini.surround")
-    -- Plug("unblevable/quick-scope")
-    -- Plug("tpope/vim-surround")
-    -- Plug("tpope/vim-repeat")
 
     -- User Interface
     -- ---------------------------------------------------------------------- --
@@ -53,7 +52,6 @@ vim.call("plug#begin", "~/.config/nvim/plugs")
     Plug("nvim-lualine/lualine.nvim")
     Plug("lukas-reineke/indent-blankline.nvim")
     Plug("nvim-telescope/telescope.nvim")
-    -- Plug("nvim-tree/nvim-tree.lua") -- Pretty bad for startup time, possibly perf.
 
     -- Language Parsing
     -- ---------------------------------------------------------------------- --
@@ -79,16 +77,12 @@ vim.call("plug#begin", "~/.config/nvim/plugs")
     Plug("hrsh7th/cmp-nvim-lsp")
     Plug("hrsh7th/cmp-nvim-lsp-signature-help")
     Plug("L3MON4D3/LuaSnip")
-    -- Plug("neoclide/coc.nvim", { branch = "release" }) -- DEPS: Node.js >= 14.14
 
     -- Language Servers
     -- ---------------------------------------------------------------------- --
 
     Plug("DanielGavin/ols", { ft = "odin"})
     Plug("DanielGavin/odin.vim", { ft = "odin" })
-    -- Has issues with correct indentation level. Remedied by disabling this and enabling odin.vim.
-    -- Plug("ap29600/tree-sitter-odin", { ft = "odin" })
-    -- Plug("simrat39/rust-tools.nvim", { ft = "rs" })
 
     -- Diagnostics
     -- ---------------------------------------------------------------------- --
@@ -105,14 +99,6 @@ vim.call("plug#begin", "~/.config/nvim/plugs")
     -- ---------------------------------------------------------------------- --
 
     Plug("rebelot/kanagawa.nvim")
-    -- Plug("tomasiser/vim-code-dark")
-
-    -- Todos
-    -- ---------------------------------------------------------------------- --
-
-    -- Plug("junegunn/fzf", { ["do"] = ":fzf#install()" })
-    -- Plug("junegunn/fzf.vim")
-    -- Plug("spywhere/tmux.nvim")
 
 vim.call("plug#end")
 
@@ -423,24 +409,6 @@ require("mason-lspconfig").setup({
 
 -- lspzero.ensure_installed({"",})
 
--- nvim-lspconfig
--- -------------------------------------------------------------------------- --
-
-local lspconfig = require("lspconfig")
-local lsp_configs = require("lspconfig.configs") -- This is where servers that aren't supported by lspconfig are stored.
-local lsp_util = require("lspconfig.util")
-local cmp_nvim_lsp = require("cmp_nvim_lsp")
-
-local lsp_defaults = lspconfig.util.default_config
-
-local capabilities = cmp_nvim_lsp.default_capabilities()
-
-local on_attach = function(client, bufnr)
-    vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
-    local opts = { silent = true, buffer = bufnr }
-    vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-    vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-end
 
 -- nvim-cmp
 -- -------------------------------------------------------------------------- --
@@ -524,6 +492,24 @@ cmp.setup({
         { name = "luasnip", options = {}, priority = 20 },
     }),
 })
+
+-- nvim-lspconfig
+-- -------------------------------------------------------------------------- --
+
+local lspconfig    = require("lspconfig")
+local lsp_configs  = require("lspconfig.configs") -- This is where servers that aren't supported by lspconfig are stored.
+local lsp_util     = require("lspconfig.util")
+-- local lsp_defaults = lspconfig.util.default_config
+
+local capabilities = vim.lsp.protocol.make_client_capabilities()
+capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+
+local on_attach = function(client, bufnr)
+    vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
+    local opts = { silent = true, buffer = bufnr }
+    vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+    vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+end
 
 -- luasnip
 -- -------------------------------------------------------------------------- --

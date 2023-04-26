@@ -1,7 +1,16 @@
+-- focus
+
 return {
     "beauwilliams/focus.nvim",
-    name = "Focus",
-    lazy = false,
+    name = "focus",
+    lazy = true,
+    -- event = "BufWinEnter",
+    keys = {
+        {"<leader>h", ":FocusSplitLeft<CR>", desc = "Focus Left"},
+        {"<leader>j", ":FocusSplitDown<CR>", desc = "Focus Down"},
+        {"<leader>k", ":FocusSplitUp<CR>", desc = "Focus Up"},
+        {"<leader>l", ":FocusSplitRight<CR>", desc = "Focus Right"},
+    },
     opts = {
         cursorline = false,
         signcolumn = false,

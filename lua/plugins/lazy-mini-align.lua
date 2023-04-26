@@ -1,15 +1,34 @@
+-- mini.align
+
 return {
     "echasnovski/mini.align",
-    name = "Mini-Align",
+    name = "mini-align",
     enabled = true,
-    lazy = false, -- We may want to align text immediately upon launching Neovim.
-    config = function()
+    lazy = true, -- We may want to align text immediately upon launching Neovim.
+    event = "InsertEnter",
+    keys = {
+        {"ga", "<cmd>lua require('mini.align').align()<CR>", desc = "Start aligning text"},
+    },
+    opts = {
+        mappings = {
+            start_with_preview = "ga",
+        },
+        -- Tweak `j` modifier to cycle through available "justify_side" options.
+        modifiers = {
+          j = function(_, opts)
+            local next_option = ({
+              left = 'center', center = 'right', right = 'none', none = 'left',
+            })[opts.justify_side]
+            opts.justify_side = next_option or 'left'
+          end,
+        },
+    },
+    config = function(_, opts)
         local mini_align_ok, mini_align = pcall(require, "mini.align")
         if not mini_align_ok then
             print("Issue loading 'mini.align'.")
             return
-        else
-            mini_align.setup() -- TODO Add custom alignment rules.
         end
+        mini_align.setup(opts) -- TODO Add custom alignment rules.
     end
 }
