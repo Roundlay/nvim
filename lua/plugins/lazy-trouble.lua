@@ -3,7 +3,7 @@
 return {
     "folke/trouble.nvim",
     name = "trouble",
-    enabled = true,
+    enabled = false,
     lazy = true,
     event = "InsertEnter",
     keys = {
