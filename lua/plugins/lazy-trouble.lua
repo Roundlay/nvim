@@ -2,11 +2,12 @@
 
 return {
     "folke/trouble.nvim",
-    name = "Trouble",
+    name = "trouble",
     enabled = true,
     lazy = true,
     event = "InsertEnter",
     keys = {
+        {"<leader>-", "<cmd>TroubleToggle<CR>", desc = "Toggle Trouble"},
     },
     opts = {
         position = "bottom",

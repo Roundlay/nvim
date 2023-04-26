@@ -1,12 +1,15 @@
 return {
     'numToStr/Comment.nvim',
-    name = "Comment",
-    lazy = true,
-    event = "BufEnter", -- Lazy load Comment.nvim when user enters Insert Mode for the first time.
+    name = "comment",
+    -- lazy = true,
+    event = "BufEnter",
+    keys = {
+        {"gcc", "gc", desc = "Toggle blockwise comment"},
+    },
     opts = {
         padding  = true,
         sticky   = true,
-        mappings = { basic = true },
+        mappings = { basic = true }, -- Setup custom mappings as listed above.
     },
     config = function(_, opts)
         require("Comment").setup(opts)

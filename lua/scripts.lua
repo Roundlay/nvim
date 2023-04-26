@@ -2,6 +2,12 @@
 
 local M = {}
 
+-- Picture in Picture plugin?
+-- [ ] Could this be pegged to a certain part of the file even while scrolling?
+-- [ ] Could this be used to do the one line scrolling thing?
+-- M.Border = vim.api.nvim_open_win(0, true, {relative='win', width=vim.api.nvim_win_get_width(0), height=3, bufpos=vim.api.nvim_win_get_cursor(), border = "none" })
+-- vim.api.nvim_open_win(0, true, {relative='win', width=vim.api.nvim_win_get_width(0), height=3, bufpos=vim.api.nvim_win_get_cursor(), border = "none" })
+
 -- ========================================================================== --
 -- Source Plugins
 -- ========================================================================== --
@@ -239,6 +245,15 @@ local M = {}
 
 -- Get the Golden Ratio of the current window by passing in width or height
 -- -------------------------------------------------------------------------- --
+
+-- function M.PrintWidth()
+--     local width = math.floor(vim.api.nvim_win_get_width(0) / ((1 + math.sqrt(5)) / 2 * 100))
+--     local height = math.floor(vim.api.nvim_win_get_height(0) / ((1 + math.sqrt(5)) / 2 * 100))
+--     return width, height
+-- end
+
+-- M.Width = math.floor(vim.api.nvim_win_get_width(0) / ((1 + math.sqrt(5)) / 2 * 100))
+-- M.Height = math.floor(vim.api.nvim_win_get_height(0) / ((1 + math.sqrt(5)) / 2 * 100))
 
 -- function M.Golden(dimension)
 --   local win_height = vim.api.nvim_win_get_height(0)

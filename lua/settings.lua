@@ -1,146 +1,105 @@
 -- settings.lua
 -- -------------------------------------------------------------------------- --
 
--- Notes
--- -------------------------------------------------------------------------- --
-
--- https://github.com/mukeshsoni/config/blob/master/.config/nvim/init.lua
--- Echo Neovim's runtimepath variables: print(vim.inspect(vim.api.nvim_list_runtime_paths()))
--- Primer on highlighting in Vimscript: https://gist.github.com/romainl/379904f91fa40533175dfaec4c833f2f
-
--- -------------------------------------------------------------------------- --
-
--- ========================================================================== --
--- Visual Studio Code Settings
--- ========================================================================== --
+-- Helpers: `:h quickref.txt`
+-- Defaults: https://neovim.io/doc/user/vim_diff.html
 
 if (vim.g.vscode) then
-
-    -- vim.cmd([[ let g:qs_highlight_on_keys = ['f', 'F'] ]])
-
-    -- Colours based on: https://icolorpalette.com/color/pantone-16-0836-tcx
-    -- vim.cmd([[
-    --     highlight QuickScopePrimary guifg='#c8b273'
-    --     highlight QuickScopeSecondary guifg='#73c7b2'
-    -- ]])
-
     return
-
 end
 
--- ========================================================================== --
--- Neovim Settings
--- ========================================================================== --
+-- Standard Plugins
 
--- Netrw
--- -------------------------------------------------------------------------- --
+-- Note: Tell Vim's 'standard plugins' to finish early. In other words, tell Vim
+-- that the following standard plugins have already been loaded even though they
+-- haven't. This doesn't seem very reliable though, as the plugins still eat
+-- into `startuptime` when `rtp plugins` are sourced.
 
--- Lexplore opens a netrw window to the left of the current window.
+-- See: `:h standard-plugin`, `:h standard-plugin-list` and `:h load-plugins`.
 
-vim.g.loaded_netrw = 1 -- Set to 1 to disable netrw completely.
--- vim.g.loaded_netrwPlugin = 1 -- Set to 1 to disable netrw plugins.
--- vim.g.netrw_banner = 0 -- Remove the banner that appears when opening netrw.
--- vim.g.netrw_liststyle = 3
--- vim.g.netrw_browse_split = 4 -- 2: horizontal split, 2: vertical split, 3: tab, 4: previous window
--- vim.g.netrw_altv = 1 -- ...
--- vim.g.netrw_winsize = 20
+vim.g.loaded_netrw = 1 -- Disable the 'netrw' plugin.
+vim.g.loaded_netrwPlugin = 1 -- Disable the 'netrw' plugin.
+vim.g.loaded_zip = 1 -- Disables 'zip' plugin.
+vim.g.loaded_zipPlugin = 1 -- Disables 'zip' plugin.
+vim.g.loaded_gzip = 1 -- Disables 'gzip' plugin.
+vim.g.loaded_tutor = 1 -- Disable the 'tutor' plugin.
+vim.g.loaded_tarPlugin = 1 -- Disables 'tar' plugin.
+vim.g.loaded_tar = 1 -- Disables 'tar' plugin.
 
--- Misc
--- -------------------------------------------------------------------------- --
+-- Environment
 
-vim.o.encoding = 'utf-8'
-vim.o.background = 'dark'
-vim.o.hidden = true -- Retain undo information when a buffer is unloaded. Required for CoC.
-vim.o.termguicolors = true -- Enable true 24bit colour support; required for custom Neovim theme.
-vim.g.redrawtime = 5 -- Time in ms to redraw the screen. (Default: 2000)
+vim.o.hidden = true -- Retain undo information when a buffer is unloaded.
+vim.o.filetype = 'on' -- Disables filetype detection. NOTE: Handled by filetype. Can I disable this?
+vim.o.backup = false -- (Don't) make a backup before overwriting a file, and leave it around afterwards.
+vim.o.writebackup = true -- Make a backup before overwriting a file, but delete it afterwards.
+vim.api.nvim_set_option('undofile', true)
+vim.api.nvim_set_option('mouse', 'a') -- Enables mouse scrolling in 'a'll modes.
+
+-- Line-wrap
+
+vim.o.linebreak = true -- Wrap text on word boundaries.
+vim.o.wrap = false -- Wrap lines. 
 
 -- Syntax
--- -------------------------------------------------------------------------- --
 
+vim.o.syntax   = 'on' -- Enable syntax highlighting.
+-- vim.wo.conceallevel = 0 -- Determines how text with the 'conceal' syntax attribute is shown. Was experimenting with hiding curly braces in .odin files.
+
+-- Colours
+
+-- vim.o.background = 'dark'
+vim.o.termguicolors = true -- Enable true 24bit colour support; use 'gui' instead of 'cterm' in highlights.
+
+-- Status Line
+
+vim.o.showcmd = false -- Show input in the status line.
+vim.o.showmode = false -- Don't show the command line mode (e.g. '-- INSERT --') below the status line.
+vim.o.laststatus = 2 -- This needs to be called before 'fillchars'. 2: ensures that all windows have a status line. 3: enables the global status line. 
+
+-- Search
+
+vim.o.incsearch = true -- Show search results as you type.
+vim.o.inccommand = 'nosplit' --Shows the effects of a command (like ':substitute') incrementally in the buffer.
+vim.o.showmatch = true -- Show matching braces, etc.
 vim.o.ignorecase = true -- Ignore case when searching.
-vim.o.smartcase  = true -- Don't ignore case with capitals.
-vim.o.hlsearch   = true -- Highlight search results.
-vim.o.synmaxcol  = 2000 -- Max columns to search for syntax items. 0 = infinity.
+vim.o.hlsearch = true -- Highlight search results.
+vim.o.synmaxcol = 2000 -- Max columns to search for syntax items; 0 = infinity.
+vim.o.smartcase = true -- Don't ignore case with capitals.
 
--- UI
--- -------------------------------------------------------------------------- --
+-- Line/Column
 
-vim.o.showcmd    = false -- Show input in the status line.
-vim.o.showmode   = false -- Don't show the command line mode below the status line.
-vim.o.incsearch  = true -- Show search results as you type.
-vim.o.showmatch  = true -- Show matching braces, etc.
-vim.o.syntax     = 'on' -- Enable syntax highlighting.
-vim.o.filetype   = 'on' -- Enables filetype detection. NOTE: Handled by filetype plugin now to avoid autocmds?
-vim.o.laststatus = 2 -- 2 ensures that all windows have a status line. 3 enables the global status line. -- This needs to be called before fillchars...
-
-vim.o.fillchars      = 'eob: ' -- Remove empty buffer symbols.
+vim.o.fillchars      = 'eob: ' -- This needs to be called after 'laststatus'. Remove empty buffer symbols.
 vim.o.number         = false -- Hide line numbers.
 vim.o.relativenumber = false
 vim.o.signcolumn     = 'no' -- Force the signcolumn to remain hidden.
--- vim.o.cursorline = false -- Highlight the current line. Known to cause performance issues.
-
--- Lines
--- -------------------------------------------------------------------------- --
-
-vim.o.linebreak = true -- Wrap text on word boundaries.
-vim.o.list = false
-vim.o.wrap = false -- Wrap lines. 
+vim.o.cursorline     = false -- Highlight the current line. Known to cause performance issues.
 
 -- Indentation
--- -------------------------------------------------------------------------- --
 
-vim.o.autoindent = true
-vim.o.smartindent = true
-vim.o.breakindent = true -- Indent wrapped lines.
-vim.o.shiftwidth = 4 -- Num. spaces to use for each step of autoindent.
-
--- TODO Get this working for Markdown and TXT files.
--- vim.o.showbreak = '␤ '
--- vim.o.breakindentopt = 'shift:-3'
-
--- Tabs
--- -------------------------------------------------------------------------- --
-
-vim.o.tabstop = 4
-vim.o.expandtab = true
-vim.o.smarttab = true 
+vim.o.shiftwidth  = 4 -- Number spaces to use for each step of 'autoindent'; used for 'cindent', >>, <<, etc.
+vim.o.tabstop     = 4 -- Number of spaces that a <Tab> in the file counts for.
+vim.o.expandtab   = true -- In Insert mode, use the appropriate number of spaces when inserting a <Tab>.
+vim.o.autoindent  = true -- Copy indent from current line when starting a new line.
+vim.o.smartindent = true -- Auto-inserts indents after a line: ending in '{', starting with a keyword from 'cinwords', other.
+vim.o.breakindent = true -- Visually indent wrapped lines.
+-- vim.o.showbreak = '␤ ' -- TODO: String at the start of wrapped lines.
+-- vim.o.breakindentopt = 'shift:-3' -- TODO: Shift the wrapped line's beginning by 'n' spaces after applying 'breakindent'.
 
 -- Timing
--- -------------------------------------------------------------------------- --
 
-vim.o.updatetime = 150
-vim.o.timeoutlen = 300 -- Timeout in milliseconds to wait for maps to complete.
-vim.o.ttimeoutlen = 0 -- Timeout in milliseconds to wait for for key codes to complete.
--- vim.o.nottimeout = true
--- vim.o.shadafile = 'NONE' -- Doesn't work?
--- vim.o.lazyredraw = false -- Tried for perf.
+vim.g.redrawtime = 1 -- Time in ms to redraw the screen. (Default: 2000)
+vim.o.updatetime  = 4000 -- Write swap-file to disk every `updatetime` ms.
+vim.o.timeoutlen  = 300 -- Time in ms to wait for mapped sequences to complete.
+vim.o.ttimeoutlen = 0 -- Time in ms to wait for for key-code sequences to complete.
 
 -- Folds
--- -------------------------------------------------------------------------- --
 
-vim.o.foldenable = true -- Make sure folds are open by default.
-vim.o.foldmethod = 'syntax'
-vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
-vim.o.foldlevel = 99
-vim.w.foldcolumn = 1 -- How many columns to use when drawing a fold.
+vim.o.foldmethod = 'syntax' -- Line folds are specified by syntax highlighting.
+-- vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
+-- vim.o.foldlevel = 99 -- Zero closes all folds. Lower numbers close more folds, higher numbers open more folds.
+-- vim.w.foldcolumn = 1 -- How many columns to use when drawing a fold.
 
-
--- Window Options
--- -------------------------------------------------------------------------- --
-
-vim.wo.conceallevel = 0 -- Highlighted with "Conceal" highlight group, meaning dimmed windows may appear to have chunks missing in locations where text is concealed. 
-vim.o.inccommand = 'nosplit' --Shows the effects of a command incrementally in the buffer.
-
--- Hacks
--- Coc/completion specific flags; 'Some servers have issues with backup files'
--- -------------------------------------------------------------------------- --
-
-vim.opt.backup = false
-vim.opt.writebackup = false
-
-vim.diagnostic.config({underline = false})
-
-vim.wo.colorcolumn = "99999" -- Trying to solve issues with Indent Blankline
+-- Autocmds
 
 -- Highlight yanked text on yank
 -- https://www.reddit.com/r/neovim/comments/ypvrwp/comment/ivnl294/
@@ -152,27 +111,17 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     end,
 })
 
+-- Diagnostics
+
+vim.diagnostic.config({ underline = false })
+
 -- Vim Commands
--- -------------------------------------------------------------------------- --
 
 -- vim.cmd [[ set ttyfast ]]
-vim.cmd [[ set mouse=a ]] -- Enables mouse scrolling.
-vim.cmd [[ set undofile ]] -- Keep undo history between sessions.
 vim.cmd [[ autocmd FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o ]] -- Disable auto comment formatting. (`c`: auto-wrap comments; `r`: auto-insert comment leader after hitting <Enter> in Insert mode; `o`: Auto-insert the comment leader after hitting 'o' or 'O' in Normal mode.
-vim.cmd [[ let g:qs_highlight_on_keys = ['f', 'F'] ]] -- Highlight search terms on 'f' and 'F' keypresses.
 -- vim.cmd [[ au BufNewFile,BufRead *.odin map=<C-P> :w<Return>:%!odinfmt %<Return> ]]
--- vim.cmd [[ highlight Todo guifg=#FF9E3B guibg=bg gui=bold ctermfg=178 cterm=bold ]] -- Change highlighting for todo tags.
--- vim.cmd [[ let g:dracula_underline = 0 ]] -- Disable underlines in Dracula theme.
--- vim.cmd [[ highlight QuickScopePrimary guifg='#c82491' gui=bold ctermfg=178 cterm=bold ]] -- Set QuickScope highlight colours.
--- vim.cmd [[ highlight QuickScopeSecondary guifg='#afff00' ctermfg=154 ]] -- Set QuickScope secondary highlight colours.
 -- vim.cmd [[ au BufNewFile,BufRead *.odin set syntax=odin ]] -- Set Odin syntax highlighting for .odin files.
 -- vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files.
 -- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]]
 -- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]]
--- vim.cmd [[ autocmd VimResized * wincmd = ]] -- Glitchy AF. -- Resize splits when Vim window is resized.
--- vim.cmd [[ autocmd CompleteChanged * call coc#float#close_all() ]]
-
--- Disable virtual text for diagnostics.
--- vim.diagnostic.config({
---     virtual_text = false,
--- })
+-- vim.cmd [[ let g:dracula_underline = 0 ]] -- Disable underlines in Dracula theme.
