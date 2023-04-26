@@ -29,9 +29,9 @@ require("lazy").setup("plugins", {
     defaults = {
         lazy = false
     },
-    install = {
-        colorscheme = {"kanagawa"}
-    },
+    -- install = {
+    --     colorscheme = {"kanagawa"}
+    -- },
     change_detection = {
         enabled = true,
         notify = false,
