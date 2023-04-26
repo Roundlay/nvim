@@ -16,30 +16,6 @@ return {
           return
         end
         cmp.setup({
-            _Get_Ws = function(max, len)
-                return(" "):rep(max - len)
-            end,
-
-            _Format_Suggestion = function(entry, item)
-                local menu_icon = {
-                    nvim_lsp = "",
-                    nvim_lua = "",
-                    luasnip  = "",
-                    buffer   = "",
-                    path     = "",
-                }
-                item.menu = menu_icon[entry.source.name]
-
-                local content = item.abbr
-                if #content > 10 then
-                    item.abbr = vim.fn.strcharpart(content, 0, 10) .. "..."
-                else
-                    item.abbr = content .. Get_Ws(10, #content)
-                end
-
-                return item
-            end,
-
             completion = {
                 -- 'noselect' avoids inserting text until it is explicitly selected from the completion menu.
                 completeopt = "menu, preview, menuone, noinsert, noselect"
@@ -102,7 +78,7 @@ return {
                     -- Set the max content width based on either: 'fixed_width' or a percentage of the window width, in this case 20%. We subtract 10 from 'fixed_width' to leave room for the 'kind' and other fields.
                     -- local max_content_width = fixed_width and fixed_width - 10 or math.floor(win_width * 0.2)
 
-                    local max_content_width = math.floor(win_width * 0.15)
+                    local max_content_width = math.floor(win_width * 0.25)
 
                     -- Truncate the completion entry text if it's longer than the max content width. We subtract 3 from the max content width to account for the "..." that will be appended to it.
                     if #content > max_content_width then
