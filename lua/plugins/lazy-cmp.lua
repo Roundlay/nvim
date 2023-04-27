@@ -4,11 +4,11 @@ return {
     enable = true,
     event  = "InsertEnter",
     dependencies = {
-        {"hrsh7th/cmp-nvim-lsp"}, -- Required
-        {"hrsh7th/cmp-nvim-lsp-signature-help"},
-        {"hrsh7th/cmp-nvim-lua"},
-        {"hrsh7th/cmp-path"},
-        {"L3MON4D3/LuaSnip"}, -- Required
+        { "L3MON4D3/LuaSnip" }, -- A snippet engine is *required*.
+        { "hrsh7th/cmp-nvim-lsp" }, -- Required
+        { "hrsh7th/cmp-nvim-lsp-signature-help" },
+        { "hrsh7th/cmp-nvim-lua" },
+        { "hrsh7th/cmp-path" },
     },
     config = function ()
         local cmp_ok, cmp = pcall(require, "cmp")
@@ -17,8 +17,7 @@ return {
         end
         cmp.setup({
             completion = {
-                -- 'noselect' avoids inserting text until it is explicitly selected from the completion menu.
-                completeopt = "menu, preview, menuone, noinsert, noselect"
+                completeopt = "menu, preview, menuone, noinsert, noselect" -- 'noselect' avoids inserting text until it is explicitly selected from the completion menu.
             },
             snippet = {
                 expand = function(args)
@@ -92,7 +91,7 @@ return {
             view = {
                 entries = {
                     name = "custom",
-                    selection_order = "near_cursor"
+                    -- selection_order = "near_cursor"
                 },
             },
             mapping = cmp.mapping.preset.insert({
