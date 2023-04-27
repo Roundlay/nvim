@@ -10,6 +10,7 @@ return {
         {"<leader>j", ":FocusSplitDown<CR>", desc = "Focus Down"},
         {"<leader>k", ":FocusSplitUp<CR>", desc = "Focus Up"},
         {"<leader>l", ":FocusSplitRight<CR>", desc = "Focus Right"},
+        {"<C-w>", "<C-w>", desc = "Enter Window mode"},
     },
     opts = {
         cursorline = false,
