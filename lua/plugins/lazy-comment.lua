@@ -1,15 +1,17 @@
 return {
     'numToStr/Comment.nvim',
     name = "comment",
-    -- lazy = true,
-    event = "BufEnter",
+    lazy = true,
     keys = {
-        {"gcc", "gc", desc = "Toggle blockwise comment"},
+        { "gcc", "gcc", desc = "Toggle blockwise comment" },
+        { "gc", "gcc", desc = "Toggle blockwise comment" },
     },
     opts = {
-        padding  = true,
-        sticky   = true,
-        mappings = { basic = true }, -- Setup custom mappings as listed above.
+        padding = true,
+        sticky = true,
+        mappings = {
+            basic = true
+        }, -- Setup custom mappings as listed above.
     },
     config = function(_, opts)
         require("Comment").setup(opts)
