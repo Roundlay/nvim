@@ -4,7 +4,8 @@ return {
     'lukas-reineke/indent-blankline.nvim',
     name = "indent-blankline",
     enabled = true,
-    lazy = false,
+    lazy = true,
+    event = {"BufReadPost", "BufNewFile"},
     config = function ()
         require("indent_blankline").setup {
             char = "┃",
