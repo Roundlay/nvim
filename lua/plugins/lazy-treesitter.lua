@@ -4,22 +4,36 @@ return {
     "nvim-treesitter/nvim-treesitter",
     name = "nvim-treesitter",
     enabled = true,
+    version = false,
+    build = ":TSUpdateSync",
     lazy = true,
     event = "BufReadPost",
-    build = ":TSUpdateSync",
-    version = false,
+    cmd = {
+        "TSEnable",
+        "TSPlaygroundToggle"
+    },
     dependencies = {
         "nvim-treesitter/playground",
     },
     opts = {
-        ensure_installed = {"vim", "query", "c", "lua", "python", "rust", "cmake"},
+        ensure_installed = {
+            "c",
+            "lua",
+            "vim",
+            "rust",
+            "cmake",
+            "query",
+            "python",
+        },
         sync_install = false,
         auto_install = false,
         highlight = {
             enable = true, -- Highlighting incredibly slow when this is false.
             additional_vim_regex_highlighting = false, -- Slow.
         },
-        text_objects = { enable = true },
+        text_objects = {
+            enable = true
+        },
         indent = {
             enable = false -- Experimental and broke indentation in Odin.
         },
