@@ -42,7 +42,7 @@ return {
         lspconfig.lua_ls.setup({
             filetypes = {"lua"},
             on_attach = on_attach,
-            -- capabilities = capabilities,
+            capabilities = capabilities,
             settings = {
                 Lua = {
                     diagnostics = {
@@ -62,7 +62,7 @@ return {
         lspconfig.ols.setup({
             filetypes = {"odin"},
             on_attach = on_attach,
-            -- capabilities = capabilities,
+            capabilities = capabilities,
             default_config = {
                 cmd = { "ols" },
                 filetypes = { "odin" },
@@ -86,7 +86,7 @@ return {
         lspconfig.pyright.setup({
             filetypes = {"python"},
             on_attach = on_attach,
-            -- capabilities = capabilities,
+            capabilities = capabilities,
             settings = {
                 python = {
                     analysis = {
@@ -102,7 +102,7 @@ return {
         lspconfig.tsserver.setup({
             filetypes = {"javascript", "typescript"},
             on_attach = on_attach,
-            -- capabilities = capabilities,
+            capabilities = capabilities,
         })
 
     end,
