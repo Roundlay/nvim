@@ -1,26 +1,29 @@
 -- copilot.vim
 
--- NOTE: This can't be lazy loaded at the moment because it doesn't play nicely with telescope and <Tab>.
+-- Note: This can't be lazy-loaded at the moment because the plugin doesn't play
+-- nicely with telescope and <Tab>...?
 
 -- return {
 --     "github/copilot.vim",
 --     name = "copilot",
 --     enabled = true,
---     -- lazy = false,
---     -- event  = "InsertEnter", -- 23/4/23: Not compatible with telescope and causes issues with tab functionality.
+--     lazy = true,
+--     event = "InsertEnter", 
 -- }
 
 -- copilot.lua
 
--- NOTE: Doesn't support tab completion in the same way the Vim plugin does.
+-- Note: For the Alacritty slash modified-carriage-return enjoyers out there,
+-- to get <S-CR> and <C-CR> working, Alacritty needs to be configured to send
+-- escape-sequences Vim expects: https://stackoverflow.com/a/42461580/21730427
 
 return {
     "zbirenbaum/copilot.lua",
     name = "Copilot (Neovim)",
     enabled = true,
+    build = ":Copilot auth",
     lazy = true,
     cmd = "Copilot",
-    build = ":Copilot auth",
     event = "InsertEnter",
     opts = {
         copilot_node_command = 'node',
@@ -28,9 +31,9 @@ return {
         suggestion = {
             enabled = true,
             auto_trigger = true,
-            debounce = 300,
+            debounce = 75,
             keymap = {
-                accept = "<S-0>",
+                accept = "<C-CR>",
             },
         },
         panel = {
@@ -49,13 +52,16 @@ return {
         end
         copilot.setup(opts)
 
-        -- Super Tab allows for tab completion in the same way the Vim plugin does.
-        vim.keymap.set('i', '<Tab>', function()
-            if require("copilot.suggestion").is_visible() then
-                require("copilot.suggestion").accept()
-            else
-                vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", false)
-            end
-        end, { desc = "Super Tab" })
+        -- This keymap makes accepting suggestions work similarly to the
+        -- official Copilot plugin, allowing you to use <Tab> for
+        -- indentation as well as for accepting Copilot suggestions.
+
+        -- vim.keymap.set('i', '<S-CR>', function()
+        --     if require("copilot.suggestion").is_visible() then
+        --         require("copilot.suggestion").accept()
+        --     else
+        --         vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", false)
+        --     end
+        -- end, {desc = "Super Tab"})
     end
 }
