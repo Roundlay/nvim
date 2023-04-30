@@ -1,14 +1,19 @@
 -- nvim-lspconfig
 
+-- Note: BufReadPre triggers before the STARTUP event, so it's preferable to use the BufReadPost event instead so that other important plugins, like filetype, have a chance to load.
+
 return {
     "neovim/nvim-lspconfig",
     name    = "lspconfig",
     enabled = true,
     lazy    = true,
-    event   = {"BufReadPre", "BufNewFile"},
+    event   = {
+        "BufReadPost",
+        "BufNewFile"
+    },
     dependencies = {
         "hrsh7th/nvim-cmp",
-        "williamboman/mason.nvim",
+        "williamboman/mason.nvim"
     },
     config = function()
 		local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
@@ -23,12 +28,8 @@ return {
 		    return
 		end
 
-        -- global_capabilities = vim.lsp.protocol.make_client_capabilities()
-        -- global_capabilities.textDocument.completion.completionItem.snippetSupport = true
-        -- lspconfig.util.default_config = vim.tbl_extend("force", lspconfig.util.default_config, { capabilities = global_capabilities, })
-
-        -- TODO: This probably isn't the ideal way to deal with capabilities, but it works for now?
-        capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
+        -- This probably isn't the ideal way to deal with capabilities. Don't I need to do the whole deep force shenanigans?
+        local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
 
 		local on_attach = function(_, bufnr)
             vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
@@ -36,7 +37,8 @@ return {
             vim.keymap.set("n", "gd", vim.lsp.buf.definition)
         end
 
-        -- Once LSP servers have been installed with Mason, Node, etc. they need to be setup here.
+        -- Once LSP servers have been installed with Mason, Node, etc.,
+        -- they need to be setup here.
 
         -- luals
         lspconfig.lua_ls.setup({
@@ -74,7 +76,7 @@ return {
         -- vim-language-server
         lspconfig.vimls.setup({
             on_attach = on_attach,
-            -- capabilities = capabilities,
+            capabilities = capabilities,
             init_options = {
                 diagnostics = {
                     enable = true,
