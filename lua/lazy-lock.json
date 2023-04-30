@@ -1,5 +1,5 @@
 {
-  "Copilot (Neovim)": { "branch": "master", "commit": "decc8d43bcd73a288fa689690c20faf0485da217" },
+  "Copilot (Neovim)": { "branch": "master", "commit": "19c1c945553918d683a001e697faad933c41bb5d" },
   "LuaSnip": { "branch": "master", "commit": "e77fa9ad0b1f4fc6cddf54e51047e17e90c7d7ed" },
   "auto-save": { "branch": "main", "commit": "979b6c82f60cfa80f4cf437d77446d0ded0addf0" },
   "cmp-nvim-lsp": { "branch": "main", "commit": "0e6b2ed705ddcff9738ec4ea838141654f12eeef" },
@@ -22,7 +22,7 @@
   "mini-align": { "branch": "main", "commit": "bca4d62862e9d27099de6d230b368f9af1abc399" },
   "mini-pairs": { "branch": "main", "commit": "5b9539a06a9cf97437dddc6580a29d4d220919b1" },
   "nvim-cmp": { "branch": "main", "commit": "11102d3db12c7f8b35265ad0e17a21511e5b1e68" },
-  "nvim-treesitter": { "branch": "master", "commit": "b8a0791eb435efc790755883cad166a91a4fe864" },
+  "nvim-treesitter": { "branch": "master", "commit": "1ca9b938c1c3d8b2c64a168f6a5419b8f3870410" },
   "odin.vim": { "branch": "master", "commit": "436349e22a0c7055c6bae7095045fc19f07edf57" },
   "ols": { "branch": "master", "commit": "df680916e378d49965416bfd7f3dc4151d81f6ed" },
   "playground": { "branch": "master", "commit": "2b81a018a49f8e476341dfcb228b7b808baba68b" },
