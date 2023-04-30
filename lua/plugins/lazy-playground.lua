@@ -5,6 +5,7 @@ return {
     name = "playground",
     enabled = true,
     lazy = true,
+    cmd = "TSPlaygroundToggle",
     opts = {
         playground = {
             enable = true,
