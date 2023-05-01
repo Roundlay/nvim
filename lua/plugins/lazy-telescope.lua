@@ -26,7 +26,7 @@ return {
             previewer = false,
             borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
             layout_config = {
-                height = 0.3,
+                height = 0.5,
                 prompt_position = "bottom",
             },
         },
