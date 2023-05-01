@@ -4,15 +4,15 @@ return {
     lazy = true,
     event = "BufReadPost",
     keys = {
-        -- { "gcc", "gcc", desc = "Toggle blockwise comment" },
-        -- { "gc", "gcc", desc = "Toggle blockwise comment" },
+        { "gcc", "gcc", desc = "Toggle linewise comment" },
+        { "gc", "gc", desc = "Toggle blockwise comment" },
     },
     opts = {
         padding = true,
         sticky = true,
         mappings = {
             basic = true
-        }, -- Setup custom mappings as listed above.
+        },
     },
     config = function(_, opts)
         require("Comment").setup(opts)
