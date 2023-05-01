@@ -5,15 +5,12 @@ return {
     name = "mini-align",
     enabled = true,
     lazy = true, -- We may want to align text immediately upon launching Neovim.
-    event = "InsertEnter",
-    keys = {
-        {"ga", "<cmd>lua require('mini.align').align()<CR>", desc = "Start aligning text"},
-    },
+    event = {"BufReadPost", "InsertEnter"},
     opts = {
         mappings = {
             start_with_preview = "ga",
         },
-        -- Tweak `j` modifier to cycle through available "justify_side" options.
+        -- Tweak 'j' modifier to cycle through available "justify_side" options.
         modifiers = {
           j = function(_, opts)
             local next_option = ({
