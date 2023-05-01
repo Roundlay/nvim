@@ -31,13 +31,14 @@ return {
         suggestion = {
             enabled = true,
             auto_trigger = true,
-            debounce = 75,
+            debounce = 1,
             keymap = {
                 accept = "<C-CR>",
+                -- accept = "<S-CR>",
             },
         },
         panel = {
-            enabled = true,
+            enabled = false,
             auto_refresh = true,
         },
         layout = {
