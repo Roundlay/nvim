@@ -16,6 +16,5 @@ return {
     },
     config = function(_, opts)
         require("Comment").setup(opts)
-        require("Comment.ft").odin = { "//%s", "/*%s*/" } -- Define custom comment syntax for Odin files.
     end,
 }
