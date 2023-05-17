@@ -16,6 +16,7 @@ return {
           return
         end
         cmp.setup({
+            preselect = "none", -- This ensures that the first item in the completion menu is not automatically selected.
             completion = {
                 completeopt = "menu, preview, menuone, noinsert, noselect" -- 'noselect' avoids inserting text until it is explicitly selected from the completion menu.
             },

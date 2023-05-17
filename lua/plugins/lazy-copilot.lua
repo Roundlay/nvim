@@ -57,7 +57,7 @@ return {
         -- official Copilot plugin, allowing you to use <Tab> for
         -- indentation as well as for accepting Copilot suggestions.
 
-        -- vim.keymap.set('i', '<S-CR>', function()
+        -- vim.keymap.set('i', '<C-CR>', function()
         --     if require("copilot.suggestion").is_visible() then
         --         require("copilot.suggestion").accept()
         --     else
