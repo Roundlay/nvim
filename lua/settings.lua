@@ -81,9 +81,9 @@ vim.o.tabstop     = 4 -- Number of spaces that a <Tab> in the file counts for.
 vim.o.expandtab   = true -- In Insert mode, use the appropriate number of spaces when inserting a <Tab>.
 vim.o.autoindent  = true -- Copy indent from current line when starting a new line.
 vim.o.smartindent = true -- Auto-inserts indents after a line: ending in '{', starting with a keyword from 'cinwords', other.
-vim.o.breakindent = true -- Visually indent wrapped lines.
 -- vim.o.showbreak = '␤ ' -- TODO: String at the start of wrapped lines.
--- vim.o.breakindentopt = 'shift:-3' -- TODO: Shift the wrapped line's beginning by 'n' spaces after applying 'breakindent'.
+vim.o.breakindent = true -- Visually indent wrapped lines.
+-- vim.o.breakindentopt = 'shift:-2' -- TODO: Shift the wrapped line's beginning by 'n' spaces after applying 'breakindent'.
 
 -- Timing
 

@@ -2,38 +2,40 @@
 
 local M = {}
 
-function M.generate_series(type, n, factor)
-    local series = {}
-    if type == "quadratic" then
-        for i = 1, n do
-            table.insert(series, i * i * factor)
-        end
-    elseif type == "cubic" then
-        for i = 1, n do
-            table.insert(series, i * i * i * factor)
-        end
-    end
-    return series
-end
+-- I think this was something to do with the accelerate_jk plugin.
 
-local acceleration_table = M.generate_series("quadratic", 4, 5)
-local deceleration_table = {}
-
-local deceleration_intervals = {200, 300}
-for _, interval in ipairs(deceleration_intervals) do
-    local deceleration_steps = M.generate_series("quadratic", 2, 3)
-    table.insert(deceleration_table, {interval, deceleration_steps})
-end
-
-print("Acceleration Table: ")
-for _, value in ipairs(acceleration_table) do
-    print(value)
-end
-
-print("\nDeceleration Table: ")
-for _, pair in ipairs(deceleration_table) do
-    print(pair[1], table.concat(pair[2], ", "))
-end
+-- function M.generate_series(type, n, factor)
+--     local series = {}
+--     if type == "quadratic" then
+--         for i = 1, n do
+--             table.insert(series, i * i * factor)
+--         end
+--     elseif type == "cubic" then
+--         for i = 1, n do
+--             table.insert(series, i * i * i * factor)
+--         end
+--     end
+--     return series
+-- end
+--
+-- local acceleration_table = M.generate_series("quadratic", 4, 5)
+-- local deceleration_table = {}
+--
+-- local deceleration_intervals = {200, 300}
+-- for _, interval in ipairs(deceleration_intervals) do
+--     local deceleration_steps = M.generate_series("quadratic", 2, 3)
+--     table.insert(deceleration_table, {interval, deceleration_steps})
+-- end
+--
+-- print("Acceleration Table: ")
+-- for _, value in ipairs(acceleration_table) do
+--     print(value)
+-- end
+--
+-- print("\nDeceleration Table: ")
+-- for _, pair in ipairs(deceleration_table) do
+--     print(pair[1], table.concat(pair[2], ", "))
+-- end
 
 -- Picture in Picture plugin?
 -- [ ] Could this be pegged to a certain part of the file even while scrolling?
