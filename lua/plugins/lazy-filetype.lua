@@ -17,6 +17,7 @@ return {
                 txt = "text",
                 odin = "odin",
                 ipynb = "python",
+                html = "html"
             },
             literal = {
                 todos = "md",

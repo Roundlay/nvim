@@ -4,10 +4,10 @@ return {
 	"echasnovski/mini.pairs",
     name = "mini-pairs",
     version = false,
-    enabled = true,
+    enabled = false,
     lazy = true,
     event = "InsertEnter",
 	config = function()
-		require("mini.pairs").setup()
+		require("mini.pairs").setup({})
 	end,
 }
