@@ -5,6 +5,7 @@
 -- -------------------------------------------------------------------------- --
 
 -- Lazy Benchmark (01-05-23)
+-- Lazy Profile: Startuptime: 40.35ms
 -- Environment: Windows 11 -> Alacritty (Administrator) -> Clink -> NVIM v0.9.0
 -- Command: `hyperfine --warmup 5 "nvim init.lua --headless +qa"`
 -- Time (mean ± σ):    106.4 ms ±   2.3 ms  [User: 56.7 ms, System: 70.5 ms]
