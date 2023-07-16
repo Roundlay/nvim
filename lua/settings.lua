@@ -63,7 +63,7 @@ vim.o.inccommand = 'nosplit' --Shows the effects of a command (like ':substitute
 vim.o.showmatch = true -- Show matching braces, etc.
 vim.o.ignorecase = true -- Ignore case when searching.
 vim.o.hlsearch = true -- Highlight search results.
-vim.o.synmaxcol = 2000 -- Max columns to search for syntax items; 0 = infinity.
+vim.o.synmaxcol = 0 -- Max columns to search for syntax items; 0 = infinity.
 vim.o.smartcase = true -- Don't ignore case with capitals.
 
 -- Line/Column
