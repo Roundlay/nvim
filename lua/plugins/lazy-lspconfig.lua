@@ -32,7 +32,7 @@ return {
         local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
 
 		local on_attach = function(_, bufnr)
-            vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
+            -- vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
             vim.keymap.set("n", "gD", vim.lsp.buf.declaration)
             vim.keymap.set("n", "gd", vim.lsp.buf.definition)
         end
