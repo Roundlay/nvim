@@ -2,6 +2,164 @@
 
 local M = {}
 
+-- TODOs
+
+--[[
+
+TODO
+When wrapping lines that are already commented, ensure that joined lines don't maintain their comment symbol.
+E.g., right now this...
+```
+TODO Allow user to use a keybinding to submit rather than typing "submit".
+E.g., Ctrl+Enter.
+```
+...becomes...
+```
+TODO Allow user to use a keybinding to submit rather than typing 
+"submit". # E.g., Ctrl+Enter. 
+```
+
+TODO
+If text is within block comments, defer to the character that makes the most sense.
+This might actually be really tricky and requrie something like a tree-sitter tree to support.
+Does Vim have an API function that returns if a line is commented or not?
+E.g., in a Python file, right now this...
+"""
+- If possible, brainstorm solutions for generating summaries of the context
+  window each time the user submits a prompt.
+  - E.g.:
+      - User submits their prompt
+      - This prompt is passed to the conversation model in order to get a response <- Only this line is selected with Shift+V and then the Wrappin command is run on it.
+      - While the response is being streamed, another instance of GPT-4 summarises
+      - The promp
+"""
+...becomes...
+"""
+- If possible, brainstorm solutions for generating summaries of the context
+  window each time the user submits a prompt.
+  - E.g.:
+      - User submits their prompt
+      # - This prompt is passed to the conversation model in order to get a
+      # response 
+      - While the response is being streamed, another instance of GPT-4 summarises
+      - The promp
+"""
+...but it should become...
+"""
+- If possible, brainstorm solutions for generating summaries of the context
+  window each time the user submits a prompt.
+  - E.g.:
+      - User submits their prompt
+      - This prompt is passed to the conversation model in order to get a 
+        response 
+      - While the response is being streamed, another instance of GPT-4 summarises
+      - The promp
+"""
+--]]
+
+function M.Wrappin()
+    -- Get the range of the visual selection
+    local start_line = vim.fn.getpos("'<")[2] - 1
+    local end_line = vim.fn.getpos("'>")[2] - 1
+
+    -- Get the commentstring option of the current buffer
+    local commentstring = vim.api.nvim_buf_get_option(0, 'commentstring')
+    -- Extract the comment character from the commentstring
+    local comment_char = commentstring:match("^(.*)%%s"):match("^%s*(.-)%s*$")
+
+    -- Get the lines in the visual selection
+    local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line+1, false)
+
+    -- Join the lines into a single line
+    local line_content = table.concat(lines, " ")
+
+    -- If the line length is less than or equal to 80, do nothing and return
+    if #line_content <= 80 then
+        return
+    end
+
+    -- Get the leading whitespace of the line for indentation
+    local indent = line_content:match("^%s*")
+    -- Remove leading and trailing whitespace from the line
+    local stripped = line_content:match("^%s*(.-)%s*$")
+
+    -- Remove leading comment characters from the stripped string
+    stripped = stripped:gsub("^" .. comment_char .. "%s*", "")
+
+    -- Split the stripped line into words
+    local words = {}
+    for word in stripped:gmatch("%S+") do
+        table.insert(words, word)
+    end
+
+    -- Create a table to hold the new lines
+    local new_lines = {}
+    -- Initialize line with the comment character and indentation
+    local line = indent .. comment_char .. " "
+
+    -- Add each word to the new line, ensuring that the length of the new
+    -- line does not exceed 80 characters
+    for _, word in ipairs(words) do
+        if #line + #word > 80 then
+            table.insert(new_lines, line)
+            line = indent .. comment_char .. " " .. word .. " "
+        else
+            line = line .. word .. " "
+        end
+    end
+    table.insert(new_lines, line)
+
+    -- Replace the original lines with the new lines
+    vim.api.nvim_buf_set_lines(0, start_line, end_line+1, false, new_lines)
+end
+
+-- wrap_and_comment.lua
+
+-- function M.wrap_and_comment()
+--     -- Get the current line number
+--     local line_number = vim.api.nvim_win_get_cursor(0)[1]
+--     -- Get the current line content
+--     local line_content = vim.api.nvim_buf_get_lines(0, line_number-1, line_number,
+--     false)[1]
+--
+--     -- Check if line_content is not nil
+--     if line_content == nil then
+--         print("No line selected.")
+--         return
+--     end
+--
+--     -- Get the leading whitespace of the line for indentation
+--     local indent = line_content:match("^%s*")
+--     -- Remove leading and trailing whitespace from the line
+--     local stripped = line_content:match("^%s*(.-)%s*$")
+--     -- Split the stripped line into words
+--     local words = {}
+--     for word in stripped:gmatch("%S+") do
+--         table.insert(words, word)
+--     end
+--
+--     -- Get the commentstring option of the current buffer
+--     local commentstring = vim.api.nvim_buf_get_option(0, 'commentstring')
+--     -- Extract the comment character from the commentstring
+--     local comment_char = commentstring:match("^(.*)%%s")
+--
+--     -- Create a table to hold the new lines
+--     local new_lines = {}
+--     local line = indent .. comment_char .. " "
+--     for i, word in ipairs(words) do
+--         if #line + #word > 80 then
+--             table.insert(new_lines, line)
+--             line = indent .. comment_char .. " " .. word .. " "
+--         else
+--             line = line .. word .. " "
+--         end
+--     end
+--     table.insert(new_lines, line)
+--
+--     -- Replace the original line with the new lines
+--     vim.api.nvim_buf_set_lines(0, line_number-1, line_number, false, new_lines)
+-- end
+
 -- I think this was something to do with the accelerate_jk plugin.
 
 -- function M.generate_series(type, n, factor)
