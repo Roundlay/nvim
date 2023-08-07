@@ -1,38 +1,29 @@
-;; extends 
+(keyword) @keyword
+(operator) @operator
 
-;; (#set! conceal "⦃")
-;; [ "(" ")" "[" "]" "{" "}"] @braces
-; [ "{" "}"] @curlybraces
-;; (if_statement condition:(binary_expression(operator) @andSymbol (#eq? @andSymbol "&&"))(#set! conceal "∆"))
-;; (if_statement condition:(binary_expression(operator) @orSymbol (#eq? @orSymbol "||"))(#set! conceal "∨"))
+(int_literal)   @number
+(float_literal) @number
+(rune_literal)  @number
+(bool_literal) @boolean
+(nil) @constant.builtin
 
-; Procedure Declarations
-; main :: proc() { ... }
 
-(const_declaration name:(const_identifier) value:(proc_literal (block("{") @procOpeningBrace)))
-(const_declaration name:(const_identifier) value:(proc_literal (block("}") @procClosingBrace)))
+(ERROR) @error
 
-; For Statements
+(type_identifier)    @type
+(package_identifier) @namespace
+(label_identifier)   @label
 
-(for_statement body: (block("{"("\n")) @nestedOpeningBrace) (#eq? @nestedOpeningBrace "{") )
-(for_statement body: (block("\n"("}") @nestedClosingBrace) (#eq? @nestedClosingBrace "}")))
-(for_statement initializer:(var_declaration) (";") @forStatementSemicolon)
+(interpreted_string_literal) @string
+(raw_string_literal) @string
+(escape_sequence) @string.escape
 
-; If Statements
-; Note: We only need to handle nested if-statements because they're not allowed
-; at the file scope in Odin.
+(comment) @comment
+(const_identifier) @constant
 
-(if_statement if_true:(block("{"("\n")) @nestedIfTrueOpeningBrace (#eq? @nestedIfTrueOpeningBrace "{")))
-(if_statement if_true:(block("\n"("}") @nestedIfTrueClosingBrace (#eq? @nestedIfTrueClosingBrace "}"))))
-(if_statement if_false:(block("{"("\n")) @nestedIfFalseOpeningBrace))
-(if_statement if_false:(block("\n"("}") @nestedIfFalseClosingBrace)))
 
-; Switch Statements
+(compiler_directive) @attribute
+(calling_convention) @attribute
 
-(switch_statement body:(("{") @switchStatement) (#eq? @switchStatement "{"))
-(switch_statement body:(("}") @switchStatement) (#eq? @switchStatement "}"))
-
-; Structs
-
-(const_declaration name:(const_identifier) value:(struct_type("{") @structOpeningBrace))
-(const_declaration name:(const_identifier) value:(struct_type("}") @structClosingBrace))
+(identifier) @variable
+(pragma_identifier) @attribute

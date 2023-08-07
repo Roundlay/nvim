@@ -49,11 +49,11 @@ return {
                 format = function(entry, item)
                     -- Define menu shorthand for different completion sources.
                     local menu_icon = {
-                        nvim_lsp = "NLSP",
-                        nvim_lua = "NLUA",
-                        luasnip  = "LSNP",
-                        buffer   = "BUFF",
-                        path     = "PATH",
+                        nvim_lsp = "LSP",
+                        nvim_lua = "LUA",
+                        luasnip  = "LSN",
+                        buffer   = "BUF",
+                        path     = "PTH",
                     }
                     -- Set the menu "icon" to the shorthand for each completion source.
                     item.menu = menu_icon[entry.source.name]
@@ -86,6 +86,7 @@ return {
                     else
                         item.abbr = content .. (" "):rep(max_content_width - #content)
                     end
+
                     return item
                 end,
             },
