@@ -8,6 +8,7 @@ return {
     opts = {
         enabled = true,
         write_all_buffers = false,
+        debounce_delay = 135,
         execution_message = {
             message = function() return ('Auto-Saved at '..vim.fn.strftime('%H:%M:%S')) end,
             dim = 0.33,

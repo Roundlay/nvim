@@ -13,8 +13,11 @@ return {
         {"<C-w>", "<C-w>", desc = "Enter Window mode"},
     },
     opts = {
-        cursorline = false,
-        signcolumn = false,
+        ui = {
+            cursorline = false,
+            cursorcolumn = false,
+            signcolumn = false,
+        },
     },
     config = function(_, opts)
         require("focus").setup(opts)

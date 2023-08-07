@@ -93,8 +93,9 @@ return {
                 python = {
                     analysis = {
                         autoSearchPaths = true,
-                        useLibraryCodeForTypes = true,
                         diagnosticMode = "workspace",
+                        extraPaths = {"c:/users/christopher/appdata/local/programs/python/python310/lib/site-packages"}, -- This resolves an issue where third party imports can't be resolved because they're not in the root directory of the working file.
+                        useLibraryCodeForTypes = true,
                     },
                 },
             },
