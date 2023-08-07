@@ -42,54 +42,56 @@ vim.o.wrap = false -- Wrap lines.
 
 -- Syntax
 
-vim.o.syntax   = 'on' -- Enable syntax highlighting.
--- vim.wo.conceallevel = 0 -- Determines how text with the 'conceal' syntax attribute is shown. Was experimenting with hiding curly braces in .odin files.
+vim.wo.conceallevel = 0 -- Determines how text with the 'conceal' syntax attribute is shown. Was experimenting with hiding curly braces in .odin files.
+vim.o.syntax = 'on' -- Enable syntax highlighting.
+vim.o.list = false
+-- vim.opt.listchars = { trail = '⋅'} -- Show trailing whitespace as a dot.
 
 -- Colours
 
--- vim.o.background = 'dark'
 vim.o.termguicolors = true -- Enable true 24bit colour support; use 'gui' instead of 'cterm' in highlights.
+vim.o.background = 'dark'
 
 -- Status Line
 
+vim.o.laststatus = 2 -- This needs to be called before 'fillchars'. 2: ensures that all windows have a status line. 3: enables the global status line.
 vim.o.showcmd = false -- Show input in the status line.
-vim.o.showmode = false -- Don't show the command line mode (e.g. '-- INSERT --') below the status line.
-vim.o.laststatus = 2 -- This needs to be called before 'fillchars'. 2: ensures that all windows have a status line. 3: enables the global status line. 
-
--- Search
-
-vim.o.incsearch = true -- Show search results as you type.
-vim.o.inccommand = 'nosplit' --Shows the effects of a command (like ':substitute') incrementally in the buffer.
-vim.o.showmatch = true -- Show matching braces, etc.
-vim.o.ignorecase = true -- Ignore case when searching.
-vim.o.hlsearch = true -- Highlight search results.
-vim.o.synmaxcol = 0 -- Max columns to search for syntax items; 0 = infinity.
-vim.o.smartcase = true -- Don't ignore case with capitals.
+vim.o.showmode = false -- Don't show the command line mode (e.g. '-- INSERT --') below the status line. (I implement my own mode presentation logic in `scripts.lua`.)
 
 -- Line/Column
 
-vim.o.fillchars      = 'eob: ' -- This needs to be called after 'laststatus'. Remove empty buffer symbols.
-vim.o.number         = false -- Hide line numbers.
+vim.o.cursorline = false -- Highlight the current line. Known to cause performance issues.
+vim.o.number = false -- Hide line numbers.
 vim.o.relativenumber = false
-vim.o.signcolumn     = 'no' -- Force the signcolumn to remain hidden.
-vim.o.cursorline     = false -- Highlight the current line. Known to cause performance issues.
+vim.o.fillchars = 'eob: ' -- This needs to be called after 'laststatus'. Remove empty buffer symbols.
+vim.o.signcolumn = 'no' -- Force the signcolumn to remain hidden.
+
+-- Search
+
+vim.o.synmaxcol = 5000 -- Max columns to search for syntax items; 0 = infinity.
+vim.o.incsearch = true -- Show search results as you type.
+vim.o.hlsearch = true -- Highlight search results.
+vim.o.showmatch  = true -- Highlight matching braces, etc.
+vim.o.ignorecase = true -- Ignore case when searching in lowercase (case insensitive search)...
+vim.o.smartcase = true -- Unless there's a capital letter in the query (case sensitive search).
+vim.o.inccommand = 'nosplit' -- Shows the results of a command (like ':%s') in the buffer.
 
 -- Indentation
 
-vim.o.shiftwidth  = 4 -- Number spaces to use for each step of 'autoindent'; used for 'cindent', >>, <<, etc.
-vim.o.tabstop     = 4 -- Number of spaces that a <Tab> in the file counts for.
-vim.o.expandtab   = true -- In Insert mode, use the appropriate number of spaces when inserting a <Tab>.
-vim.o.autoindent  = true -- Copy indent from current line when starting a new line.
-vim.o.smartindent = true -- Auto-inserts indents after a line: ending in '{', starting with a keyword from 'cinwords', other.
--- vim.o.showbreak = '␤ ' -- TODO: String at the start of wrapped lines.
+vim.o.shiftwidth = 4 -- Number spaces to use for each step of 'autoindent'; used for 'cindent', >>, <<, etc.
+vim.o.tabstop = 4 -- Number of spaces that a <Tab> in the file counts for.
+vim.o.expandtab = true -- In Insert mode, use the appropriate number of spaces when inserting a <Tab>.
+vim.o.autoindent = true -- Copy indent from current line when starting a new line.
+vim.o.smartindent = true -- Auto                          -inserts indents after a line: ending in '{', starting with a keyword from 'cinwords', other.
 vim.o.breakindent = true -- Visually indent wrapped lines.
+-- vim.o.showbreak = '␤ ' -- TODO: String at the start of wrapped lines.
 -- vim.o.breakindentopt = 'shift:-2' -- TODO: Shift the wrapped line's beginning by 'n' spaces after applying 'breakindent'.
 
 -- Timing
 
 vim.g.redrawtime = 1 -- Time in ms to redraw the screen. (Default: 2000)
-vim.o.updatetime  = 4000 -- Write swap-file to disk every `updatetime` ms.
-vim.o.timeoutlen  = 300 -- Time in ms to wait for mapped sequences to complete.
+vim.o.updatetime = 4000 -- Write swap-file to disk every `updatetime` ms.
+vim.o.timeoutlen = 300 -- Time in ms to wait for mapped sequences to complete.
 vim.o.ttimeoutlen = 0 -- Time in ms to wait for for key-code sequences to complete.
 
 -- Folds
