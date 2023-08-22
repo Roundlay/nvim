@@ -5,7 +5,10 @@ return {
     name = "playground",
     enabled = true,
     lazy = true,
-    cmd = "TSPlaygroundToggle",
+    cmd = {
+        "TSPlaygroundToggle",
+        "TSPlayground",
+    },
     opts = {
         playground = {
             enable = true,

@@ -2,7 +2,10 @@ return {
     'numToStr/Comment.nvim',
     name = "comment",
     lazy = true,
-    event = "BufReadPost",
+    event = {
+        "BufReadPost",
+        "InsertEnter",
+    },
     keys = {
         { "gcc", "gcc", desc = "Toggle linewise comment" },
         { "gc", "gc", desc = "Toggle blockwise comment" },

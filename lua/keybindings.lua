@@ -17,6 +17,7 @@ local function insert(new, old)
     vim.api.nvim_set_keymap('i', new, old, {noremap=true, silent=true})
 end
 
+
 --------------------------------------------------------------------------------
 -- VS Code
 --------------------------------------------------------------------------------
@@ -108,6 +109,11 @@ normal('<C-Down>', 'ddp')
 visual('<C-Down>', 'xp`[V`]')
 visual('<C-Up>', 'xkP`[V`]')
 
+-- Save & Close Buffer (without closing Neovim)
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+
+normal('<leader>b', ':w<CR>:bd<CR>')
+
 --------------------------------------------------------------------------------
 -- Test
 --------------------------------------------------------------------------------
@@ -123,5 +129,6 @@ visual('<C-Up>', 'xkP`[V`]')
 -- define what the model should and shouldn’t answer, and define the format of 
 -- model responses. And this is me testing just so I know. 
 
-
-visual('<F2>', ':lua require("scripts").Wrappin()<CR>')
+visual('<F2>', ':lua _G.Wrappin()<CR>')
+visual('<F3>', ':lua _G.WrappinTest()<CR>')
+normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
