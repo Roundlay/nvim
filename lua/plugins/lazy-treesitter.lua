@@ -10,7 +10,6 @@ return {
     event = "BufReadPost",
     cmd = {
         "TSEnable",
-        -- "TSPlaygroundToggle"
     },
     dependencies = {
         "nvim-treesitter/playground",

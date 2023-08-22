@@ -4,6 +4,7 @@ return {
     "beauwilliams/focus.nvim",
     name = "focus",
     lazy = true,
+    -- TODO How can we load whenever user opens telescope for the first time?
     -- event = "BufWinEnter",
     keys = {
         {"<leader>h", ":FocusSplitLeft<CR>", desc = "Focus Left"},

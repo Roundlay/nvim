@@ -1,14 +1,17 @@
+-- nvim-cmp
+
 return {
     "hrsh7th/nvim-cmp",
-    name   = "nvim-cmp",
+    name   = "cmp",
     enable = true,
+    lazy   = true,
     event  = "InsertEnter",
     dependencies = {
-        { "L3MON4D3/LuaSnip" }, -- A snippet engine is *required*.
-        { "hrsh7th/cmp-nvim-lsp" }, -- Required
-        { "hrsh7th/cmp-nvim-lsp-signature-help" },
-        { "hrsh7th/cmp-nvim-lua" },
-        { "hrsh7th/cmp-path" },
+        "L3MON4D3/LuaSnip", -- A snippet engine is *required*.
+        "hrsh7th/cmp-nvim-lsp", -- Required
+        "hrsh7th/cmp-nvim-lsp-signature-help",
+        "hrsh7th/cmp-nvim-lua",
+        "hrsh7th/cmp-path",
     },
     config = function ()
         local cmp_ok, cmp = pcall(require, "cmp")

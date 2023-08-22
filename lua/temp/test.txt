@@ -1,0 +1,7 @@
+This is a test sentence that goes on longer
+than 80 characters so that we can test our plugin's capabilities. This is a test sentence that goes on longer than 80 characters so that we can test our plugin's capabilities.
+
+-- This is a test sentence that goes on longer than 80 characters
+so that we can do do see how we're doing
+
+-- This is a very long sentence that goes very far over the column wrap limit and we're using this as a test just to make sure that when we wrap a line that starts with a comment we wrap it correctly and take into account the comment length and comment string.

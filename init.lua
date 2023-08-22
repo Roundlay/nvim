@@ -33,4 +33,5 @@ require("lazy-init")
 -- Light up custom highlights
 require("highlights")
 
+-- I'm just not that funny: call scripts.lua.
 require("scripts")

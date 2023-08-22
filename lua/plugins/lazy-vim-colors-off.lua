@@ -1,6 +1,7 @@
 -- vim-colors-off
 
--- TODO: Think about porting this to Lua slash Lualine slash Alacritty; it's pretty nice.
+-- TODO Think about porting this to Lua slash Lualine slash Alacritty; it's 
+-- pretty nice. 
 
 return {
     "pbrisbin/vim-colors-off",
