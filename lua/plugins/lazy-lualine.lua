@@ -10,6 +10,7 @@ return {
             section_separators = { left = "", right = "" },
             globalstatus = false,
             icons_enabled = false,
+            -- theme = "vscode",
             theme = "kanagawa",
         },
         sections = {
