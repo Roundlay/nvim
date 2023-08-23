@@ -1,15 +1,20 @@
 -- nvim-lspconfig
 
--- Note: BufReadPre triggers before the STARTUP event, so it's preferable to use the BufReadPost event instead so that other important plugins, like filetype, have a chance to load.
+-- Incomming dependencies: N/A
+-- Outgoing dependencies: mason-lspconfig.nvim
 
 return {
     "neovim/nvim-lspconfig",
     name = "lspconfig",
     enabled = true,
-    lazy = true,
+    lazy = false,
+    -- BufReadPre triggers before the STARTUP event, so it's preferable to use the BufReadPost event instead so that other important plugins, like filetype, have a chance to load.
     event = {
         "BufReadPost",
         "BufNewFile"
+    },
+    dependencies = {
+        "williamboman/mason-lspconfig.nvim",
     },
     config = function()
 		local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
