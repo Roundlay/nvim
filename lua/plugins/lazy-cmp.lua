@@ -7,11 +7,12 @@ return {
     lazy   = true,
     event  = "InsertEnter",
     dependencies = {
-        "L3MON4D3/LuaSnip", -- A snippet engine is *required*.
+        "neovim/nvim-lspconfig",
         "hrsh7th/cmp-nvim-lsp", -- Required
         "hrsh7th/cmp-nvim-lsp-signature-help",
         "hrsh7th/cmp-nvim-lua",
         "hrsh7th/cmp-path",
+        "L3MON4D3/LuaSnip", -- A snippet engine is *required*.
     },
     config = function ()
         local cmp_ok, cmp = pcall(require, "cmp")
