@@ -1,18 +1,17 @@
 -- mason.nvim
 
+-- Incomming dependencies: nvim-lspconfig
+-- Outgoing dependencies: mason-lspconfig
+
 return {
     "williamboman/mason.nvim",
-    name  = "mason",
+    -- name  = "mason",
     build = ":MasonUpdate",
     lazy  = true,
     event = "BufReadPre",
     cmd   = "Mason",
     keys = {
         -- { "<leader>mm", "<cmd>Mason<CR>", desc = "Toggle Mason Menu" },
-    },
-    dependencies = {
-        "williamboman/mason-lspconfig.nvim",
-        -- "neovim/nvim-lspconfig",
     },
     opts = {
         ui = {
