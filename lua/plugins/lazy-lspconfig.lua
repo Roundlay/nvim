@@ -4,16 +4,13 @@
 
 return {
     "neovim/nvim-lspconfig",
-    name    = "lspconfig",
+    name = "lspconfig",
     enabled = true,
-    lazy    = true,
-    event   = {
+    lazy = true,
+    event = {
         "BufReadPost",
         "BufNewFile"
     },
-    -- dependencies = {
-    --     "hrsh7th/nvim-cmp",
-    -- },
     config = function()
 		local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
 		if not lspconfig_ok then
@@ -44,6 +41,9 @@ return {
             filetypes = {"lua"},
             on_attach = on_attach,
             capabilities = capabilities,
+            default_config = {
+                cmd = { vim.fn.exepath("lua-language-server") },
+            },
             settings = {
                 Lua = {
                     diagnostics = {
@@ -83,22 +83,21 @@ return {
             },
         })
 
-        -- pyright
-        -- lspconfig.pyright.setup({
-        --     filetypes = {"python"},
-        --     on_attach = on_attach,
-        --     capabilities = capabilities,
-        --     settings = {
-        --         python = {
-        --             analysis = {
-        --                 autoSearchPaths = true,
-        --                 diagnosticMode = "workspace",
-        --                 extraPaths = {"c:/users/christopher/appdata/local/programs/python/python310/lib/site-packages"}, -- This resolves an issue where third party imports can't be resolved because they're not in the root directory of the working file.
-        --                 useLibraryCodeForTypes = true,
-        --             },
-        --         },
-        --     },
-        -- })
+        lspconfig.pyright.setup({
+            filetypes = {"python"},
+            on_attach = on_attach,
+            capabilities = capabilities,
+            settings = {
+                python = {
+                    analysis = {
+                        autoSearchPaths = true,
+                        diagnosticMode = "workspace",
+                        extraPaths = {"c:/users/christopher/appdata/local/programs/python/python310/lib/site-packages"}, -- This resolves an issue where third party imports can't be resolved because they're not in the root directory of the working file.
+                        useLibraryCodeForTypes = true,
+                    },
+                },
+            },
+        })
 
         -- tsserver
         lspconfig.tsserver.setup({

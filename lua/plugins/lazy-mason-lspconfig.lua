@@ -10,7 +10,7 @@ return {
     lazy = true,
     dependencies = {
         "neovim/nvim-lspconfig",
-        -- "williamboman/mason.nvim",
+        "williamboman/mason.nvim",
     },
     config = function()
 		local mason_lspconfig_ok, mason_lspconfig = pcall(require, "mason-lspconfig")
