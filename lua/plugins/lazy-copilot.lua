@@ -1,4 +1,5 @@
--- copilot.lua
+-- copilot.vim
+-- -----------------------------------------------------------------------------
 
 -- Note: This can't be lazy-loaded at the moment because the plugin doesn't play
 -- nicely with telescope and <Tab>...?
@@ -11,17 +12,18 @@
 --     event = "InsertEnter", 
 -- }
 
--- copilot.lua
 
--- Note: For the Alacritty slash modified-carriage-return enjoyers out there,
--- to get <S-CR> and <C-CR> working, Alacritty needs to be configured to send
--- escape-sequences Vim expects: https://stackoverflow.com/a/42461580/21730427
+-- copilot.lua
+-- -----------------------------------------------------------------------------
+
+-- For the Alacritty slash modified-carriage-return enjoyers out there, to get
+-- <S-CR> and <C-CR> working, Alacritty needs to be configured to send escape
+-- sequences Vim expects: https://stackoverflow.com/a/42461580/21730427
 
 return {
     "zbirenbaum/copilot.lua",
-    -- name = "Copilot (Neovim)",
-    enabled = true,
     build = ":Copilot auth",
+    enabled = true,
     lazy = true,
     cmd = "Copilot",
     event = "InsertEnter",
@@ -34,7 +36,6 @@ return {
             debounce = 1,
             keymap = {
                 accept = "<C-CR>",
-                -- accept = "<S-CR>",
             },
         },
         panel = {
