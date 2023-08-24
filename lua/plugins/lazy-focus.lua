@@ -7,10 +7,10 @@ return {
     -- TODO How can we load whenever user opens telescope for the first time?
     -- event = "BufWinEnter",
     keys = {
-        {"<leader>h", ":FocusSplitLeft<CR>", desc = "Focus Left"},
-        {"<leader>j", ":FocusSplitDown<CR>", desc = "Focus Down"},
-        {"<leader>k", ":FocusSplitUp<CR>", desc = "Focus Up"},
-        {"<leader>l", ":FocusSplitRight<CR>", desc = "Focus Right"},
+        -- {"<leader>h", ":FocusSplitLeft<CR>",  desc = "Focus Left"},
+        -- {"<leader>j", ":FocusSplitDown<CR>",  desc = "Focus Down"},
+        -- {"<leader>k", ":FocusSplitUp<CR>",    desc = "Focus Up"},
+        -- {"<leader>l", ":FocusSplitRight<CR>", desc = "Focus Right"},
         {"<C-w>", "<C-w>", desc = "Enter Window mode"},
     },
     opts = {
