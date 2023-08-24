@@ -3,7 +3,7 @@
 return {
     "petertriho/nvim-scrollbar",
     -- name = "scrollbar",
-    enabled = true,
+    enabled = false,
     lazy = true,
     event = "BufReadPre",
     opts = {
