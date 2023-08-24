@@ -2,7 +2,7 @@
 
 return {
     "nathom/filetype.nvim",
-    name = "filetype",
+    -- name = "filetype",
     enabled = true,
     lazy = false,
     opts = {

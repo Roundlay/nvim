@@ -1,6 +1,8 @@
+-- accelerated-jk.nvim
+
 return {
     "rainbowhxch/accelerated-jk.nvim",
-    name = "accelerated-jk",
+    -- name = "accelerated-jk",
     enabled = false,
     lazy = true,
     event = {"BufReadPost", "InsertEnter"},

@@ -5,7 +5,7 @@
 
 return {
     "pbrisbin/vim-colors-off",
-    name = "vim-colors-off",
+    -- name = "vim-colors-off",
     enabled = false,
     lazy = false,
     priority = 1000,

@@ -5,7 +5,7 @@
 
 return {
     "neovim/nvim-lspconfig",
-    name = "lspconfig",
+    -- name = "lspconfig",
     enabled = true,
     lazy = false,
     -- BufReadPre triggers before the STARTUP event, so it's preferable to use the BufReadPost event instead so that other important plugins, like filetype, have a chance to load.

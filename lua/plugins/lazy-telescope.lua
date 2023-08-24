@@ -2,7 +2,7 @@
 
 return {
     'nvim-telescope/telescope.nvim',
-    name = "telescope",
+    -- name = "telescope",
     version = false,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,

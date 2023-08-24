@@ -2,7 +2,7 @@
 
 return {
     "beauwilliams/focus.nvim",
-    name = "focus",
+    -- name = "focus",
     lazy = true,
     -- TODO How can we load whenever user opens telescope for the first time?
     -- event = "BufWinEnter",

@@ -10,7 +10,7 @@
 
 return {
     "ap29600/tree-sitter-odin",
-    name = "nvim-treesitter-odin",
+    -- name = "nvim-treesitter-odin",
     enabled = true,
     lazy = true,
     ft = "odin",

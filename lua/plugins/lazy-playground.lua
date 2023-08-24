@@ -1,8 +1,8 @@
--- nvim-treesitter/playground
+-- playground
 
 return {
     "nvim-treesitter/playground",
-    name = "playground",
+    -- name = "playground",
     enabled = true,
     lazy = true,
     cmd = {

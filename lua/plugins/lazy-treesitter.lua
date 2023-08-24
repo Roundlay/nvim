@@ -2,7 +2,7 @@
 
 return {
     "nvim-treesitter/nvim-treesitter",
-    name = "nvim-treesitter",
+    -- name = "nvim-treesitter",
     enabled = true,
     version = false,
     build = ":TSUpdateSync",

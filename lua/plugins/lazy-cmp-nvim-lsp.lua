@@ -2,7 +2,7 @@
 
 return {
     "hrsh7th/cmp-nvim-lsp",
-    name = "cmp-nvim-lsp",
+    -- name = "cmp-nvim-lsp",
     enable = true,
     lazy = true,
     config = function()

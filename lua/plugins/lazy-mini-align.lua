@@ -2,7 +2,7 @@
 
 return {
     "echasnovski/mini.align",
-    name = "mini-align",
+    -- name = "mini-align",
     enabled = true,
     lazy = true, -- We may want to align text immediately upon launching Neovim.
     event = {"BufReadPost", "InsertEnter"},

@@ -1,6 +1,6 @@
 return {
     "nvim-lualine/lualine.nvim",
-    name = "lualine",
+    -- name = "lualine",
     enabled = true,
     lazy = false,
     opts = {

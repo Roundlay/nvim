@@ -2,7 +2,7 @@
 
 return {
     "folke/trouble.nvim",
-    name = "trouble",
+    -- name = "trouble",
     enabled = false,
     lazy = true,
     event = "InsertEnter",

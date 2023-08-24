@@ -1,6 +1,8 @@
+-- LuaSnip
+
 return {
     "L3MON4D3/LuaSnip",
-    name = "LuaSnip",
+    -- name = "LuaSnip",
     version = "2.*",
     enabled = true,
     lazy = true,

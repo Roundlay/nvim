@@ -1,3 +1,12 @@
+-- lazy-init.lua
+
+-- Notes:
+-- Lazy has some issues with the 'name' parameter when defining plugins, often
+-- resulting in duplicate entries in the Lazy dashboard when another plugin
+-- lists a plugin with a custom name as a dependency. Presumably this is
+-- because you can only use the full git path as the dependency name, which
+-- is what ends up listed on the dashboard.
+
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
 if not vim.loop.fs_stat(lazypath) then
