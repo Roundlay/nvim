@@ -1,7 +1,9 @@
+-- leap.nvim
+
 return {
     "ggandor/leap.nvim",
     commit = "8facf2eb6a378fd7691dce8c8a7b2726823e2408", -- Temporarily rolling back to previous commit due to https://github.com/ggandor/leap.nvim/issues/171
-    name = "leap",
+    -- name = "leap",
     enabled = true,
     lazy = true,
     -- event = "InsertEnter",

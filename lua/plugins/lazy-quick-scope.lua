@@ -2,7 +2,7 @@
 
 return {
     "unblevable/quick-scope",
-    name = "quick-scope",
+    -- name = "quick-scope",
     enabled = false,
     lazy = true,
     event = "InsertEnter",

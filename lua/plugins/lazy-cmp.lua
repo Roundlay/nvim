@@ -2,7 +2,7 @@
 
 return {
     "hrsh7th/nvim-cmp",
-    name   = "cmp",
+    -- name   = "cmp",
     enable = true,
     lazy   = true,
     event  = "InsertEnter",

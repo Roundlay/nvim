@@ -1,6 +1,8 @@
+-- Comment.nvim
+
 return {
     'numToStr/Comment.nvim',
-    name = "comment",
+    -- name = "comment",
     lazy = true,
     event = {
         "BufReadPost",

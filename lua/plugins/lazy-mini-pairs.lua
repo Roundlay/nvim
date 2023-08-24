@@ -2,7 +2,7 @@
 
 return {
 	"echasnovski/mini.pairs",
-    name = "mini-pairs",
+    -- name = "mini-pairs",
     version = false,
     enabled = false,
     lazy = true,

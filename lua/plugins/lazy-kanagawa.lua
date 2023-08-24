@@ -1,6 +1,8 @@
+-- kanagawa.nvim
+
 return {
     'rebelot/kanagawa.nvim',
-    name = "kanagawa",
+    -- name = "kanagawa",
     enabled = true,
     lazy = false,
     priority = 1000,

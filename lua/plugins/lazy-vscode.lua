@@ -2,7 +2,7 @@
 
 return {
     "Mofiqul/vscode.nvim",
-    name = "vscode",
+    -- name = "vscode",
     enabled = false,
     lazy = false,
     priority = 1000,

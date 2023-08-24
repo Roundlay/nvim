@@ -1,4 +1,4 @@
--- copilot.vim
+-- copilot.lua
 
 -- Note: This can't be lazy-loaded at the moment because the plugin doesn't play
 -- nicely with telescope and <Tab>...?
@@ -19,7 +19,7 @@
 
 return {
     "zbirenbaum/copilot.lua",
-    name = "Copilot (Neovim)",
+    -- name = "Copilot (Neovim)",
     enabled = true,
     build = ":Copilot auth",
     lazy = true,
