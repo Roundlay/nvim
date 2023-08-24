@@ -11,15 +11,16 @@ return {
         transparent = false,
         italic_comments = false,
         color_overrides = {
-            -- vscLineNumber = '#000000',
+        -- vscLineNumber = '#000000',
         },
     },
     config = function(_, opts)
-        local kanagawa_ok, kanagawa = pcall(require, "vscode")
-        if not kanagawa_ok then
+        local vscode_ok, vscode = pcall(require, "vscode")
+        if not vscode_ok then
+            print("Error loading 'vscode.nvim'.")
             return
         end
-        kanagawa.setup(opts)
+        vscode.setup(opts)
         vim.cmd.colorscheme("vscode")
     end
 }
