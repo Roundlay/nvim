@@ -53,6 +53,10 @@ vim.g.maplocalleader = ' '
 
 normal('<n>', '<C-v>') -- ? WIN: Fixes paste overlap within Visual Command Mode.
 
+-- Save & Close Buffer (without closing Neovim)
+
+normal('<leader>b', ':w<CR>:bd<CR>')
+
 -- Alternate Escape
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 
@@ -104,22 +108,22 @@ visual('<leader>P', '"+P')
 -- NOTE [ ] These don't seem to work with remapped arrow keys on HHKBs.
 -- TODO [ ] These trigger the auto-save plugin every time they're used.
 
-normal('<C-Up>', 'ddkP')
-normal('<C-Down>', 'ddp')
-visual('<C-Down>', 'xp`[V`]')
-visual('<C-Up>', 'xkP`[V`]')
-
--- Save & Close Buffer (without closing Neovim)
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-
-normal('<leader>b', ':w<CR>:bd<CR>')
+-- normal('<C-Up>', 'ddkP')
+-- normal('<C-Down>', 'ddp')
+-- visual('<C-Down>', 'xp`[V`]')
+-- visual('<C-Up>', 'xkP`[V`]')
 
 --------------------------------------------------------------------------------
--- Test
+-- Lazy
 --------------------------------------------------------------------------------
 
+-- Toggle Lazy
+
+normal('<leader>l', ':Lazy<CR>')
+
+--------------------------------------------------------------------------------
 -- Wrappin
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+--------------------------------------------------------------------------------
 
 -- TODO [ ] Turn this into a plugin.
 
