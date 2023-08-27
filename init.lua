@@ -18,20 +18,8 @@
 -- Initialisation
 -- -------------------------------------------------------------------------- --
 
--- Set Neovim settings
 require("settings")
-
--- Bind custom keybindings
 require("keybindings")
-
--- Plug in Vim-Plug
--- require("plug")
-
--- Initialise Lazy
 require("lazy-init")
-
--- Light up custom highlights
 require("highlights")
-
--- I'm just not that funny: call scripts.lua.
 require("scripts")
