@@ -4,9 +4,9 @@
 -- Benchmarks
 -- -------------------------------------------------------------------------- --
 
--- Lazy Benchmark (26-07-23)
--- Lazy Profile: Startuptime: 39.72ms
--- Environment: Windows 11 -> Alacritty (Administrator) -> Clink -> NVIM v0.9.0
+-- Lazy Benchmark (29-08-23)
+-- Lazy Profile: Startuptime: 31.21ms
+-- Environment: Windows 11 -> Alacritty (Administrator) -> Clink -> NVIM v0.9.1
 -- Command: `hyperfine --warmup 5 "nvim init.lua --headless +qa"`
 
 -- Vim-Plug Benchmark (22-04-23)
