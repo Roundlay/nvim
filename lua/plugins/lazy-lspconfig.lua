@@ -7,11 +7,10 @@ return {
     "neovim/nvim-lspconfig",
     -- name = "lspconfig",
     enabled = true,
-    lazy = false,
-    -- BufReadPre triggers before the STARTUP event, so it's preferable to use the BufReadPost event instead so that other important plugins, like filetype, have a chance to load.
+    lazy = true,
     event = {
-        "BufReadPost",
-        "BufNewFile"
+        "InsertEnter",
+        "CmdlineEnter",
     },
     dependencies = {
         "williamboman/mason-lspconfig.nvim",
@@ -23,23 +22,27 @@ return {
 			return
 		end
 
-		local lsputil_ok, lsputil = pcall(require, "lspconfig.util")
-		if not lsputil_ok then
-            vim.notify(vim.inspect(lsputil), vim.log.levels.ERROR)
-		    return
-		end
-
-        -- This probably isn't the ideal way to deal with capabilities. Don't I need to do the whole deep force shenanigans?
-        local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
+        -- This probably isn't the ideal way to deal with capabilities.
+        -- Don't I need to do the whole deep force shenanigans? Regardless...
+        -- There seems to be multiple ways about doing this, so TODO: figure
+        -- out how to test if everything's working a-ok here.
+        local capabilities = vim.lsp.protocol.make_client_capabilities()
+        capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+        lspconfig.util.default_config.capabilities = vim.tbl_deep_extend(
+            "force",
+            lspconfig.util.default_config.capabilities,
+            -- This will cause `cmp_nvim_lsp` to be loaded right away,
+            -- overriding any lazy-loading defined in `lazy-cmp-nvim-lsp.lua`.
+            require("cmp_nvim_lsp").default_capabilities(capabilities)
+        )
 
 		local on_attach = function(_, bufnr)
-            -- vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
             vim.keymap.set("n", "gD", vim.lsp.buf.declaration)
             vim.keymap.set("n", "gd", vim.lsp.buf.definition)
         end
 
-        -- Once LSP servers have been installed with Mason, Node, etc.,
-        -- they need to be setup here.
+        -- Once LSP servers have been installed manually, with Mason, etc.,
+        -- they need to be set up here.
 
         -- luals
         lspconfig.lua_ls.setup({
@@ -65,6 +68,7 @@ return {
             },
         })
 
+        -- ols
         lspconfig.ols.setup({
             filetypes = {"odin"},
             on_attach = on_attach,
@@ -72,7 +76,7 @@ return {
             default_config = {
                 cmd = { "ols" },
                 filetypes = { "odin" },
-                root_dir = lsputil.root_pattern("ols.json", ".git"),
+                root_dir = lspconfig.util.root_pattern("ols.json", ".git"),
                 single_file_support = true,
             },
         })
@@ -88,6 +92,7 @@ return {
             },
         })
 
+        -- pyright
         lspconfig.pyright.setup({
             filetypes = {"python"},
             on_attach = on_attach,
@@ -105,11 +110,11 @@ return {
         })
 
         -- tsserver
-        lspconfig.tsserver.setup({
-            filetypes = {"javascript", "typescript"},
-            on_attach = on_attach,
-            capabilities = capabilities,
-        })
+        -- lspconfig.tsserver.setup({
+        --     filetypes = {"javascript", "typescript"},
+        --     on_attach = on_attach,
+        --     capabilities = capabilities,
+        -- })
 
     end,
 }
