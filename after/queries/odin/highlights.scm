@@ -1,29 +1,42 @@
-(keyword) @keyword
-(operator) @operator
+;; extends 
 
-(int_literal)   @number
-(float_literal) @number
-(rune_literal)  @number
-(bool_literal) @boolean
-(nil) @constant.builtin
+;; (#set! conceal "⦃")
+;; [ "(" ")" "[" "]" "{" "}"] @braces
+;; [ "{" "}"] @curlybraces
+;; (if_statement condition:(binary_expression(operator) @andSymbol (#eq? @andSymbol "&&"))(#set! conceal "∆"))
+;; (if_statement condition:(binary_expression(operator) @orSymbol (#eq? @orSymbol "||"))(#set! conceal "∨"))
 
+; Procedure Declarations
 
-(ERROR) @error
+(procedure_declaration(procedure(block("{")@procOpeningBrace)))
+(procedure_declaration(procedure(block("}")@procClosingBrace)))
 
-(type_identifier)    @type
-(package_identifier) @namespace
-(label_identifier)   @label
+; For Statements
 
-(interpreted_string_literal) @string
-(raw_string_literal) @string
-(escape_sequence) @string.escape
+(for_statement consequence:(block("{")@forOpeningBrace))
+(for_statement consequence:(block("}")@forClosingBrace))
+(for_statement initializer:(assignment_statement) (";") @forAssignmentSemicolon)
 
-(comment) @comment
-(const_identifier) @constant
+; If Statements
+; Note: We only need to handle nested if-statements because they're not allowed
+; at the file scope in Odin.
 
+(if_statement consequence:(block("{")@ifStatementOpeningBrace))
+(if_statement consequence:(block("}")@ifStatementClosingBrace))
+(if_statement(else_clause consequence:(block("{")@elseClauseOpeningBrace)))
+(if_statement(else_clause consequence:(block("}")@elseClauseClosingBrace)))
 
-(compiler_directive) @attribute
-(calling_convention) @attribute
+; Switch Statements
 
-(identifier) @variable
-(pragma_identifier) @attribute
+(switch_statement ("{") @switchOpeningBrace)
+(switch_statement ("}") @switchClosingBrace)
+
+; Foreign Blocks
+
+(foreign_block (block("{") @foreignOpeningBrace))
+(foreign_block (block("}") @foreignClosingBrace))
+
+; Structs
+
+(struct_declaration ("{") @structOpeningBrace)
+(struct_declaration ("}") @structClosingBrace)
