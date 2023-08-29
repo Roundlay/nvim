@@ -7,7 +7,6 @@ return {
     lazy   = true,
     event  = "InsertEnter",
     dependencies = {
-        "neovim/nvim-lspconfig",
         "hrsh7th/cmp-nvim-lsp", -- Required
         "hrsh7th/cmp-nvim-lsp-signature-help",
         "hrsh7th/cmp-nvim-lua",
@@ -17,7 +16,8 @@ return {
     config = function ()
         local cmp_ok, cmp = pcall(require, "cmp")
         if not cmp_ok then
-          return
+            vim.notify(vim.inspect(cmp), vim.log.levels.ERROR)
+            return
         end
         cmp.setup({
             preselect = "none",
@@ -81,7 +81,6 @@ return {
 
                     -- Set the max content width based on either: 'fixed_width' or a percentage of the window width, in this case 20%. We subtract 10 from 'fixed_width' to leave room for the 'kind' and other fields.
                     -- local max_content_width = fixed_width and fixed_width - 10 or math.floor(win_width * 0.2)
-
                     local max_content_width = math.floor(win_width * 0.25)
 
                     -- Truncate the completion entry text if it's longer than the max content width. We subtract 3 from the max content width to account for the "..." that will be appended to it.
