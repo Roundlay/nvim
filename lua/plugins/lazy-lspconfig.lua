@@ -9,11 +9,13 @@ return {
     enabled = true,
     lazy = true,
     event = {
+        "BufReadPost",
         "InsertEnter",
         "CmdlineEnter",
     },
     dependencies = {
         "williamboman/mason-lspconfig.nvim",
+        "hrsh7th/nvim-cmp",
     },
     config = function()
 		local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
@@ -27,7 +29,7 @@ return {
         -- There seems to be multiple ways about doing this, so TODO: figure
         -- out how to test if everything's working a-ok here.
         local capabilities = vim.lsp.protocol.make_client_capabilities()
-        capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+        -- capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
         lspconfig.util.default_config.capabilities = vim.tbl_deep_extend(
             "force",
             lspconfig.util.default_config.capabilities,
