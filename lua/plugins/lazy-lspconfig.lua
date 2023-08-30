@@ -19,17 +19,15 @@ return {
     },
     config = function()
 		local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
+
 		if not lspconfig_ok then
             vim.notify(vim.inspect(lspconfig), vim.log.levels.ERROR)
 			return
 		end
 
-        -- This probably isn't the ideal way to deal with capabilities.
-        -- Don't I need to do the whole deep force shenanigans? Regardless...
-        -- There seems to be multiple ways about doing this, so TODO: figure
-        -- out how to test if everything's working a-ok here.
+        -- We use `vim.tbl_deep_extend` to merge the defaults lspconfig
+        -- provides with the capabilities `nvim-cmp` adds.
         local capabilities = vim.lsp.protocol.make_client_capabilities()
-        -- capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
         lspconfig.util.default_config.capabilities = vim.tbl_deep_extend(
             "force",
             lspconfig.util.default_config.capabilities,
@@ -38,6 +36,7 @@ return {
             require("cmp_nvim_lsp").default_capabilities(capabilities)
         )
 
+        local bufnr = vim.api.nvim_get_current_buf()
 		local on_attach = function(_, bufnr)
             vim.keymap.set("n", "gD", vim.lsp.buf.declaration)
             vim.keymap.set("n", "gd", vim.lsp.buf.definition)
@@ -76,8 +75,8 @@ return {
             on_attach = on_attach,
             capabilities = capabilities,
             default_config = {
-                cmd = { "ols" },
-                filetypes = { "odin" },
+                cmd = {"ols"},
+                filetypes = {"odin"},
                 root_dir = lspconfig.util.root_pattern("ols.json", ".git"),
                 single_file_support = true,
             },
