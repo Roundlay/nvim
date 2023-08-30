@@ -5,18 +5,21 @@
 
 return {
     "hrsh7th/nvim-cmp",
-    -- name   = "cmp",
+    -- name = "cmp",
     enable = true,
-    lazy   = true,
-    event  = "InsertEnter",
+    lazy = true,
+    event = "InsertEnter",
     dependencies = {
+        -- Dependencies without their own setup files and will be automatically
+        -- fetched and setup by lazy.nvim.
+        -- "L3MON4D3/LuaSnip",
+        -- "saadparwaiz1/cmp_luasnip",
         "hrsh7th/cmp-nvim-lsp", -- Required
-        "hrsh7th/cmp-nvim-lsp-signature-help",
         "hrsh7th/cmp-nvim-lua",
+        "hrsh7th/cmp-buffer",
         "hrsh7th/cmp-path",
-        "L3MON4D3/LuaSnip", -- A snippet engine is *required*.
     },
-    config = function ()
+    config = function()
         local cmp_ok, cmp = pcall(require, "cmp")
 
         if not cmp_ok then
@@ -25,85 +28,21 @@ return {
         end
 
         cmp.setup({
-            preselect = "none",
-            sources = cmp.config.sources({
-                { name = "path", options = {}, },
-                { name = "nvim_lsp_signature_help", },
-                { name = "luasnip", options = {}, },
-                { name = "nvim_lua", options = {}, },
-                -- The entry_filter function is used to filter out completion
-                -- that have the kind 'Text'.
-                { name = "nvim_lsp", options = {}, entry_filter = function(entry, ctx) return require("cmp").lsp.CompletionItemKind.Text ~= entry:get_kind() end },
-            }),
             completion = {
                 completeopt = "menu,menuone,noinsert,noselect" -- 'noselect' avoids inserting text until it is explicitly selected from the completion menu.
-            },
-            sorting = {
-                comparators = {
-                    cmp.config.compare.offset,
-                    cmp.config.compare.exact,
-                    cmp.config.compare.score,
-                    -- This has the effect of sorting completion items that
-                    -- start with an underscore lower than those without. The
-                    -- more leading underscores, the lower it will sort.
-                    -- https://github.com/pysan3/dotfiles/blob/9d3ca30baecefaa2a6453d8d6d448d62b5614ff2/nvim/lua/plugins/70-nvim-cmp.lua#L39-L49
-                    function(entry1, entry2)
-                        local _, entry1_under = entry1.completion_item.label:find "^_+"
-                        local _, entry2_under = entry2.completion_item.label:find "^_+"
-                        entry1_under = entry1_under or 0
-                        entry2_under = entry2_under or 0
-                        if entry1_under > entry2_under then
-                            return false
-                        elseif entry1_under < entry2_under then
-                            return true
-                        end
-                    end,
-                    cmp.config.compare.kind,
-                    cmp.config.compare.sort_text,
-                    cmp.config.compare.length,
-                    cmp.config.compare.order,
-                },
-            },
-            matching = {
-                disallow_fuzzy_matching = false,
-                disallow_full_fuzzy_matching = false,
-                disallow_partial_fuzzy_matching = false,
-                disallow_partial_matching = false,
-                disallow_prefix_unmatching = false,
-            },
-            snippet = {
-                expand = function(args)
-                    require("luasnip").lsp_expand(args.body)
-                end
-            },
-            performance = {
-                debounce = 1,
-                throttle = 1,
-                fetching_timeout = 1,
-            },
-            window = {
-                completion = {
-                    scrollbar = false,
-                },
-                documentation = {
-                    scrollbar = false,
-                    side_padding = 2,
-                    -- max_height = 40,
-                    -- max_width = 80,
-                },
             },
             experimental = {
                 ghost_text = false,
                 native_menu = false,
             },
             formatting = {
-                fields = { "abbr", "menu", "kind" },
+                fields = {"abbr", "menu", "kind"},
                 format = function(entry, item)
                     -- Define menu shorthand for different completion sources.
                     local menu_icon = {
+                        -- luasnip  = "LSN",
                         nvim_lsp = "LSP",
                         nvim_lua = "LUA",
-                        luasnip  = "LSN",
                         buffer   = "BUF",
                         path     = "PTH",
                     }
@@ -141,17 +80,80 @@ return {
                     return item
                 end,
             },
+            mapping = cmp.mapping.preset.insert({
+                ["<CR>"] = cmp.mapping.confirm({select = false}),
+                ["<C-n>"] = cmp.mapping.select_next_item({behavior=cmp.SelectBehavior.Insert}),
+                ["<C-p>"] = cmp.mapping.select_prev_item({behavior=cmp.SelectBehavior.Insert}),
+            }),
+            matching = {
+                disallow_fuzzy_matching = false,
+                disallow_full_fuzzy_matching = false,
+                disallow_partial_fuzzy_matching = false,
+                disallow_partial_matching = false,
+                disallow_prefix_unmatching = false,
+            },
+            performance = {
+                debounce = 1,
+                throttle = 1,
+                fetching_timeout = 1,
+            },
+            preselect = "none",
+            -- snippet = {
+            --     expand = function(args)
+            --         require("luasnip").lsp_expand(args.body)
+            --     end
+            -- },
+            sorting = {
+                comparators = {
+                    cmp.config.compare.offset,
+                    cmp.config.compare.exact,
+                    cmp.config.compare.score,
+                    -- This has the effect of sorting completion items that
+                    -- start with an underscore lower than those without. The
+                    -- more leading underscores, the lower it will sort.
+                    -- https://github.com/pysan3/dotfiles/blob/9d3ca30baecefaa2a6453d8d6d448d62b5614ff2/nvim/lua/plugins/70-nvim-cmp.lua#L39-L49
+                    function(entry1, entry2)
+                        local _, entry1_under = entry1.completion_item.label:find "^_+"
+                        local _, entry2_under = entry2.completion_item.label:find "^_+"
+                        entry1_under = entry1_under or 0
+                        entry2_under = entry2_under or 0
+                        if entry1_under > entry2_under then
+                            return false
+                        elseif entry1_under < entry2_under then
+                            return true
+                        end
+                    end,
+                    cmp.config.compare.kind,
+                    cmp.config.compare.sort_text,
+                    cmp.config.compare.length,
+                    cmp.config.compare.order,
+                },
+            },
+            -- The order of the parameters in sources implicitly controls the
+            -- ranking of each source in the completion menu.
+            sources = cmp.config.sources({
+                {name="nvim_lua", options={},},
+                {name="nvim_lsp", options={}, entry_filter = function(entry, ctx) return require("cmp").lsp.CompletionItemKind.Text ~= entry:get_kind() end}, -- `entry_filter` filters out completions of kind 'Text'.
+                {name="path", options={},},
+                {name="buffer", options={},},
+            }),
             view = {
                 entries = {
                     name = "custom",
                     -- selection_order = "near_cursor"
                 },
             },
-            mapping = cmp.mapping.preset.insert({
-                ["<CR>"]  = cmp.mapping.confirm({select = false}),
-                ["<C-n>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
-                ["<C-p>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
-            }),
+            window = {
+                completion = {
+                    scrollbar = false,
+                },
+                documentation = {
+                    scrollbar = false,
+                    side_padding = 2,
+                    -- max_height = 40,
+                    -- max_width = 80,
+                },
+            },
         })
     end
 }
