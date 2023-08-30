@@ -4,7 +4,7 @@ return {
     "L3MON4D3/LuaSnip",
     -- name = "LuaSnip",
     version = "2.*",
-    enabled = true,
+    enabled = false,
     lazy = true,
     -- event = "VimEnter",
     config = function()
