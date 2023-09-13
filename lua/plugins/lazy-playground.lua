@@ -9,11 +9,14 @@ return {
         "TSPlaygroundToggle",
         "TSPlayground",
     },
+    dependencies = {
+        "nvim-treesitter/nvim-treesitter",
+    },
     opts = {
         playground = {
             enable = true,
             disable = {},
-            updatetime = 25,
+            updatetime = 5,
             persist_queries = true,
             keybindings = {
                 toggle_query_editor = "o",
