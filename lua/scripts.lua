@@ -68,6 +68,8 @@ _G.WrappinTest = function()
     end
 end
 
+-- Wrappin
+-- -----------------------------------------------------------------------------
 
 -- Function to wrap lines and add comments
 _G.Wrappin = function()
@@ -126,7 +128,129 @@ _G.Wrappin = function()
     vim.api.nvim_buf_set_lines(0, start_line, end_line+1, false, new_lines)
 end
 
--- return M
+-- Slect 0.1.0
+-- Draw virtual text over selected text or at the cursor position.
+-- -----------------------------------------------------------------------------
+
+-- local ns_id = vim.api.nvim_create_namespace("SlectNamespace")
+--
+-- _G.Slect = function()
+--   print("Slect called")
+--   
+--   local bufnr = vim.api.nvim_get_current_buf()
+--   local cursor_pos = vim.api.nvim_win_get_cursor(0)
+--   local line, col = cursor_pos[1] - 1, cursor_pos[2]
+--   local virtual_text = ""
+--   local extmark_id
+--   
+--   local function update_virtual_text(text)
+--     print("Updating virtual text")
+--     vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+--     extmark_id = vim.api.nvim_buf_set_extmark(bufnr, ns_id, line, col, {
+--       virt_text = {{text, "Comment"}},
+--       virt_text_win_col = col,
+--       hl_mode = "combine",
+--     })
+--     vim.api.nvim_win_set_cursor(0, cursor_pos)
+--     vim.api.nvim_command("redraw")
+--   end
+--   
+--   while true do
+--     local key = vim.fn.getchar()
+--     local c = vim.fn.nr2char(key)
+--     print("Key pressed: " .. c)
+--
+--     if c == "\r" then
+--       vim.api.nvim_buf_del_extmark(bufnr, ns_id, extmark_id)
+--       break
+--     elseif c == "\27" then  -- Esc key
+--       update_virtual_text("")
+--       vim.api.nvim_buf_del_extmark(bufnr, ns_id, extmark_id)
+--       break
+--     else
+--       virtual_text = virtual_text .. c
+--       update_virtual_text(virtual_text)
+--     end
+--   end
+-- end
+
+-- Slect 0.2.0
+-- Move a virtual cursor around the screen and add text to the buffer.
+-- -----------------------------------------------------------------------------
+
+local api = vim.api
+local ns_id = api.nvim_create_namespace('Slect')
+
+local function validate_cursor(buf, cursor)
+    local line_count = api.nvim_buf_line_count(buf)
+    local max_col = api.nvim_buf_get_lines(buf, cursor[1], cursor[1]+1, false)[1]:len()
+    cursor[1] = math.max(0, math.min(line_count - 1, cursor[1]))
+    cursor[2] = math.max(0, math.min(max_col, cursor[2]))
+    return cursor
+end
+
+local function update_virtual_text(buf, virtual_cursor, vcursor_id)
+    -- Update the extmark to the new position
+    print("Updating text:", virtual_cursor, vcursor_id) 
+    api.nvim_buf_set_extmark(buf, ns_id, virtual_cursor[1], virtual_cursor[2], {
+        virt_text = {{"|", "Comment"}},
+        -- Make it right-aligned so it behaves more like a cursor
+        virt_text_pos = "overlay",
+        id = vcursor_id
+    })
+end
+
+_G.Slect = function()
+
+    local buf = api.nvim_get_current_buf()
+    print("Buffer:", buf)
+    local win = api.nvim_get_current_win()
+
+    local cursor = api.nvim_win_get_cursor(win)
+    local virtual_cursor = {cursor[1] - 1, cursor[2]} -- 0-based indexing
+
+    -- Set the initial virtual cursor and save its ID
+    local vcursor_id = api.nvim_buf_set_extmark(buf, ns_id, virtual_cursor[1], virtual_cursor[2], {
+        virt_text = {{"x", "Search"}},
+        -- Make it right-aligned so it behaves more like a cursor
+        virt_text_pos = "overlay",
+    })
+
+    local function on_input(key)
+        virtual_cursor = validate_cursor(buf, virtual_cursor)
+        if key == 'j' then
+            virtual_cursor[1] = virtual_cursor[1] + 1
+        elseif key == 'k' then
+            virtual_cursor[1] = virtual_cursor[1] - 1
+        elseif key == 'h' then
+            virtual_cursor[2] = virtual_cursor[2] - 1
+        elseif key == 'l' then
+            virtual_cursor[2] = virtual_cursor[2] + 1
+        else
+            return true
+        end
+        -- Update the virtual cursor's position
+        update_virtual_text(buf, virtual_cursor, vcursor_id)
+        vim.cmd("redraw")
+        return false
+    end
+    local success = vim.fn.input({prompt = '', func = 'v:lua.Slect_on_input', cancelreturn = ''})
+    api.nvim_buf_del_extmark(buf, ns_id, vcursor_id)
+    api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
+end
+
+function _G.Slect_on_input(key)
+  return on_input(key)
+end
+
+
+
+
+
+
+
+
+
 
 -- DO NOT EDIT: 
 
