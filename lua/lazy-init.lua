@@ -1,11 +1,13 @@
 -- lazy-init.lua
+-- -----------------------------------------------------------------------------
 
 -- Notes:
--- Lazy has some issues with the 'name' parameter when defining plugins, often
--- resulting in duplicate entries in the Lazy dashboard when another plugin
--- lists a plugin with a custom name as a dependency. Presumably this is
--- because you can only use the full git path as the dependency name, which
--- is what ends up listed on the dashboard.
+-- Lazy has some issues with the 'name' parameter. Custom names often result in
+-- duplicate entries in the Lazy dashboard when that plugin is listed by another
+-- plugin as a dependency. This is presumably because you can only use the full
+-- git path as the dependency name, which ends up listed on the dashboard.
+
+-- Lazy Installation
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
@@ -22,8 +24,12 @@ end
 
 vim.opt.rtp:prepend(lazypath)
 
+-- Note: Set up the leader key before Lazy tries to set itself up. I do that
+-- in 'keybindings.lua'.
 -- vim.g.mapleader = ' '
 -- vim.g.maplocalleader = ' '
+
+-- Lazy Setup
 
 require("lazy").setup("plugins", {
     -- The directory where Lazy installs plugins.
@@ -85,8 +91,8 @@ require("lazy").setup("plugins", {
             import = "IMPORT",
             keys = "KEYS",
             lazy = "",
-            loaded = "1",
-            not_loaded = "0",
+            loaded = "✔",
+            not_loaded = "✖",
             plugin = "PLUGIN",
             runtime = "RUNTIME",
             source = "SOURCE",
@@ -97,7 +103,8 @@ require("lazy").setup("plugins", {
                 "-",
                 "-",
                 "-",
-            }
+                "-",
+            },
         },
     },
 })
