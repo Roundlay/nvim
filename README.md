@@ -15,6 +15,6 @@
 **Things to remember about Lazy**
 
 - **Dependencies** are plugins that must be initialized before the plugin that relies on them. This might appear straightforward, but managing the load order of Lazy-loaded plugins can become complex.
-> "First of all, lua dependencies don't need to be explicitly set. So if a package uses lua modules from another plugin, you don't need to add those dependencies. That's being done automatically." [↗](https://github.com/folke/lazy.nvim/discussions/611#discussioncomment-5175400)
 - Simply listing a plugin as a _dependency_ will trigger its installation and setup, regardless of whether you've explicitly defined it in your own configuration files.
+> "First of all, lua dependencies don't need to be explicitly set. So if a package uses lua modules from another plugin, you don't need to add those dependencies. That's being done automatically." [↗](https://github.com/folke/lazy.nvim/discussions/611#discussioncomment-5175400)
 - Using the `name` attribute to rename plugins can result in duplicate entries in the Lazy dashboard. This seems to occur when the renamed plugin is also a _dependency_.
