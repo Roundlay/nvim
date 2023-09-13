@@ -91,7 +91,7 @@ vim.o.breakindent = true -- Visually indent wrapped lines.
 
 vim.g.redrawtime = 1 -- Time in ms to redraw the screen. (Default: 2000)
 vim.o.updatetime = 4000 -- Write swap-file to disk every `updatetime` ms.
-vim.o.timeoutlen = 300 -- Time in ms to wait for mapped sequences to complete.
+vim.o.timeoutlen = 500 -- Time in ms to wait for mapped sequences to complete.
 vim.o.ttimeoutlen = 0 -- Time in ms to wait for for key-code sequences to complete.
 
 -- Folds
