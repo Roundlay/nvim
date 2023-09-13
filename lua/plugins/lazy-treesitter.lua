@@ -11,9 +11,6 @@ return {
     cmd = {
         "TSEnable",
     },
-    dependencies = {
-        "nvim-treesitter/playground",
-    },
     opts = {
         ensure_installed = {
             "c",
@@ -56,7 +53,12 @@ return {
             },
         },
     },
-    config = function (_, opts)
+    config = function(_, opts)
+        local nvim_treesitter_ok, nvim_treesitter = pcall(require, "nvim-treesitter")
+        if not nvim_treesitter_ok then
+            print("Error loading 'nvim_treesitter'.")
+            return
+        end
         require("nvim-treesitter.configs").setup(opts)
     end
 }
