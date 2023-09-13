@@ -1,4 +1,4 @@
--- Keybindings
+-- {Keybindings}
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -108,10 +108,10 @@ visual('<leader>P', '"+P')
 -- NOTE [ ] These don't seem to work with remapped arrow keys on HHKBs.
 -- TODO [ ] These trigger the auto-save plugin every time they're used.
 
--- normal('<C-Up>', 'ddkP')
--- normal('<C-Down>', 'ddp')
--- visual('<C-Down>', 'xp`[V`]')
--- visual('<C-Up>', 'xkP`[V`]')
+normal('<C-Up>', 'ddkP')
+normal('<C-Down>', 'ddp')
+visual('<C-Down>', 'xp`[V`]')
+visual('<C-Up>', 'xkP`[V`]')
 
 --------------------------------------------------------------------------------
 -- Lazy
@@ -136,3 +136,5 @@ normal('<leader>l', ':Lazy<CR>')
 visual('<F2>', ':lua _G.Wrappin()<CR>')
 visual('<F3>', ':lua _G.WrappinTest()<CR>')
 normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
+normal('<F6>', ':lua _G.Slect()<CR>')
+visual('<F6>', ':lua _G.Slect()<CR>')
