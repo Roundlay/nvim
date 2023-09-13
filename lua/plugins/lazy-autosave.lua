@@ -6,7 +6,10 @@ return {
     enabled = true,
     lazy = true,
     condition = function() if (vim.g.vscode) then return false end end,
-    event = "InsertEnter",
+    event = {
+        "InsertEnter",
+        "CmdlineEnter",
+    },
     opts = {
         enabled = true,
         write_all_buffers = false,
