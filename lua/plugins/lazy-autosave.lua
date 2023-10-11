@@ -3,7 +3,7 @@
 return {
     'Pocco81/auto-save.nvim',
     -- name = "auto-save",
-    enabled = true,
+    enabled = false,
     lazy = true,
     condition = function() if (vim.g.vscode) then return false end end,
     event = {
