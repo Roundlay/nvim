@@ -1,5 +1,9 @@
 -- scripts.lua
 
+if vim.g.vscode then
+    return
+end
+
 -- local M = {}
 
 -- Function to reload scripts
