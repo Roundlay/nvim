@@ -110,6 +110,20 @@ return {
             },
         })
 
+        --html-lsp
+        lspconfig.html.setup({
+            filetypes = {"html"},
+            on_attach = on_attach,
+            capabilities = capabilities,
+        })
+
+        --css-lsp
+        lspconfig.cssls.setup({
+            filetypes = {"css"},
+            on_attach = on_attach,
+            capabilities = capabilities,
+        })
+
         -- tsserver
         -- lspconfig.tsserver.setup({
         --     filetypes = {"javascript", "typescript"},
