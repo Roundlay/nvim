@@ -75,11 +75,13 @@ visual('J', '}')
 visual('K', '{')
 
 -- Jump to the beginning and end of the active line in Normal/Visual mode.
+-- NOTE: Disabled for now, because I just never ended up using these, and I'd
+-- prefer to have access to <H>igh and <L>ow.
 
-normal('L', '$')
-normal('H', '_')
-visual('L', '$')
-visual('H', '_')
+-- normal('L', '$')
+-- normal('H', '_')
+-- visual('L', '$')
+-- visual('H', '_')
 
 -- Yank & Put
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
