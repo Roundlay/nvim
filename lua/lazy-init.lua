@@ -7,6 +7,10 @@
 -- plugin as a dependency. This is presumably because you can only use the full
 -- git path as the dependency name, which ends up listed on the dashboard.
 
+if vim.g.vscode then
+    return
+end
+
 -- Lazy Installation
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
