@@ -1,5 +1,9 @@
 -- highlights.lua
 
+if vim.g.vscode then
+    return
+end
+
 -- local fuji_white = "#DCD7BA"
 local sumi_ink_2 = "#2A2A37"
 local winter_blue = "#252535"
