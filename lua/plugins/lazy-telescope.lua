@@ -6,6 +6,7 @@ return {
     version = false,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
+    event = "BufReadPost",
     cmd = 'Telescope',
     keys = {
         { ";f", "<cmd>Telescope find_files<CR>", desc = "Find file..." },
@@ -23,10 +24,11 @@ return {
             results_title = false,
             dynamic_preview_title = false,
             prompt_title = false,
-            previewer = false,
+            previewer = true,
             borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
             layout_config = {
-                height = 0.5,
+                height = 0.50,
+                -- preview_cutoff = 120,
                 prompt_position = "bottom",
             },
         },
