@@ -4,7 +4,7 @@
 -- Helpers: `:h quickref.txt`
 -- Defaults: https://neovim.io/doc/user/vim_diff.html
 
-if (vim.g.vscode) then
+if vim.g.vscode then
     return
 end
 
