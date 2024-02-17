@@ -6,20 +6,22 @@ end
 
 -- local fuji_white = "#DCD7BA"
 local sumi_ink_2 = "#2A2A37"
-local winter_blue = "#252535"
+-- local winter_blue = "#252535"
 local sumiInk3 = "#363646"
-local sumiInk4 = "#54546D"
+-- local sumiInk4 = "#54546D"
+-- local boatYellow = "#938056"
+-- local autumnYellow = "#DCA561"
+-- local autumnRed = "#C34043"
+-- local roninYellow = "#FF9E3B"
+-- local samuraiRed = "#E82424"
 
 -- NOTE: It's so stupid that I have to do this.
 NONE = NONE
 
 vim.api.nvim_set_hl(0, "LineNr", {fg = sumi_ink_2, bg = NONE, gui = NONE})
-
-vim.cmd [[ highlight WinSeparator guifg=bg guibg=bg cterm=NONE ]]
-
 vim.api.nvim_set_hl(0, "IndentBlanklineChar", {fg = "#252535"}) -- Kanagawa
-
 vim.api.nvim_set_hl(0, "@curlybraces", {fg = sumiInk3})
+vim.cmd [[ highlight WinSeparator guifg=bg guibg=bg cterm=NONE ]]
 
 -- vim.api.nvim_set_hl(0, "@procOpeningBrace",        {fg = sumiInk3})
 -- vim.api.nvim_set_hl(0, "@procClosingBrace",        {fg = sumiInk3})
