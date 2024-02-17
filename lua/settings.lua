@@ -4,9 +4,17 @@
 -- Helpers: `:h quickref.txt`
 -- Defaults: https://neovim.io/doc/user/vim_diff.html
 
+-- -------------------------------------------------------------------------- --
+
+-- VSCode
+-- -------------------------------------------------------------------------- --
+
 if vim.g.vscode then
     return
 end
+
+-- Neovim
+-- -------------------------------------------------------------------------- --
 
 -- Standard Plugins
 
@@ -45,7 +53,10 @@ vim.o.wrap = false -- Wrap lines.
 vim.wo.conceallevel = 0 -- Determines how text with the 'conceal' syntax attribute is shown. Was experimenting with hiding curly braces in .odin files.
 vim.o.syntax = 'on' -- Enable syntax highlighting.
 vim.o.list = false
--- vim.opt.listchars = { trail = '⋅'} -- Show trailing whitespace as a dot.
+vim.o.spelllang = 'en_gb' -- Set the spell-checking language.
+vim.o.spell = true
+-- vim.opt.listchars = { trail = '⋅'} -- Show trailing whitespace as a middle-dot.
+
 
 -- Colours
 
@@ -112,6 +123,16 @@ vim.api.nvim_create_autocmd('TextYankPost', {
         vim.highlight.on_yank { higroup = 'IncSearch', timeout = 600 }
     end,
 })
+
+-- Open files in tabs
+-- vim.api.nvim_create_autocmd("BufNewFile,BufRead", {
+--     pattern = "*",
+--     callback = function()
+--         if #vim.api.nvim_list_wins() >= 1 then
+--             vim.cmd("tabnew")
+--         end
+--     end,
+-- })
 
 -- Diagnostics
 
