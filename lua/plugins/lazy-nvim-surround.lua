@@ -4,8 +4,11 @@ return {
     "kylechui/nvim-surround",
     enabled = true,
     version = "*",
-    lazy = true,
+    lazy = "true",
     event = "VeryLazy",
+    keys = {
+        { "<leader>sp", "ysiw)", desc = "Surround the inner word with parentheses."},
+    },
     opts = {
     },
     config = function(_, opts)
