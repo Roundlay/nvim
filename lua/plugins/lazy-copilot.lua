@@ -28,6 +28,10 @@ return {
     cmd = "Copilot",
     event = "InsertEnter",
     opts = {
+        filetypes = {
+            txt = false,
+            markdown = false,
+        },
         copilot_node_command = 'node',
         server_opts_verrides = {},
         suggestion = {
