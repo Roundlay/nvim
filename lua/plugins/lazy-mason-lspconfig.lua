@@ -5,7 +5,7 @@
 -- Incomming dependencies: neovim/nvim-lspconfig
 -- Outgoing dependencies: mason.nvim
 -- It's important that this be called after `mason.nvim` and before `lspconfig`.
--- Lazy's dependencies are a little counterjntuitive. The `dependencies` field
+-- Lazy's dependencies are a little counterintuitive. The `dependencies` field
 -- defines what plugins must be loaded before the plugin listing the dependency.
 -- Load order: mason.nvim -> mason-lspconfig.nvim -> lspconfig
 -- Dependency flow: lspconfig -> mason.nvim <- mason-lspconfig.nvim
