@@ -61,7 +61,8 @@ return {
     config = function(_, opts)
         local copilot_ok, copilot = pcall(require, "copilot")
         if not copilot_ok then
-          return
+            vim.notify(vim.inspect(copilot), vim.log.levels.ERROR)
+            return
         end
         copilot.setup(opts)
 
