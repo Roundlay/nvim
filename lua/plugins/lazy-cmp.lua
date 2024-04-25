@@ -1,23 +1,19 @@
--- nvim-cmp
-
--- Resources:
--- https://www.reddit.com/r/neovim/comments/14k7pbc/what_is_the_nvimcmp_comparatorsorting_you_are/
-
 return {
     "hrsh7th/nvim-cmp",
     -- name = "cmp",
     enable = true,
     lazy = true,
-    event = "InsertEnter",
+    event = "InsertCharPre",
     dependencies = {
         -- Dependencies without their own setup files and will be automatically
-        -- fetched and setup by lazy.nvim.
-        -- "L3MON4D3/LuaSnip",
-        -- "saadparwaiz1/cmp_luasnip",
+        -- fetched and setup by lazy.nvim, so you don't have to create a setup
+        -- file for these.
+        -- cmp-nvim-lsp is required for nvim-lspconfig. We call this
+        -- within nvim-lspconfig though, so can we just make nvim-lspconfig a
+        -- dependency instead? (Seems not...)
         "hrsh7th/cmp-nvim-lsp", -- Required
         "hrsh7th/cmp-nvim-lua",
         "hrsh7th/cmp-buffer",
-        "hrsh7th/cmp-path",
     },
     config = function()
         local cmp_ok, cmp = pcall(require, "cmp")
@@ -29,23 +25,26 @@ return {
 
         cmp.setup({
             completion = {
-                completeopt = "menu,menuone,noinsert,noselect" -- 'noselect' avoids inserting text until it is explicitly selected from the completion menu.
+                -- Avoids inserting text until it is explicitly selected from
+                -- the completion menu.
+                completeopt = "menu,menuone,noinsert,noselect"
             },
             experimental = {
                 ghost_text = false,
                 native_menu = false,
             },
             formatting = {
-                fields = {"abbr", "menu", "kind"},
+                fields = {"abbr", "kind", "menu",},
                 format = function(entry, item)
                     -- Define menu shorthand for different completion sources.
+
                     local menu_icon = {
                         -- luasnip  = "LSN",
                         nvim_lsp = "LSP",
                         nvim_lua = "LUA",
-                        buffer   = "BUF",
-                        path     = "PTH",
+                        buffer = "BUF",
                     }
+
                     -- Set the menu "icon" to the shorthand for each completion source.
                     item.menu = menu_icon[entry.source.name]
 
@@ -98,11 +97,11 @@ return {
                 fetching_timeout = 1,
             },
             preselect = "none",
-            -- snippet = {
-            --     expand = function(args)
-            --         require("luasnip").lsp_expand(args.body)
-            --     end
-            -- },
+            snippet = {
+                expand = function(args)
+                    require("luasnip").lsp_expand(args.body)
+                end
+            },
             sorting = {
                 comparators = {
                     cmp.config.compare.offset,
@@ -131,12 +130,14 @@ return {
             },
             -- The order of the parameters in sources implicitly controls the
             -- ranking of each source in the completion menu.
-            sources = cmp.config.sources({
+            -- sources = cmp.config.sources({
+            sources = {
+                {name="nvim_lsp", options={},},
+                -- {name="nvim_lsp", options={}, entry_filter = function(entry, ctx) return require("cmp").lsp.CompletionItemKind.Text ~= entry:get_kind() end}, -- `entry_filter` filters out completions of kind 'Text'.
                 {name="nvim_lua", options={},},
-                {name="nvim_lsp", options={}, entry_filter = function(entry, ctx) return require("cmp").lsp.CompletionItemKind.Text ~= entry:get_kind() end}, -- `entry_filter` filters out completions of kind 'Text'.
-                {name="path", options={},},
                 {name="buffer", options={},},
-            }),
+            },
+            -- }),
             view = {
                 entries = {
                     name = "custom",
