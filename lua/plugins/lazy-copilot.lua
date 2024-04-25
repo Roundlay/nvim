@@ -30,7 +30,14 @@ return {
     opts = {
         filetypes = {
             txt = false,
-            markdown = false,
+            md = false,
+            c = true,
+            cpp = true,
+            lua = true,
+            css = true,
+            html = true,
+            odin = true,
+            js = true,
         },
         copilot_node_command = 'node',
         server_opts_verrides = {},
