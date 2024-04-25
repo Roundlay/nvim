@@ -21,7 +21,7 @@ if not vim.loop.fs_stat(lazypath) then
         "clone",
         "--filter=blob:none",
         "https://github.com/folke/lazy.nvim.git",
-        "--branch=stable", -- latest stable release
+        "--branch=stable",
         lazypath,
     })
 end
@@ -48,9 +48,6 @@ require("lazy").setup("plugins", {
     defaults = {
         lazy = false
     },
-    -- install = {
-    --     colorscheme = {"kanagawa"}
-    -- },
     change_detection = {
         enabled = true,
         notify = false,
@@ -95,8 +92,8 @@ require("lazy").setup("plugins", {
             import = "IMPORT",
             keys = "KEYS",
             lazy = "",
-            loaded = "✔",
-            not_loaded = "✖",
+            loaded = "●",
+            not_loaded = "○",
             plugin = "PLUGIN",
             runtime = "RUNTIME",
             source = "SOURCE",
