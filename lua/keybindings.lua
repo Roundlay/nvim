@@ -1,9 +1,8 @@
 -- {Keybindings}
---------------------------------------------------------------------------------
 
---------------------------------------------------------------------------------
+----------------------------------------
 -- Helper Functions
---------------------------------------------------------------------------------
+----------------------------------------
 
 local function normal(new, old)
     vim.api.nvim_set_keymap('n', new, old, {noremap=true, silent=true})
@@ -17,10 +16,9 @@ local function insert(new, old)
     vim.api.nvim_set_keymap('i', new, old, {noremap=true, silent=true})
 end
 
-
---------------------------------------------------------------------------------
--- VS Code
---------------------------------------------------------------------------------
+local function terminal(new, old)
+    vim.api.nvim_set_keymap('t', new, old, {noremap=true, silent=true})
+end
 
 if (vim.g.vscode) then
     normal('J', '}') -- Jump n paragraphs backwards.
@@ -35,12 +33,22 @@ if (vim.g.vscode) then
     return
 end
 
---------------------------------------------------------------------------------
+if vim.g.neovide then
+    -- https://github.com/neovide/neovide/issues/1301#issuecomment-1705046950 
+    vim.api.nvim_set_keymap("n", "<C-=>", ":lua vim.g.neovide_scale_factor = math.min(vim.g.neovide_scale_factor + 0.1,  1.0)<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<C-->", ":lua vim.g.neovide_scale_factor = math.max(vim.g.neovide_scale_factor - 0.1,  0.1)<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<C-+>", ":lua vim.g.neovide_transparency = math.min(vim.g.neovide_transparency + 0.05, 1.0)<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<C-_>", ":lua vim.g.neovide_transparency = math.max(vim.g.neovide_transparency - 0.05, 0.0)<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<C-0>", ":lua vim.g.neovide_scale_factor = 0.5<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<C-)>", ":lua vim.g.neovide_transparency = 0.9<CR>", { silent = true })
+end
+
+----------------------------------------
 -- Neovim
---------------------------------------------------------------------------------
+----------------------------------------
 
 -- Leader
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+----------------------------------------
 
 -- Required by lazy.nvim and therefore this file needs to be called before lazy
 -- is loaded in init.lua.
@@ -49,7 +57,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Misc.
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+----------------------------------------
 
 normal('<n>', '<C-v>') -- ? WIN: Fixes paste overlap within Visual Command Mode.
 
@@ -58,14 +66,14 @@ normal('<n>', '<C-v>') -- ? WIN: Fixes paste overlap within Visual Command Mode.
 normal('<leader>b', ':w<CR>:bd<CR>')
 
 -- Alternate Escape
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+----------------------------------------
 
 normal('<C-j>', '<esc>')
 visual('<C-j>', '<esc>')
 insert('<C-j>', '<esc>')
 
 -- Jump Navigation
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+----------------------------------------
 
 -- Jump up and down by paragraph in Normal/Visual mode.
 
@@ -84,7 +92,7 @@ visual('K', '{')
 -- visual('H', '_')
 
 -- Yank & Put
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+----------------------------------------
 
 -- Put then re-yank original selection.
 
@@ -105,7 +113,7 @@ visual('<leader>p', '"+p')
 visual('<leader>P', '"+P')
 
 -- Bubble Selection
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+----------------------------------------
 
 -- NOTE [ ] These don't seem to work with remapped arrow keys on HHKBs.
 -- TODO [ ] These trigger the auto-save plugin every time they're used.
@@ -115,17 +123,63 @@ normal('<C-Down>', 'ddp')
 visual('<C-Down>', 'xp`[V`]')
 visual('<C-Up>', 'xkP`[V`]')
 
---------------------------------------------------------------------------------
+-- Terminal
+----------------------------------------
+
+-- TODO [ ] Can we detect when we're in a terminal buffer?
+    -- I.e. can we preface window movements with ESC so that we can move around freely.
+
+terminal('<Esc>', '<C-\\><C-n>')
+terminal('<C-w>h', '<C-\\><C-n><C-w>h')
+terminal('<C-w>l', '<C-\\><C-n><C-w>l')
+terminal('<C-w>k', '<C-\\><C-n><C-w>k')
+terminal('<C-w>j', '<C-\\><C-n><C-w>j')
+normal('<leader>t', ':vs | terminal<CR>')
+
+----------------------------------------
 -- Lazy
---------------------------------------------------------------------------------
+----------------------------------------
 
 -- Toggle Lazy
 
 normal('<leader>l', ':Lazy<CR>')
 
---------------------------------------------------------------------------------
+----------------------------------------
+-- Comment.nvim
+----------------------------------------
+
+normal("gcc", "gcc")
+normal("gc", "gc")
+
+----------------------------------------
+-- yanky.nvim
+----------------------------------------
+
+-- normal("y", "<Plug>(YankyYank)")
+-- normal("p", "<Plug>(YankyPutAfter)")
+-- normal("P", "<Plug>(YankyPutBefore)")
+-- normal("gp", "<Plug>(YankyGPutAfter)")
+-- normal("gP", "<Plug>(YankyGPutBefore)")
+-- normal("<C-p>", "<Plug>(YankyPreviousEntry)")
+-- normal("<C-n>", "<Plug>(YankyNextEntry)")
+
+----------------------------------------
+-- Oil
+----------------------------------------
+
+normal('<leader>o', ':Oil<CR>')
+
+normal('<leader>e', '</<C-X><C-O>')
+
+----------------------------------------
+-- Date and Time Helpers
+----------------------------------------
+
+normal("<leader>dt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d ')}, 'c', true, true)<CR>")
+
+----------------------------------------
 -- Wrappin
---------------------------------------------------------------------------------
+----------------------------------------
 
 -- TODO [ ] Turn this into a plugin.
 
