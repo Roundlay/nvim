@@ -26,7 +26,7 @@ return {
     enabled = true,
     lazy = true,
     cmd = "Copilot",
-    event = "InsertEnter",
+    event = "InsertCharPre",
     opts = {
         filetypes = {
             txt = false,
