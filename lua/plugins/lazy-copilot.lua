@@ -40,7 +40,7 @@ return {
             js = true,
         },
         copilot_node_command = 'node',
-        server_opts_verrides = {},
+        server_opts_overrides = {},
         suggestion = {
             enabled = true,
             auto_trigger = true,
