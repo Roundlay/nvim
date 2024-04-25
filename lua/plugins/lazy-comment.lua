@@ -2,15 +2,12 @@
 
 return {
     'numToStr/Comment.nvim',
-    -- name = "comment",
+    enabled = true,
     lazy = true,
-    event = {
-        "BufReadPost",
-        "InsertEnter",
-    },
+    -- event = {},
     keys = {
-        { "gcc", "gcc", desc = "Toggle linewise comment" },
-        { "gc", "gc", desc = "Toggle blockwise comment" },
+        { "gcc", mode = {"n"}, desc = "Toggle linewise comment" },
+        { "gc", mode = {"v"} , desc = "Toggle blockwise comment" },
     },
     opts = {
         padding = true,
@@ -19,7 +16,15 @@ return {
             basic = true
         },
     },
+    -- config = function(_, opts)
+    --     require("Comment").setup(opts)
+    -- end,
     config = function(_, opts)
-        require("Comment").setup(opts)
+		local comment_ok, comment = pcall(require, "Comment")
+		if not comment_ok then
+            vim.notify(vim.inspect(comment), vim.log.levels.ERROR)
+			return
+		end
+        comment.setup(opts)
     end,
 }
