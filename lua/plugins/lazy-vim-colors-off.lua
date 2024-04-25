@@ -5,10 +5,10 @@
 
 return {
     "pbrisbin/vim-colors-off",
-    -- name = "vim-colors-off",
     enabled = false,
     lazy = false,
     priority = 1000,
+
     config = function()
         vim.cmd.colorscheme("off")
     end
