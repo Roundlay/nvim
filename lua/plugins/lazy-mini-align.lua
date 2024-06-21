@@ -5,7 +5,10 @@ return {
     -- name = "mini-align",
     enabled = true,
     lazy = true, -- We may want to align text immediately upon launching Neovim.
-    event = {"BufReadPost", "InsertEnter"},
+    -- event = {"BufReadPost", "InsertCharPre"},
+    keys = {
+        {"ga", mode = { "v" }, desc = "Align."},
+    },
     opts = {
         mappings = {
             start_with_preview = "ga",

@@ -6,7 +6,7 @@
 return {
     "DanielGavin/odin.vim",
     -- name = "odin.vim",
-    enabled = true,
+    enabled = false,
     lazy = true,
     ft = "odin",
 }

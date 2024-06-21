@@ -13,6 +13,26 @@ if vim.g.vscode then
     return
 end
 
+-- Neovide
+-- -------------------------------------------------------------------------- --
+-- https://neovide.dev/configuration.html
+
+if vim.g.neovide then
+    vim.o.guifont = "Pragmasevka:h14"
+    vim.o.linespace = 1
+    vim.g.neovide_underline_stroke_scale = 1.0
+    vim.g.neovide_cursor_antialiasing = true
+    vim.g.neovide_padding_top = 22
+    vim.g.neovide_padding_bottom = 22
+    vim.g.neovide_padding_right = 22
+    vim.g.neovide_padding_left = 22
+    vim.g.neovide_show_border = false
+    vim.g.neovide_remember_previous_window_size = true
+    vim.g.neovide_refresh_rate = 144
+    vim.g.neovide_refresh_rate_idle = 30
+    vim.g.neovide_scale_factor = 1.00
+end
+
 -- Neovim
 -- -------------------------------------------------------------------------- --
 
@@ -53,8 +73,8 @@ vim.o.wrap = false -- Wrap lines.
 vim.wo.conceallevel = 0 -- Determines how text with the 'conceal' syntax attribute is shown. Was experimenting with hiding curly braces in .odin files.
 vim.o.syntax = 'on' -- Enable syntax highlighting.
 vim.o.list = false
-vim.o.spelllang = 'en_gb' -- Set the spell-checking language.
-vim.o.spell = true
+-- vim.o.spelllang = 'en_gb' -- Set the spell-checking language.
+-- vim.o.spell = true
 -- vim.opt.listchars = { trail = '⋅'} -- Show trailing whitespace as a middle-dot.
 
 
@@ -72,14 +92,16 @@ vim.o.showmode = false -- Don't show the command line mode (e.g. '-- INSERT --')
 -- Line/Column
 
 vim.o.cursorline = false -- Highlight the current line. Known to cause performance issues.
-vim.o.number = false -- Hide line numbers.
-vim.o.relativenumber = false
+-- vim.o.rnu = true
+-- vim.o.numberwidth = 3
+-- vim.opt.statuscolumn = "%=%{v:virtnum < 1 ? (v:relnum ? v:relnum : v:lnum < 10 ? v:lnum . '  ' : v:lnum) : ''}%=%s"
+-- vim.o.relativenumber = true
 vim.o.fillchars = 'eob: ' -- This needs to be called after 'laststatus'. Remove empty buffer symbols.
 vim.o.signcolumn = 'no' -- Force the signcolumn to remain hidden.
 
 -- Search
 
-vim.o.synmaxcol = 5000 -- Max columns to search for syntax items; 0 = infinity.
+vim.o.synmaxcol = 256 -- Max columns to search for syntax items; 0 = infinity.
 vim.o.incsearch = true -- Show search results as you type.
 vim.o.hlsearch = true -- Highlight search results.
 vim.o.showmatch  = true -- Highlight matching braces, etc.
@@ -100,10 +122,10 @@ vim.o.breakindent = true -- Visually indent wrapped lines.
 
 -- Timing
 
-vim.g.redrawtime = 1 -- Time in ms to redraw the screen. (Default: 2000)
+vim.g.redrawtime = 100 -- Time in ms to redraw the screen. (Default: 2000)
 vim.o.updatetime = 4000 -- Write swap-file to disk every `updatetime` ms.
 vim.o.timeoutlen = 500 -- Time in ms to wait for mapped sequences to complete.
-vim.o.ttimeoutlen = 0 -- Time in ms to wait for for key-code sequences to complete.
+vim.o.ttimeoutlen = 0 -- Time in ms to wait for key-code sequences to complete.
 
 -- Folds
 
@@ -111,6 +133,10 @@ vim.o.foldmethod = 'syntax' -- Line folds are specified by syntax highlighting.
 -- vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
 vim.o.foldlevel = 99 -- Zero closes all folds. Lower numbers close more folds, higher numbers open more folds. Keeping this at 99 to ensure folds don't appear.
 -- vim.w.foldcolumn = 1 -- How many columns to use when drawing a fold.
+
+-- Buffers
+
+vim.o.splitright = true -- Split new windows to the right.
 
 -- Autocmds
 
@@ -142,9 +168,11 @@ vim.diagnostic.config({ underline = false })
 
 -- vim.cmd [[ set ttyfast ]]
 vim.cmd [[ autocmd FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o ]] -- Disable auto comment formatting. (`c`: auto-wrap comments; `r`: auto-insert comment leader after hitting <Enter> in Insert mode; `o`: Auto-insert the comment leader after hitting 'o' or 'O' in Normal mode.
+vim.cmd [[ autocmd BufWinEnter,WinEnter term://* startinsert ]] -- Disable auto comment formatting. (`c`: auto-wrap comments; `r`: auto-insert comment leader after hitting <Enter> in Insert mode; `o`: Auto-insert the comment leader after hitting 'o' or 'O' in Normal mode.
+vim.cmd [[ autocmd BufLeave term://* stopinsert]] -- Disable auto comment formatting. (`c`: auto-wrap comments; `r`: auto-insert comment leader after hitting <Enter> in Insert mode; `o`: Auto-insert the comment leader after hitting 'o' or 'O' in Normal mode.
 -- vim.cmd [[ au BufNewFile,BufRead *.odin map=<C-P> :w<Return>:%!odinfmt %<Return> ]]
 -- vim.cmd [[ au BufNewFile,BufRead *.odin set syntax=odin ]] -- Set Odin syntax highlighting for .odin files.
--- vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files.
+-- vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files. (Handled by filetype plugin.)
 -- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]]
 -- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]]
 -- vim.cmd [[ let g:dracula_underline = 0 ]] -- Disable underlines in Dracula theme.

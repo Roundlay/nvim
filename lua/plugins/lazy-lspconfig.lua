@@ -9,17 +9,36 @@ return {
     enabled = true,
     lazy = true,
     event = {
-        "BufReadPost",
-        "InsertEnter",
-        "CmdlineEnter",
+        "BufReadPre",
+    },
+    cmd = {
+        "LspInfo", "LspInstall",
     },
     dependencies = {
-        "williamboman/mason-lspconfig.nvim",
-        "hrsh7th/nvim-cmp",
+        -- Depedencies to be loaded before nvim-lspconfig.
+        -- We need to make sure that `mason` is loaded in the following order:
+        -- `mason` -> `mason-lspconfig.nvim` -> `nvim-lspconfig`
+        -- We call `mason-lspconfig` here, which in turn calls `mason`.
+        -- In effect, before `nvim-lspconfig` is loaded, `mason` and
+        -- `mason-lspconfig` are loaded in that order.
+        "williamboman/mason.nvim",
+        { "williamboman/mason-lspconfig.nvim", module = "mason" },
+        -- "hrsh7th/nvim-cmp",
     },
-    config = function()
+    opts = {
+        diagnostics = {
+            enabled = true,
+            underline = true,
+            update_in_insert = true,
+            virtual_text = {
+                spacing = 4,
+                source = "always",
+                prefix = "·",
+            },
+        },
+    },
+    config = function(_, opts)
 		local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
-
 		if not lspconfig_ok then
             vim.notify(vim.inspect(lspconfig), vim.log.levels.ERROR)
 			return
@@ -27,17 +46,23 @@ return {
 
         -- We use `vim.tbl_deep_extend` to merge the defaults lspconfig
         -- provides with the capabilities `nvim-cmp` adds.
+        -- This will cause `cmp_nvim_lsp` to be loaded right away,
+        -- overriding any lazy-loading defined in `lazy-cmp-nvim-lsp.lua`.
+
+        local cmp_ok, cmp = pcall(require, "cmp_nvim_lsp")
+		if not cmp_ok then
+            vim.notify(vim.inspect(cmp), vim.log.levels.ERROR)
+			return
+		end
+
         local capabilities = vim.lsp.protocol.make_client_capabilities()
-        lspconfig.util.default_config.capabilities = vim.tbl_deep_extend(
-            "force",
-            lspconfig.util.default_config.capabilities,
-            -- This will cause `cmp_nvim_lsp` to be loaded right away,
-            -- overriding any lazy-loading defined in `lazy-cmp-nvim-lsp.lua`.
-            require("cmp_nvim_lsp").default_capabilities(capabilities)
-        )
+
+        lspconfig.util.default_config.capabilities = vim.tbl_deep_extend("force", lspconfig.util.default_config.capabilities, cmp.default_capabilities(capabilities))
 
         local bufnr = vim.api.nvim_get_current_buf()
-		local on_attach = function(_, bufnr)
+        local client = vim.lsp.get_active_clients()
+
+		on_attach = function(_, bufnr)
             vim.keymap.set("n", "gD", vim.lsp.buf.declaration)
             vim.keymap.set("n", "gd", vim.lsp.buf.definition)
         end
@@ -55,9 +80,9 @@ return {
             },
             settings = {
                 Lua = {
-                    diagnostics = {
+                    diagnostics = vim.tbl_extend('force', opts.diagnostics, {
                         globals = {"vim"},
-                    },
+                    }),
                     workspace = {
                         library = vim.api.nvim_get_runtime_file("", true),
                         checkThirdParty = false,
@@ -88,7 +113,7 @@ return {
             capabilities = capabilities,
             init_options = {
                 diagnostics = {
-                    enable = true,
+                    opts.diagnostic,
                 },
             },
         })
@@ -123,6 +148,13 @@ return {
             on_attach = on_attach,
             capabilities = capabilities,
         })
+
+        -- marksman
+        -- lspconfig.marksman.setup({
+        --     filetypes = {"markdown"},
+        --     on_attach = on_attach,
+        --     capabilities = capabilities,
+        -- })
 
         -- tsserver
         -- lspconfig.tsserver.setup({

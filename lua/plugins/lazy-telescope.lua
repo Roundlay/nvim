@@ -2,12 +2,11 @@
 
 return {
     'nvim-telescope/telescope.nvim',
-    -- name = "telescope",
     version = false,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
-    event = "BufReadPost",
-    cmd = 'Telescope',
+    -- event = "CmdlineEnter",
+    -- cmd = 'Telescope',
     keys = {
         { ";f", "<cmd>Telescope find_files<CR>", desc = "Find file..." },
         { ";g", "<cmd>Telescope live_grep<CR>", desc = "GREP..." },
@@ -16,7 +15,8 @@ return {
         { ";c", "<cmd>Telescope commands<CR>", desc = "Display command history..." },
     },
     dependencies = {
-        'nvim-lua/plenary.nvim',
+        { "nvim-lua/plenary.nvim", module = "telescope" },
+        -- { "williamboman/mason-lspconfig.nvim", module = "mason"}, -- This in turn depends on mason.nvim.
     },
     opts = {
         defaults = {
@@ -28,12 +28,16 @@ return {
             borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
             layout_config = {
                 height = 0.50,
-                -- preview_cutoff = 120,
                 prompt_position = "bottom",
             },
         },
     },
     config = function(_, opts)
-        require('telescope').setup(opts)
+		local telescope_ok, telescope = pcall(require, "telescope")
+		if not telescope_ok then
+            vim.notify(vim.inspect(telescope), vim.log.levels.ERROR)
+			return
+		end
+        telescope.setup(opts)
     end,
 }

@@ -10,15 +10,15 @@
 
 return {
     "ap29600/tree-sitter-odin",
-    -- name = "nvim-treesitter-odin",
     enabled = true,
+    condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
     ft = "odin",
-    event = "BufReadPost",
     dependencies = {
         "nvim-treesitter/nvim-treesitter"
     },
     config = function()
+        --- @class parser_config
         local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
         parser_config.odin = {
             install_info = {

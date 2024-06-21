@@ -2,14 +2,14 @@
 
 return {
     "williamboman/mason.nvim",
-    -- name  = "mason",
-    build = ":MasonUpdate",
     lazy = true,
+    build = ":MasonUpdate",
     cmd = "Mason",
     opts = {
         ui = {
             border = "none",
         },
+        PATH = "prepend",
     },
     config = function(_, opts)
 		local mason_ok, mason = pcall(require, "mason")
@@ -18,5 +18,5 @@ return {
 			return
 		end
         mason.setup(opts)
-    end,
+    end
 }
