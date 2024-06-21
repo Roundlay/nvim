@@ -6,10 +6,12 @@ return {
     main = "ibl", -- Required after v3.0.0
     enabled = true,
     lazy = true,
-    event = {"BufReadPost", "BufNewFile"},
+    event = {
+        "BufReadPost"
+    },
     opts = {
         indent = {
-            char = "┃",
+            char = "│",
             smart_indent_cap = true,
             highlight = {
                 "winter_blue",
@@ -43,7 +45,7 @@ return {
         --         local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
         --         if line == "" then
         --             for _, text in ipairs(virtual_text) do
-        --                 if text[1] == config.indent.char then text [1] = "┋"
+        --                 if text[1] == config.indent.char then text [1] = "┊"
         --                 -- if text[1] == config.indent.char then text [1] = "╋"
         --                 end
         --             end
@@ -53,12 +55,10 @@ return {
         -- )
 
         local ibl_ok, ibl = pcall(require, "ibl")
-
         if not ibl_ok then
-            print("Error loading 'indent-blankline'.")
+            vim.notify(vim.inspect(ibl), vim.log.levels.ERROR)
             return
         end
-
         ibl.setup(opts)
     end
 }
