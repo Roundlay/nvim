@@ -4,10 +4,9 @@ return {
     'numToStr/Comment.nvim',
     enabled = true,
     lazy = true,
-    -- event = {},
     keys = {
-        { "gcc", mode = {"n"}, desc = "Toggle linewise comment" },
-        { "gc", mode = {"v"} , desc = "Toggle blockwise comment" },
+        {"gcc", mode = {"n"}, desc = "Toggle linewise comment"},
+        {"gc", mode = {"v"}, desc = "Toggle blockwise comment"},
     },
     opts = {
         padding = true,
@@ -16,9 +15,6 @@ return {
             basic = true
         },
     },
-    -- config = function(_, opts)
-    --     require("Comment").setup(opts)
-    -- end,
     config = function(_, opts)
 		local comment_ok, comment = pcall(require, "Comment")
 		if not comment_ok then
@@ -26,5 +22,5 @@ return {
 			return
 		end
         comment.setup(opts)
-    end,
+    end
 }
