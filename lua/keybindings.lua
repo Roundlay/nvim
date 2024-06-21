@@ -1,159 +1,143 @@
 -- {Keybindings}
 
-----------------------------------------
--- Helper Functions
-----------------------------------------
+-- Helpers
 
-local function normal(new, old)
-    vim.api.nvim_set_keymap('n', new, old, {noremap=true, silent=true})
+local function normal(new, old, description)
+    vim.api.nvim_set_keymap('n', new, old, {noremap=true, silent=true, desc=description})
 end
 
-local function visual(new, old)
-    vim.api.nvim_set_keymap('v', new, old, {noremap=true, silent=true})
+local function visual(new, old, description)
+    vim.api.nvim_set_keymap('v', new, old, {noremap=true, silent=true, desc=description})
 end
 
-local function insert(new, old)
-    vim.api.nvim_set_keymap('i', new, old, {noremap=true, silent=true})
+local function insert(new, old, description)
+    vim.api.nvim_set_keymap('i', new, old, {noremap=true, silent=true, desc=description})
 end
 
-local function terminal(new, old)
-    vim.api.nvim_set_keymap('t', new, old, {noremap=true, silent=true})
+local function terminal(new, old, description)
+    vim.api.nvim_set_keymap('t', new, old, {noremap=true, silent=true, desc=description})
 end
+
+-- VSCode
 
 if (vim.g.vscode) then
-    normal('J', '}') -- Jump n paragraphs backwards.
-    normal('K', '{') -- Jump n paragraphs forwards.
-    normal('L', '$') -- Jump to the end of the active line.
-    normal('H', '_') -- Jump to the beginning of the active line.
-    visual('J', '}') -- Jump n paragraphs backwards in visual mode.
-    visual('K', '{') -- Jump n paragraphs forwards in visual mode.
-    visual('L', '$') -- Jump to the end of the active line in Visual mode.
-    visual('H', '_') -- Jump to the beginning of the active line in Visual mode.
-    -- normal('<n>', '<C-v>') -- WIN: Fixes paste overlap w/ Visual Command Mode.
+    -- normal('<n>', '<C-v>', "WIN: Fixes paste overlap w/ Visual Command Mode.")
+    normal('J', '}', "Jump n paragraphs backwards.")
+    normal('K', '{', "Jump n paragraphs forwards.")
+    normal('L', '$', "Jump to the end of the active line.")
+    normal('H', '_', "Jump to the beginning of the active line.")
+
+    visual('J', '}', "Jump n paragraphs backwards in visual mode.")
+    visual('K', '{', "Jump n paragraphs forwards in visual mode.")
+    visual('L', '$', "Jump to the end of the active line in Visual mode.")
+    visual('H', '_', "Jump to the beginning of the active line in Visual mode.")
+
+    normal('<leader>y', '"+y', "Yank to system clipboard.")
+    normal('<leader>yy', '"+yy', "Yank current line to the system clipboard.")
+    normal('<leader>Y', '"+Y', "Yank to end of line to the system clipboard.")
+    visual('<leader>y', '"+y', "Yank the selection to the system clipboard.")
+
+    normal('<leader>p', '"+p', "Put from system clipboard after the cursor.")
+    normal('<leader>P', '"+P', "Put from system clipboard before the cursor.")
+    visual('<leader>p', '"+p', "Put from system clipboard in visual mode.")
+    visual('<leader>P', '"+P', "Put from system clipboard before the visual selection.")
+
     return
 end
 
+-- Neovide
+
 if vim.g.neovide then
     -- https://github.com/neovide/neovide/issues/1301#issuecomment-1705046950 
-    vim.api.nvim_set_keymap("n", "<C-=>", ":lua vim.g.neovide_scale_factor = math.min(vim.g.neovide_scale_factor + 0.1,  1.0)<CR>", { silent = true })
-    vim.api.nvim_set_keymap("n", "<C-->", ":lua vim.g.neovide_scale_factor = math.max(vim.g.neovide_scale_factor - 0.1,  0.1)<CR>", { silent = true })
-    vim.api.nvim_set_keymap("n", "<C-+>", ":lua vim.g.neovide_transparency = math.min(vim.g.neovide_transparency + 0.05, 1.0)<CR>", { silent = true })
-    vim.api.nvim_set_keymap("n", "<C-_>", ":lua vim.g.neovide_transparency = math.max(vim.g.neovide_transparency - 0.05, 0.0)<CR>", { silent = true })
-    vim.api.nvim_set_keymap("n", "<C-0>", ":lua vim.g.neovide_scale_factor = 0.5<CR>", { silent = true })
-    vim.api.nvim_set_keymap("n", "<C-)>", ":lua vim.g.neovide_transparency = 0.9<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<C-=>", ":lua vim.g.neovide_scale_factor = math.min(vim.g.neovide_scale_factor + 0.1,  1.0)<CR>", { silent = true, desc = "Increase Neovide scale factor." })
+    vim.api.nvim_set_keymap("n", "<C-->", ":lua vim.g.neovide_scale_factor = math.max(vim.g.neovide_scale_factor - 0.1,  0.1)<CR>", { silent = true, desc = "Decrease Neovide scale factor." })
+    vim.api.nvim_set_keymap("n", "<C-+>", ":lua vim.g.neovide_transparency = math.min(vim.g.neovide_transparency + 0.05, 1.0)<CR>", { silent = true, desc = "Increase Neovide transparency." })
+    vim.api.nvim_set_keymap("n", "<C-_>", ":lua vim.g.neovide_transparency = math.max(vim.g.neovide_transparency - 0.05, 0.0)<CR>", { silent = true, desc = "Decrease Neovide transparency." })
+    vim.api.nvim_set_keymap("n", "<C-0>", ":lua vim.g.neovide_scale_factor = 0.5<CR>", { silent = true, desc = "Set Neovide scale factor to 0.5." })
+    vim.api.nvim_set_keymap("n", "<C-)>", ":lua vim.g.neovide_transparency = 0.9<CR>", { silent = true, desc = "Set Neovide transparency to 0.9." })
 end
 
-----------------------------------------
--- Neovim
-----------------------------------------
-
--- Leader
-----------------------------------------
+-- Keybindings
 
 -- Required by lazy.nvim and therefore this file needs to be called before lazy
 -- is loaded in init.lua.
 
+-- Misc.
+
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Misc.
-----------------------------------------
+normal('<n>', '<C-v>', "WIN: Fixes paste overlap within Visual Command Mode.")
+normal('<leader>l', ':Lazy<CR>', "Open the Lazy plugin manager.")
+normal("<leader>dt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d ')}, 'c', true, true)<CR>", "Insert current date at cursor.")
+normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.fn.expand("%:p") .. " sourced.")<CR>', "Source the current file.")
 
-normal('<n>', '<C-v>') -- ? WIN: Fixes paste overlap within Visual Command Mode.
+-- Movement
 
--- Save & Close Buffer (without closing Neovim)
+normal('<C-j>', '<esc>', "Map <C-j> to <esc> in normal mode.")
+visual('<C-j>', '<esc>', "Map <C-j> to <esc> in visual mode.")
+insert('<C-j>', '<esc>', "Map <C-j> to <esc> in insert mode.")
 
-normal('<leader>b', ':w<CR>:bd<CR>')
+normal('J', '}', "Jump one paragraph backwards.")
+normal('K', '{', "Jump one paragraph forwards.")
+visual('J', '}', "Jump one paragraph backwards in visual mode.")
+visual('K', '{', "Jump one paragraph forwards in visual mode.")
 
--- Alternate Escape
-----------------------------------------
+-- normal('<C-Up>', 'ddkP', "Move the current line up.")
+-- normal('<C-Down>', 'ddp', "Move the current line down.")
+-- visual('<C-Down>', 'xp`[V`]', "Move selection down.")
+-- visual('<C-Up>', 'xkP`[V`]', "Move selection up.")
 
-normal('<C-j>', '<esc>')
-visual('<C-j>', '<esc>')
-insert('<C-j>', '<esc>')
+-- Yank and put
 
--- Jump Navigation
-----------------------------------------
+normal('<leader>y', '"+y', "Yank to system clipboard.")
+normal('<leader>yy', '"+yy', "Yank current line to the system clipboard.")
+normal('<leader>Y', '"+Y', "Yank to end of line to the system clipboard.")
+visual('<leader>y', '"+y', "Yank the selection to the system clipboard.")
 
--- Jump up and down by paragraph in Normal/Visual mode.
+normal('<leader>p', '"+p', "Put from system clipboard after the cursor.")
+normal('<leader>P', '"+P', "Put from system clipboard before the cursor.")
+visual('<leader>p', '"+p', "Put from system clipboard in visual mode.")
+visual('<leader>P', '"+P', "Put from system clipboard before the visual selection.")
 
-normal('J', '}')
-normal('K', '{')
-visual('J', '}')
-visual('K', '{')
+visual('p', 'pgvy', "Put then re-yank the original selection.")
 
--- Jump to the beginning and end of the active line in Normal/Visual mode.
--- NOTE: Disabled for now, because I just never ended up using these, and I'd
--- prefer to have access to <H>igh and <L>ow.
+-- Window/tab/buffer management
 
--- normal('L', '$')
--- normal('H', '_')
--- visual('L', '$')
--- visual('H', '_')
+normal('<leader>b', ':w<CR>:bd<CR>', "Save and close the current buffer.")
 
--- Yank & Put
-----------------------------------------
-
--- Put then re-yank original selection.
-
-visual('p', 'pgvy')
-
--- Yank to system clipboard.
-
-normal('<leader>y', '"+y')
-normal('<leader>yy', '"+yy')
-normal('<leader>Y', '"+Y')
-visual('<leader>y', '"+y')
-
--- Put from system clipboard.
-
-normal('<leader>p', '"+p')
-normal('<leader>P', '"+P')
-visual('<leader>p', '"+p')
-visual('<leader>P', '"+P')
-
--- Bubble Selection
-----------------------------------------
-
--- NOTE [ ] These don't seem to work with remapped arrow keys on HHKBs.
--- TODO [ ] These trigger the auto-save plugin every time they're used.
-
-normal('<C-Up>', 'ddkP')
-normal('<C-Down>', 'ddp')
-visual('<C-Down>', 'xp`[V`]')
-visual('<C-Up>', 'xkP`[V`]')
-
--- Terminal
-----------------------------------------
+-- Terminal management and movement
 
 -- TODO [ ] Can we detect when we're in a terminal buffer?
-    -- I.e. can we preface window movements with ESC so that we can move around freely.
+-- I.e. can we preface window movements with ESC so that we can move around freely.
+normal('<leader>t', ':vs | terminal<CR>', "Open a terminal in a vertical split.")
+terminal('<Esc>', '<C-\\><C-n>', "Exit terminal mode.")
+terminal('<C-w>h', '<C-\\><C-n><C-w>h', "Move to the left window from the terminal.")
+terminal('<C-w>l', '<C-\\><C-n><C-w>l', "Move to the right window from the terminal.")
+terminal('<C-w>k', '<C-\\><C-n><C-w>k', "Move to the window above from the terminal.")
+terminal('<C-w>j', '<C-\\><C-n><C-w>j', "Move to the window below from the terminal.")
 
-terminal('<Esc>', '<C-\\><C-n>')
-terminal('<C-w>h', '<C-\\><C-n><C-w>h')
-terminal('<C-w>l', '<C-\\><C-n><C-w>l')
-terminal('<C-w>k', '<C-\\><C-n><C-w>k')
-terminal('<C-w>j', '<C-\\><C-n><C-w>j')
-normal('<leader>t', ':vs | terminal<CR>')
+-- Comment
 
-----------------------------------------
--- Lazy
-----------------------------------------
+normal("gcc", "gcc", "Toggle line comment.")
+normal("gc", "gc", "Toggle block comment.")
 
--- Toggle Lazy
+-- Oil
 
-normal('<leader>l', ':Lazy<CR>')
+normal('<leader>o', ':Oil<CR>', "Open the Oil file explorer.")
+-- TODO: Was this something to do with Oil interacting with the terminal?
+normal('<leader>e', '</<C-X><C-O>', "Unknown mapping related to Oil and terminal.")
 
-----------------------------------------
--- Comment.nvim
-----------------------------------------
+-- Wrappin
 
-normal("gcc", "gcc")
-normal("gc", "gc")
+-- Tests
+-- visual('<F2>', ':lua _G.Wrappin()<CR>')
+-- visual('<F3>', ':lua _G.WrappinTest()<CR>')
+-- normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
+-- normal('<F6>', ':lua _G.Slect()<CR>')
+-- visual('<F6>', ':lua _G.Slect()<CR>')
 
-----------------------------------------
--- yanky.nvim
-----------------------------------------
+-- Yanky
 
 -- normal("y", "<Plug>(YankyYank)")
 -- normal("p", "<Plug>(YankyPutAfter)")
@@ -162,35 +146,3 @@ normal("gc", "gc")
 -- normal("gP", "<Plug>(YankyGPutBefore)")
 -- normal("<C-p>", "<Plug>(YankyPreviousEntry)")
 -- normal("<C-n>", "<Plug>(YankyNextEntry)")
-
-----------------------------------------
--- Oil
-----------------------------------------
-
-normal('<leader>o', ':Oil<CR>')
-
-normal('<leader>e', '</<C-X><C-O>')
-
-----------------------------------------
--- Date and Time Helpers
-----------------------------------------
-
-normal("<leader>dt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d ')}, 'c', true, true)<CR>")
-
-----------------------------------------
--- Wrappin
-----------------------------------------
-
--- TODO [ ] Turn this into a plugin.
-
--- Test lines:
-
--- You can use the system message to describe the assistant’s personality, 
--- define what the model should and shouldn’t answer, and define the format of 
--- model responses. And this is me testing just so I know. 
-
--- visual('<F2>', ':lua _G.Wrappin()<CR>')
--- visual('<F3>', ':lua _G.WrappinTest()<CR>')
--- normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
--- normal('<F6>', ':lua _G.Slect()<CR>')
--- visual('<F6>', ':lua _G.Slect()<CR>')
