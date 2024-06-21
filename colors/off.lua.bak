@@ -1,0 +1,219 @@
+vim.cmd('hi clear')
+
+if vim.fn.exists('syntax_on') then
+    vim.cmd('syntax reset')
+end
+
+vim.g.colors_name = 'off'
+local colors_off_a_little = vim.g.colors_off_a_little or 0
+
+local colors = {
+    black = { gui = "#212121", cterm = "0" },
+    medium_gray = { gui = "#767676", cterm = "243" },
+    white = { gui = "#F1F1F1", cterm = "15" },
+    actual_white = { gui = "#FFFFFF", cterm = "231" },
+    light_black = { gui = "#424242", cterm = "8" },
+    lighter_black = { gui = "#545454", cterm = "240" },
+    subtle_black = { gui = "#303030", cterm = "236" },
+    light_gray = { gui = "#B2B2B2", cterm = "249" },
+    lighter_gray = { gui = "#C6C6C6", cterm = "251" },
+    subtle_gray = { gui = "#696969", cterm = "250" },
+    pink = { gui = "#fb007a", cterm = "9" },
+    dark_red = { gui = "#C30771", cterm = "1" },
+    light_red = { gui = "#E32791", cterm = "1" },
+    orange = { gui = "#D75F5F", cterm = "167" },
+    darker_blue = { gui = "#005F87", cterm = "18" },
+    dark_blue = { gui = "#008EC4", cterm = "4" },
+    blue = { gui = "#20BBFC", cterm = "12" },
+    light_blue = { gui = "#b6d6fd", cterm = "153" },
+    dark_cyan = { gui = "#20A5BA", cterm = "6" },
+    light_cyan = { gui = "#4FB8CC", cterm = "14" },
+    dark_green = { gui = "#10A778", cterm = "2" },
+    light_green = { gui = "#5FD7A7", cterm = "10" },
+    dark_purple = { gui = "#523C79", cterm = "5" },
+    light_purple = { gui = "#6855DE", cterm = "13" },
+    yellow = { gui = "#F3E430", cterm = "11" },
+    dark_yellow = { gui = "#A89C14", cterm = "3" },
+}
+
+local s = {}
+
+if vim.o.background == "dark" then
+    s.bg = colors.black
+    s.bg_subtle = colors.light_black
+    s.bg_subtle_comment = colors.subtle_gray
+    s.bg_very_subtle = colors.subtle_black
+    s.norm = colors.lighter_gray
+    s.norm_subtle = colors.light_gray
+    s.purple = colors.light_purple
+    s.cyan = colors.light_cyan
+    s.green = colors.light_green
+    s.red = colors.light_red
+    s.visual = colors.lighter_black
+else
+    s.bg = colors.actual_white
+    s.bg_subtle = colors.light_gray
+    s.bg_subtle_comment = colors.subtle_gray
+    s.bg_very_subtle = colors.lighter_gray
+    s.norm = colors.light_black
+    s.norm_subtle = colors.lighter_black
+    s.purple = colors.dark_purple
+    s.cyan = colors.dark_cyan
+    s.green = colors.dark_green
+    s.red = colors.dark_red
+    s.visual = colors.light_blue
+end
+
+local function highlight(group, style)
+    local cmd = "highlight " .. group
+    if style.fg then cmd = cmd .. " guifg=" .. style.fg.gui .. " ctermfg=" .. style.fg.cterm end
+    if style.bg then cmd = cmd .. " guibg=" .. style.bg.gui .. " ctermbg=" .. style.bg.cterm end
+    if style.sp then cmd = cmd .. " guisp=" .. style.sp.gui end
+    if style.gui then cmd = cmd .. " gui=" .. style.gui end
+    if style.cterm then cmd = cmd .. " cterm=" .. style.cterm end
+    vim.cmd(cmd)
+end
+
+highlight("Normal", { bg = s.bg, fg = s.norm })
+highlight("Cursor", { bg = colors.blue, fg = s.norm })
+highlight("Comment", { fg = s.bg_subtle_comment, gui = "italic" })
+
+vim.cmd('hi! link Constant Normal')
+vim.cmd('hi! link Character Constant')
+vim.cmd('hi! link Number Constant')
+vim.cmd('hi! link Boolean Constant')
+vim.cmd('hi! link Float Constant')
+vim.cmd('hi! link String Constant')
+
+vim.cmd('hi! link Identifier Normal')
+vim.cmd('hi! link Function Identifier')
+
+vim.cmd('hi! link Statement Normal')
+vim.cmd('hi! link Conditonal Statement')
+vim.cmd('hi! link Repeat Statement')
+vim.cmd('hi! link Label Statement')
+vim.cmd('hi! link Operator Statement')
+vim.cmd('hi! link Keyword Statement')
+vim.cmd('hi! link Exception Statement')
+
+vim.cmd('hi! link PreProc Normal')
+vim.cmd('hi! link Include PreProc')
+vim.cmd('hi! link Define PreProc')
+vim.cmd('hi! link Macro PreProc')
+vim.cmd('hi! link PreCondit PreProc')
+
+vim.cmd('hi! link Type Normal')
+vim.cmd('hi! link StorageClass Type')
+vim.cmd('hi! link Structure Type')
+vim.cmd('hi! link Typedef Type')
+
+vim.cmd('hi! link Special Normal')
+vim.cmd('hi! link SpecialChar Special')
+vim.cmd('hi! link Tag Special')
+vim.cmd('hi! link Delimiter Special')
+vim.cmd('hi! link SpecialComment Special')
+vim.cmd('hi! link Debug Special')
+
+highlight("Underlined", { fg = s.norm, gui = "underline", cterm = "underline" })
+highlight("Ignore", { fg = s.bg })
+highlight("Error", { fg = colors.actual_white, bg = s.red, cterm = "bold" })
+highlight("Todo", { fg = colors.actual_white, bg = colors.pink, gui = "bold", cterm = "bold" })
+highlight("SpecialKey", { fg = colors.light_green })
+highlight("NonText", { fg = colors.medium_gray })
+highlight("Directory", { fg = colors.dark_blue })
+highlight("ErrorMsg", { fg = colors.pink })
+highlight("IncSearch", { bg = colors.yellow, fg = colors.light_black })
+highlight("Search", { bg = s.bg_subtle, fg = s.norm })
+highlight("MoreMsg", { fg = colors.medium_gray, cterm = "bold", gui = "bold" })
+vim.cmd('hi! link ModeMsg MoreMsg')
+highlight("LineNr", { fg = s.bg_subtle })
+highlight("CursorLineNr", { fg = colors.blue, bg = s.bg_very_subtle })
+highlight("Question", { fg = s.red })
+highlight("StatusLine", { bg = s.bg_very_subtle })
+highlight("StatusLineNC", { bg = s.bg_very_subtle, fg = colors.medium_gray })
+highlight("VertSplit", { bg = s.bg_very_subtle, fg = s.bg_very_subtle })
+highlight("Title", { fg = colors.dark_blue })
+highlight("Visual", { bg = s.visual })
+highlight("VisualNOS", { bg = s.bg_subtle })
+highlight("WarningMsg", { fg = s.red })
+highlight("WildMenu", { fg = s.bg, bg = s.norm })
+highlight("Folded", { fg = colors.medium_gray })
+highlight("FoldColumn", { fg = s.bg_subtle })
+highlight("DiffAdd", { fg = s.green })
+highlight("DiffDelete", { fg = s.red })
+highlight("DiffChange", { fg = colors.dark_yellow })
+highlight("DiffText", { fg = colors.dark_blue })
+highlight("SignColumn", { fg = colors.light_green })
+
+if vim.fn.has("gui_running") == 1 then
+    highlight("SpellBad", { gui = "underline", sp = s.red })
+    highlight("SpellCap", { gui = "underline", sp = colors.light_green })
+    highlight("SpellRare", { gui = "underline", sp = colors.pink })
+    highlight("SpellLocal", { gui = "underline", sp = colors.dark_green })
+else
+    highlight("SpellBad", { cterm = "underline", fg = s.red })
+    highlight("SpellCap", { cterm = "underline", fg = colors.light_green })
+    highlight("SpellRare", { cterm = "underline", fg = colors.pink })
+    highlight("SpellLocal", { cterm = "underline", fg = colors.dark_green })
+end
+
+highlight("Pmenu", { fg = s.norm, bg = s.bg_subtle })
+highlight("PmenuSel", { fg = s.norm, bg = colors.blue })
+highlight("PmenuSbar", { fg = s.norm, bg = s.bg_subtle })
+highlight("PmenuThumb", { fg = s.norm, bg = s.bg_subtle })
+highlight("TabLine", { fg = s.norm, bg = s.bg_very_subtle })
+highlight("TabLineSel", { fg = colors.blue, bg = s.bg_subtle, gui = "bold", cterm = "bold" })
+highlight("TabLineFill", { fg = s.norm, bg = s.bg_very_subtle })
+highlight("CursorColumn", { bg = s.bg_very_subtle })
+highlight("CursorLine", { fg = s.norm, bg = s.bg_very_subtle })
+highlight("ColorColumn", { bg = s.bg_subtle })
+
+highlight("MatchParen", { bg = s.bg_subtle, fg = s.norm })
+highlight("qfLineNr", { fg = colors.medium_gray })
+
+highlight("htmlH1", { bg = s.bg, fg = s.norm })
+highlight("htmlH2", { bg = s.bg, fg = s.norm })
+highlight("htmlH3", { bg = s.bg, fg = s.norm })
+highlight("htmlH4", { bg = s.bg, fg = s.norm })
+highlight("htmlH5", { bg = s.bg, fg = s.norm })
+highlight("htmlH6", { bg = s.bg, fg = s.norm })
+
+vim.cmd('hi! link diffRemoved DiffDelete')
+vim.cmd('hi! link diffAdded DiffAdd')
+
+-- Signify, git-gutter
+vim.cmd('hi! link SignifySignAdd LineNr')
+vim.cmd('hi! link SignifySignDelete LineNr')
+vim.cmd('hi! link SignifySignChange LineNr')
+
+if colors_off_a_little == 1 then
+    highlight("GitGutterAdd", { guifg = "#10A778", ctermfg = "2" })
+    highlight("GitGutterChange", { guifg = "#A89C14", ctermfg = "3" })
+    highlight("GitGutterDelete", { guifg = "#C30771", ctermfg = "1" })
+    highlight("GitGutterChangeDelete", { guifg = "#C30771", ctermfg = "1" })
+else
+    vim.cmd('hi! link GitGutterAdd LineNr')
+    vim.cmd('hi! link GitGutterDelete LineNr')
+    vim.cmd('hi! link GitGutterChange LineNr')
+    vim.cmd('hi! link GitGutterChangeDelete LineNr')
+end
+
+-- Fuzzy Search, Telescope & CtrlP
+if colors_off_a_little == 1 then
+    highlight("CtrlPMatch", { ctermbg = "235", ctermfg = "250", guibg = "NONE", guifg = "#5FD7A7", cterm = "NONE", gui = "NONE" })
+    highlight("TelescopeMatching", { guifg = "#5FD7A7", guibg = "#303030", ctermbg = "NONE" })
+    highlight("TelescopeSelection", { guifg = "NONE", gui = "bold", guibg = "#303030" })
+else
+    highlight("CtrlPMatch", { ctermbg = "NONE", ctermfg = "NONE", guibg = "NONE", guifg = "NONE", cterm = "NONE", gui = "bold" })
+    highlight("TelescopeMatching", { guifg = "NONE", guibg = "NONE", ctermbg = "NONE" })
+    highlight("TelescopeSelection", { guifg = "NONE", gui = "bold", guibg = "#303030" })
+end
+
+-- Check if Telescope is loaded before defining Telescope highlight groups
+if vim.fn.exists(":Telescope") == 2 then
+    highlight("TelescopeMatching", { guifg = colors.light_green.gui, guibg = s.bg_very_subtle.gui })
+    highlight("TelescopeSelection", { guifg = s.norm.gui, guibg = s.bg_very_subtle.gui, gui = "bold" })
+else
+    vim.cmd('hi! link TelescopeMatching NONE')
+    vim.cmd('hi! link TelescopeSelection NONE')
+end
