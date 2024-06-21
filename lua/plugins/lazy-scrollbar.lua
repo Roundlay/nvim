@@ -2,15 +2,18 @@
 
 return {
     "petertriho/nvim-scrollbar",
-    -- name = "scrollbar",
     enabled = false,
     lazy = true,
     event = "BufReadPre",
     opts = {
         show = true,
-        hide_if_all_visible = true,
+        hide_if_all_visible = false,
         show_in_active_only = true,
         throttle_ms = 1,
+        excluded_buftypes = {
+            "acwrite", -- E.g. oil.nvim (?)
+            "nofile", -- E.g. the Lazy interface
+        },
         exclude_filetypes = {
             "cmp_docs",
             "cmp_menu",
@@ -18,16 +21,23 @@ return {
         },
         handle = {
             text = " ",
-            blend = 50, -- Integer between 0 and 100. 0 for fully opaque and 100 to full transparent. Defaults to 30.
+            blend = 33,
             color = nil,
-            color_nr = nil, -- cterm
+            color_nr = nil,
             highlight = "CursorColumn",
-            hide_if_all_visible = true, -- Hides handle if all lines are visible
+            hide_if_all_visible = false,
+        },
+        handlers = {
+            cursor = true,
+            diagnostic = true,
+            handle = true,
+            search = false,
         },
         marks = {
             Cursor = {
+                -- text = "",
                 -- text = "◆",
-                text = "",
+                text = "●",
                 priority = 0,
                 gui = nil,
                 color = "#1F1F28",
@@ -40,9 +50,9 @@ return {
     config = function(_, opts)
 		local scrollbar_ok, scrollbar = pcall(require, "scrollbar")
 		if not scrollbar_ok then
-            print("Error loading 'nvim-scrollbar'.")
+            vim.notify(vim.inspect(scrollbar), vim.log.levels.ERROR)
 			return
 		end
         scrollbar.setup(opts)
-    end,
+    end
 }

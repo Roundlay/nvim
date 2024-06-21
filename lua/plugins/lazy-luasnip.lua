@@ -10,7 +10,8 @@ return {
     config = function()
         local luasnip_ok, luasnip = pcall(require, "luasnip")
         if not luasnip_ok then
-          return
+            vim.notify(vim.inspect(luasnip), vim.log.levels.ERROR)
+            return
         end
         luasnip.config.set_config {
             history = true, -- Keep the last snipped around.

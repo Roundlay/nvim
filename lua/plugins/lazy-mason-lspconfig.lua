@@ -12,9 +12,12 @@
 
 return {
     "williamboman/mason-lspconfig.nvim",
-    -- name = "mason-lspconfig.nvim",
     lazy = true,
+    event = {
+        "BufReadPre",
+    },
     dependencies = {
+        -- Depedencies to be loaded before nvim-lspconfig.
         "williamboman/mason.nvim",
     },
     config = function()
@@ -24,5 +27,5 @@ return {
 			return
 		end
         mason_lspconfig.setup()
-    end,
+    end
 }

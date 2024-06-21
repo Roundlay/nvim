@@ -247,14 +247,31 @@ function _G.Slect_on_input(key)
   return on_input(key)
 end
 
+--------------------------------------------------------------------------------
 
-
-
-
-
-
-
-
+-- Function to auto-close HTML tags
+-- Doesn't work.
+-- _G.auto_close_tags = function()
+--     local bufnr = vim.api.nvim_get_current_buf()
+--     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+--     
+--     for i, line in ipairs(lines) do
+--         -- This simple pattern matches tags that might require self-closing
+--         -- Note: Lua patterns do not support lookbehind; thus, the solution is basic
+--         local modifiedLine = line:gsub("(<(%w+)[^>/]*)>", function(tagStart)
+--             local voidElements = "area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr"
+--             if tagStart:match(voidElements) then
+--                 return tagStart .. " />"
+--             else
+--                 return tagStart .. ">"
+--             end
+--         end)
+--
+--         if modifiedLine ~= line then
+--             vim.api.nvim_buf_set_lines(bufnr, i-1, i, false, {modifiedLine})
+--         end
+--     end
+-- end
 
 -- DO NOT EDIT: 
 

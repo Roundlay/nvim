@@ -2,10 +2,10 @@
 
 return {
     "MDeiml/tree-sitter-markdown",
-    enabled = true,
+    enabled = false,
     lazy = true,
-    event = "BufReadPost",
     ft = "markdown",
+    -- event = "BufReadPost",
     dependencies = {
         "nvim-treesitter/nvim-treesitter"
     },

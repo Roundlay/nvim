@@ -5,6 +5,6 @@ return {
     -- name = "plenary",
     enabled = true,
     lazy = true,
-    config = function()
-    end
+    -- config = function()
+    -- end
 }

@@ -2,7 +2,6 @@
 
 return {
     "folke/trouble.nvim",
-    -- name = "trouble",
     enabled = false,
     lazy = true,
     event = "InsertEnter",
@@ -26,6 +25,11 @@ return {
         use_diagnostic_signs = false -- Use the signs defined in LSP client.
     },
     config = function(_, opts)
-        require("trouble").setup(opts)
-    end,
+		local trouble_ok, trouble = pcall(require, "trouble")
+		if not trouble_ok then
+            vim.notify(vim.inspect(trouble), vim.log.levels.ERROR)
+			return
+		end
+        trouble.setup(opts)
+    end
 }
