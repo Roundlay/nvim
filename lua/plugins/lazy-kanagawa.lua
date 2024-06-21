@@ -1,13 +1,10 @@
--- kanagawa.nvim
-
 return {
     'rebelot/kanagawa.nvim',
-    -- name = "kanagawa",
     enabled = true,
     lazy = false,
     priority = 1000,
     opts = {
-        theme = "wave",
+        theme = "dragon", -- "wave", "lotus", "dragon"
         overrides = function(colors)
             local theme = colors.theme
             return {
@@ -17,23 +14,29 @@ return {
                 PmenuThumb = { bg = theme.ui.bg_p2 },
             }
         end,
+        compile = true,
         undercurl = true,
         commentStyle = { italic = false },
         functionStyle = { bold = true },
         keywordStyle = { italic = false },
-        statementStyle = { bold = true },
-        typeStyle = { bold = true },
-        variablebuiltinStyle = { italic = true },
+        statementStyle = { bold = false },
+        typeStyle = { bold = false },
+        variablebuiltinStyle = { italic = false },
         specialReturn = true, -- Special highlight for the return keyword.
         specialException = true, -- Special highlight for exception handling keywords.
-        transparent = false , -- Do not set background color.
+        transparent = false, -- Do not set background color.
         terminalColors = true, -- Define vim.g.terminal_color_{0,17}.
         globalStatus = false,
-        dimInactive = false,
+        dimInactive = true,
+        background = {
+            dark = "wave",
+            light = "lotus"
+        },
     },
     config = function(_, opts)
         local kanagawa_ok, kanagawa = pcall(require, "kanagawa")
         if not kanagawa_ok then
+            vim.notify(vim.inspect(kanagawa), vim.log.levels.ERROR)
             return
         end
         kanagawa.setup(opts)
