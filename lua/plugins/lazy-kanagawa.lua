@@ -1,6 +1,6 @@
 return {
     'rebelot/kanagawa.nvim',
-    enabled = true,
+    enabled = false,
     lazy = false,
     priority = 1000,
     opts = {
@@ -26,8 +26,8 @@ return {
         specialException = true, -- Special highlight for exception handling keywords.
         transparent = false, -- Do not set background color.
         terminalColors = true, -- Define vim.g.terminal_color_{0,17}.
-        globalStatus = false,
-        dimInactive = true,
+        globalStatus = true,
+        dimInactive = false,
         background = {
             dark = "wave",
             light = "lotus"
