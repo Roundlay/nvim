@@ -1,12 +1,10 @@
 -- telescope.nvim
-
 return {
     'nvim-telescope/telescope.nvim',
     version = false,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
-    -- event = "CmdlineEnter",
-    -- cmd = 'Telescope',
+    event = "CmdlineEnter",
     keys = {
         { ";f", "<cmd>Telescope find_files<CR>", desc = "Find file..." },
         { ";g", "<cmd>Telescope live_grep<CR>", desc = "GREP..." },
@@ -16,20 +14,27 @@ return {
     },
     dependencies = {
         { "nvim-lua/plenary.nvim", module = "telescope" },
-        -- { "williamboman/mason-lspconfig.nvim", module = "mason"}, -- This in turn depends on mason.nvim.
     },
     opts = {
         defaults = {
-            layout_strategy = "bottom_pane",
-            results_title = false,
-            dynamic_preview_title = false,
-            prompt_title = false,
+            -- layout_strategy = "bottom_pane",
             previewer = true,
-            borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
-            layout_config = {
-                height = 0.50,
-                prompt_position = "bottom",
-            },
+            prompt_title = "",
+            results_title = "",
+            preview_title = "",
+            dynamic_preview_title = true,
+            selection_caret = "",
+            entry_prefix = "",
+            multi_icon = "",
+            color_devicons = false,
+            border = true,
+            borderchars = { "━", "┃", "━", "┃", "┏", "┓", "┛", "┗" },
+            preview = { msg_bg_fillchar = '' },
+            -- layout_config = {
+            --     width = 1.00,
+            --     height = 0.50,
+            --     prompt_position = "bottom",
+            -- },
         },
     },
     config = function(_, opts)
