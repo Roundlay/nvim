@@ -2,13 +2,14 @@
 
 return {
     "Mofiqul/vscode.nvim",
-    enabled = false,
+    enabled = true,
     lazy = false,
     priority = 1000,
     opts = {
         style = "dark",
         transparent = false,
         italic_comments = false,
+        underline_links = false,
         color_overrides = {
         -- vscLineNumber = '#000000',
         },
