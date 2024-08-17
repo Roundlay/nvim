@@ -4,21 +4,95 @@ if vim.g.vscode then
     return
 end
 
--- local M = {}
+M = {}
+
+-- Get the operating system name using Neovim's LibUV bindings.
+local os_name = vim.loop.os_uname().sysname -- Windows_NT
+
+function M:load_variables()
+    self.is_mac      = os_name == "Darwin" -- Set to true if the operating system is macOS, otherwise false.
+    self.is_linux    = os_name == "Linux" -- Set to true if the operating system is Linux, otherwise false.
+    self.is_windows  = os_name == "Windows_NT" -- Set to true if the operating system is Windows, otherwise false.
+    self.is_wsl      = vim.fn.has("wsl") == 1 -- Set to true if running on Windows Subsystem for Linux (WSL), otherwise false.
+    self.vim_path    = vim.fn.stdpath("config") -- Get the Neovim configuration directory path.
+    local path_sep   = self.is_windows and "\\" or "/"  -- Set the path separator based on the operating system.
+    local home       = vim.loop.os_homedir() -- Store the user's home directory in the global table
+    self.plugins_dir = self.vim_path .. path_sep .. "plugins" -- Set the Neovim modules directory path.
+    self.home        = home -- Store the user's home directory in the global table
+    self.data_dir    = string.format("%s/site/", vim.fn.stdpath("data")) -- Set the Neovim data directory path
+    -- local home    = self.is_windows and os.getenv("USERPROFILE") or os.getenv("HOME")  -- Get the user's home directory.
+    -- self.cache_dir = home .. path_sep .. ".cache" .. path_sep .. "nvim" .. path_sep  -- Set the Neovim cache directory path.
+
+    -- Logging the system variables
+
+    -- if self.is_mac then
+    --     print("Operating System: macOS")
+    -- elseif self.is_linux then
+    --     print("Operating System: Linux")
+    -- elseif self.is_windows then
+    --     print("Operating System: Windows")
+    -- end
+
+    -- if self.is_wsl then
+    --     print("Running on Windows Subsystem for Linux (WSL)")
+    -- end
+
+    -- print("Vim Path: " .. self.vim_path)
+    -- print("Plugins Directory: " .. self.plugins_dir)
+    -- print("Home Directory: " .. self.home)
+    -- print("Data Directory: " .. self.data_dir)
+end
+
+M:load_variables()
+
+function M.cowboy()
+	---@type table?
+	local id
+	local ok = true
+	for _, key in ipairs({ "h", "j", "k", "l", "+", "-" }) do
+		local count = 0
+		local timer = assert(vim.loop.new_timer())
+		local map = key
+		vim.keymap.set("n", key, function()
+			if vim.v.count > 0 then
+				count = 0
+			end
+			if count >= 10 then
+				ok, id = pcall(vim.notify, "Hold it Cowboy!", vim.log.levels.WARN, {
+					icon = ">:(",
+					replace = id,
+					keep = function()
+						return count >= 10
+					end,
+				})
+				if not ok then
+					id = nil
+					return map
+				end
+			else
+				count = count + 1
+				timer:start(2000, 0, function()
+					count = 0
+				end)
+				return map
+			end
+		end, { expr = true, silent = true })
+	end
+end
 
 -- Function to reload scripts
-_G.ReloadScripts = function()
-    local initial_state = package.loaded['scripts']
-    if package.loaded['scripts'] then
-        package.loaded['scripts'] = nil
-        if package.loaded['scripts'] ~= initial_state then
-            require('scripts')
-            if package.loaded['scripts'] == initial_state then
-                vim.notify(os.date("[%H:%M:%S] ").."Scripts module reloaded successfully.", vim.log.levels.INFO)
-            end
-        end
-    end
-end
+-- _G.ReloadScripts = function()
+--     local initial_state = package.loaded['scripts']
+--     if package.loaded['scripts'] then
+--         package.loaded['scripts'] = nil
+--         if package.loaded['scripts'] ~= initial_state then
+--             require('scripts')
+--             if package.loaded['scripts'] == initial_state then
+--                 vim.notify(os.date("[%H:%M:%S] ").."Scripts module reloaded successfully.", vim.log.levels.INFO)
+--             end
+--         end
+--     end
+-- end
 
 -- Function to show region marks and lines
 _G.show_region_marks_and_lines = function()
@@ -130,6 +204,31 @@ _G.Wrappin = function()
 
     -- Replacing lines in buffer with new wrapped lines
     vim.api.nvim_buf_set_lines(0, start_line, end_line+1, false, new_lines)
+end
+
+-- Replace the visually selected text with a new string globally.
+_G.Visrep = function()
+    -- Save the current cursor position
+    local cursor_pos = vim.fn.getpos('.')
+
+    local start_pos = vim.fn.getpos("'<")
+    local end_pos = vim.fn.getpos("'>")
+    local selected_text = vim.fn.getline(start_pos[2], end_pos[2])
+    local pattern = ''
+
+    -- Concatenate all selected lines into a single pattern
+    for i, line in ipairs(selected_text) do
+        if i > 1 then pattern = pattern .. '\n' end
+        pattern = pattern .. line:sub(start_pos[3], end_pos[3])
+    end
+
+    local new_string = vim.fn.input('Replace "' .. pattern .. '" with: ')
+    if new_string ~= "" then
+        vim.cmd(':%s/' .. pattern .. '/' .. new_string .. '/g')
+    end
+
+    -- Restore the cursor position
+    vim.fn.setpos('.', cursor_pos)
 end
 
 -- Slect 0.1.0
@@ -722,3 +821,5 @@ end
 --     end
 --     view.focus()
 -- end
+
+return M
