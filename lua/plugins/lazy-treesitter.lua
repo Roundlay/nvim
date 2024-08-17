@@ -1,53 +1,44 @@
--- treesitter
-
 return {
     "nvim-treesitter/nvim-treesitter",
     enabled = true,
     version = false,
     build = ":TSUpdateSync",
-    lazy = false,
+    lazy = true,
     event = {
-        "BufReadPre",
+        "VimEnter",
+        -- "BufReadPre",
     },
     cmd = {
         "TSEnable",
     },
-    -- TODO: Set up lazy loading keys so that incremental selection is lazy loaded?
+    -- dependencies = {
+    --     "nvim-treesitter/nvim-treesitter-textobjects",
+    -- },
     opts = {
-        ensure_installed = {
-            "c",
-            "lua",
-            "vim",
-            "vimdoc",
-            "query",
-            "rust",
-            "odin",
-            "cmake",
-            "python",
-            "markdown",
-        },
+        -- ensure_installed = {
+        --     "c",
+        --     "lua",
+        --     "vim",
+        --     "vimdoc",
+        --     "query",
+        --     "rust",
+        --     "odin",
+        --     "cmake",
+        --     "python",
+        --     "markdown",
+        --     "javascript",
+        -- },
         sync_install = false,
         auto_install = true,
         highlight = {
             enable = true, -- Highlighting incredibly slow when this is false.
             additional_vim_regex_highlighting = false, -- Slow.
         },
-        text_objects = {
-            enable = true
-        },
         indent = {
             enable = false -- Experimental and broke indentation in Odin.
         },
-        incremental_selection = {
-            enable = true,
-            keymaps = {
-                init_selection = "zz",
-                node_incremental = "zz",
-                node_decremental = "zx",
-            },
-        },
         -- playground = {
-        --     enable = false,
+        --     enable = true,
         --     disable = {},
         --     updatetime = 25,
         --     persist_queries = true,
