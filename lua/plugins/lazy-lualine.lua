@@ -46,10 +46,10 @@ local function display_tabs()
         max_length = vim.o.columns / 3,
         mode = 0,
         path = 0,
-        use_mode_colors = false,
+        use_mode_colors = true,
         show_modified_status = true,
         symbols = {
-            modified = '[+]',
+            modified = '+',
         },
         fmt = function(name, context)
             local buflist = vim.fn.tabpagebuflist(context.tabnr)
@@ -57,6 +57,15 @@ local function display_tabs()
             local bufnr = buflist[winnr]
             local mod = vim.fn.getbufvar(bufnr, '&mod')
             return name .. (mod == 1 and ' +' or '')
+        end,
+        color = function(context)
+            if context.tabnr == vim.fn.tabpagenr() then
+                -- Active tab color
+                return { bg = '#ffffff', fg = '#ffffff' }
+            else
+                -- Inactive tab color
+                return { bg = '#ffffff', fg = '#ffffff' }
+            end
         end
     }
 end
@@ -85,7 +94,8 @@ return {
             section_separators = { left = "", right = "" },
             globalstatus = false,
             icons_enabled = false,
-            theme = "kanagawa",
+            theme = "vscode",
+            -- theme = "kanagawa",
         },
         extension = {
             "mason",
@@ -94,12 +104,20 @@ return {
             "oil",
         },
         sections = {
-            lualine_a = {{ "mode", fmt = truncated_mode }},
-            lualine_b = {{ truncated_file_status() }},
+            lualine_a = {{"mode", fmt = truncated_mode}},
+            lualine_b = {{truncated_file_status()}},
             lualine_c = {},
-            lualine_x = { display_tabs() },
-            lualine_y = { visual_selection_count() },
-            lualine_z = {{ "location" }},
+            lualine_x = {display_tabs() },
+            lualine_y = {visual_selection_count()},
+            lualine_z = {{"location"}},
+        },
+        inactive_sections = {
+            lualine_a = {{truncated_file_status()}},
+            lualine_b = {},
+            lualine_c = {},
+            lualine_x = {},
+            lualine_y = {},
+            lualine_z = {},
         },
     },
     config = function(_, opts)
