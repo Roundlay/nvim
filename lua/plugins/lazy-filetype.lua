@@ -19,6 +19,7 @@ return {
                 html = "html",
                 ipynb = "python",
                 sh = "bash",
+                xit = "xit",
             },
             literal = {
                 todos = "md",
