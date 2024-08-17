@@ -1,88 +1,35 @@
--- nvim-lspconfig
-
--- Incomming dependencies: N/A
--- Outgoing dependencies: mason-lspconfig.nvim
-
 return {
     "neovim/nvim-lspconfig",
-    -- name = "lspconfig",
     enabled = true,
-    lazy = true,
-    event = {
-        "BufReadPre",
-    },
-    cmd = {
-        "LspInfo", "LspInstall",
-    },
+    lazy = "LazyFile",
+    event = { "BufReadPre" },
     dependencies = {
-        -- Depedencies to be loaded before nvim-lspconfig.
-        -- We need to make sure that `mason` is loaded in the following order:
-        -- `mason` -> `mason-lspconfig.nvim` -> `nvim-lspconfig`
-        -- We call `mason-lspconfig` here, which in turn calls `mason`.
-        -- In effect, before `nvim-lspconfig` is loaded, `mason` and
-        -- `mason-lspconfig` are loaded in that order.
         "williamboman/mason.nvim",
-        { "williamboman/mason-lspconfig.nvim", module = "mason" },
-        -- "hrsh7th/nvim-cmp",
+        "williamboman/mason-lspconfig.nvim",
     },
-    opts = {
-        diagnostics = {
-            enabled = true,
-            underline = true,
-            update_in_insert = true,
-            virtual_text = {
-                spacing = 4,
-                source = "always",
-                prefix = "·",
-            },
-        },
-    },
-    config = function(_, opts)
-		local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
-		if not lspconfig_ok then
-            vim.notify(vim.inspect(lspconfig), vim.log.levels.ERROR)
-			return
-		end
-
-        -- We use `vim.tbl_deep_extend` to merge the defaults lspconfig
-        -- provides with the capabilities `nvim-cmp` adds.
-        -- This will cause `cmp_nvim_lsp` to be loaded right away,
-        -- overriding any lazy-loading defined in `lazy-cmp-nvim-lsp.lua`.
-
-        local cmp_ok, cmp = pcall(require, "cmp_nvim_lsp")
-		if not cmp_ok then
-            vim.notify(vim.inspect(cmp), vim.log.levels.ERROR)
-			return
-		end
+    config = function()
+        local lspconfig = require("lspconfig")
+        local cmp_nvim_lsp = require("cmp_nvim_lsp")
 
         local capabilities = vim.lsp.protocol.make_client_capabilities()
+        capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
 
-        lspconfig.util.default_config.capabilities = vim.tbl_deep_extend("force", lspconfig.util.default_config.capabilities, cmp.default_capabilities(capabilities))
-
-        local bufnr = vim.api.nvim_get_current_buf()
-        local client = vim.lsp.get_active_clients()
-
-		on_attach = function(_, bufnr)
-            vim.keymap.set("n", "gD", vim.lsp.buf.declaration)
-            vim.keymap.set("n", "gd", vim.lsp.buf.definition)
+        local on_attach = function(_, bufnr)
+            vim.keymap.set("n", "gD", vim.lsp.buf.declaration, { buffer = bufnr })
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, { buffer = bufnr })
         end
 
-        -- Once LSP servers have been installed manually, with Mason, etc.,
-        -- they need to be set up here.
+        -- LSP Server Configurations
 
-        -- luals
+        -- Lua
         lspconfig.lua_ls.setup({
-            filetypes = {"lua"},
             on_attach = on_attach,
             capabilities = capabilities,
-            default_config = {
-                cmd = { vim.fn.exepath("lua-language-server") },
-            },
             settings = {
                 Lua = {
-                    diagnostics = vim.tbl_extend('force', opts.diagnostics, {
-                        globals = {"vim"},
-                    }),
+                    diagnostics = {
+                        globals = { "vim" },
+                    },
                     workspace = {
                         library = vim.api.nvim_get_runtime_file("", true),
                         checkThirdParty = false,
@@ -90,37 +37,19 @@ return {
                     telemetry = {
                         enable = false,
                     },
+                    type = {
+                        castNumberToInteger = true,
+                    },
+                    window = {
+                        progressBar = false,
+                        statusbar = false,
+                    },
                 },
             },
         })
 
-        -- ols
-        lspconfig.ols.setup({
-            filetypes = {"odin"},
-            on_attach = on_attach,
-            capabilities = capabilities,
-            default_config = {
-                cmd = {"ols"},
-                filetypes = {"odin"},
-                root_dir = lspconfig.util.root_pattern("ols.json", ".git"),
-                single_file_support = true,
-            },
-        })
-
-        -- vim-language-server
-        lspconfig.vimls.setup({
-            on_attach = on_attach,
-            capabilities = capabilities,
-            init_options = {
-                diagnostics = {
-                    opts.diagnostic,
-                },
-            },
-        })
-
-        -- pyright
+        -- Pyright
         lspconfig.pyright.setup({
-            filetypes = {"python"},
             on_attach = on_attach,
             capabilities = capabilities,
             settings = {
@@ -128,40 +57,53 @@ return {
                     analysis = {
                         autoSearchPaths = true,
                         diagnosticMode = "workspace",
-                        extraPaths = {"c:/users/christopher/appdata/local/programs/python/python310/lib/site-packages"}, -- This resolves an issue where third party imports can't be resolved because they're not in the root directory of the working file.
+                        extraPaths = { "c:/users/christopher/appdata/local/programs/python/python310/lib/site-packages" },
                         useLibraryCodeForTypes = true,
                     },
                 },
             },
         })
 
-        --html-lsp
+        -- Odin
+        lspconfig.ols.setup({
+            on_attach = on_attach,
+            capabilities = capabilities,
+        })
+
+        -- VimL
+        lspconfig.vimls.setup({
+            on_attach = on_attach,
+            capabilities = capabilities,
+        })
+
+        -- HTML
         lspconfig.html.setup({
-            filetypes = {"html"},
             on_attach = on_attach,
             capabilities = capabilities,
         })
 
-        --css-lsp
+        -- CSS
         lspconfig.cssls.setup({
-            filetypes = {"css"},
             on_attach = on_attach,
             capabilities = capabilities,
         })
 
-        -- marksman
-        -- lspconfig.marksman.setup({
-        --     filetypes = {"markdown"},
-        --     on_attach = on_attach,
-        --     capabilities = capabilities,
-        -- })
+        -- TypeScript
+        lspconfig.tsserver.setup({
+            on_attach = on_attach,
+            capabilities = capabilities,
+        })
 
-        -- tsserver
-        -- lspconfig.tsserver.setup({
-        --     filetypes = {"javascript", "typescript"},
-        --     on_attach = on_attach,
-        --     capabilities = capabilities,
-        -- })
+        -- Clangd
+        lspconfig.clangd.setup({
+            on_attach = on_attach,
+            capabilities = capabilities,
+        })
 
+        -- Omnisharp
+        lspconfig.omnisharp.setup({
+            on_attach = on_attach,
+            capabilities = capabilities,
+        })
     end,
 }
