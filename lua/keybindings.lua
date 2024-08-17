@@ -21,16 +21,17 @@ end
 -- VSCode
 
 if (vim.g.vscode) then
-    -- normal('<n>', '<C-v>', "WIN: Fixes paste overlap w/ Visual Command Mode.")
-    normal('J', '}', "Jump n paragraphs backwards.")
-    normal('K', '{', "Jump n paragraphs forwards.")
-    normal('L', '$', "Jump to the end of the active line.")
-    normal('H', '_', "Jump to the beginning of the active line.")
+    normal('<n>', '<C-v>', "WIN: Fixes paste overlap w/ Visual Command Mode.")
 
-    visual('J', '}', "Jump n paragraphs backwards in visual mode.")
-    visual('K', '{', "Jump n paragraphs forwards in visual mode.")
-    visual('L', '$', "Jump to the end of the active line in Visual mode.")
-    visual('H', '_', "Jump to the beginning of the active line in Visual mode.")
+    -- normal('J', '}', "Jump n paragraphs backwards.")
+    -- normal('K', '{', "Jump n paragraphs forwards.")
+    -- normal('L', '$', "Jump to the end of the active line.")
+    -- normal('H', '_', "Jump to the beginning of the active line.")
+
+    -- visual('J', '}', "Jump n paragraphs backwards in visual mode.")
+    -- visual('K', '{', "Jump n paragraphs forwards in visual mode.")
+    -- visual('L', '$', "Jump to the end of the active line in Visual mode.")
+    -- visual('H', '_', "Jump to the beginning of the active line in Visual mode.")
 
     normal('<leader>y', '"+y', "Yank to system clipboard.")
     normal('<leader>yy', '"+yy', "Yank current line to the system clipboard.")
@@ -46,9 +47,9 @@ if (vim.g.vscode) then
 end
 
 -- Neovide
+-- https://github.com/neovide/neovide/issues/1301#issuecomment-1705046950 
 
 if vim.g.neovide then
-    -- https://github.com/neovide/neovide/issues/1301#issuecomment-1705046950 
     vim.api.nvim_set_keymap("n", "<C-=>", ":lua vim.g.neovide_scale_factor = math.min(vim.g.neovide_scale_factor + 0.1,  1.0)<CR>", { silent = true, desc = "Increase Neovide scale factor." })
     vim.api.nvim_set_keymap("n", "<C-->", ":lua vim.g.neovide_scale_factor = math.max(vim.g.neovide_scale_factor - 0.1,  0.1)<CR>", { silent = true, desc = "Decrease Neovide scale factor." })
     vim.api.nvim_set_keymap("n", "<C-+>", ":lua vim.g.neovide_transparency = math.min(vim.g.neovide_transparency + 0.05, 1.0)<CR>", { silent = true, desc = "Increase Neovide transparency." })
@@ -57,20 +58,19 @@ if vim.g.neovide then
     vim.api.nvim_set_keymap("n", "<C-)>", ":lua vim.g.neovide_transparency = 0.9<CR>", { silent = true, desc = "Set Neovide transparency to 0.9." })
 end
 
+-- This activates cowboy mode, which complains when you spam movement keys.
+-- local discipline = require("scripts")
+-- discipline.cowboy()
+
 -- Keybindings
 
 -- Required by lazy.nvim and therefore this file needs to be called before lazy
 -- is loaded in init.lua.
 
--- Misc.
+-- Leaders
 
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
-
-normal('<n>', '<C-v>', "WIN: Fixes paste overlap within Visual Command Mode.")
-normal('<leader>l', ':Lazy<CR>', "Open the Lazy plugin manager.")
-normal("<leader>dt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d ')}, 'c', true, true)<CR>", "Insert current date at cursor.")
-normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.fn.expand("%:p") .. " sourced.")<CR>', "Source the current file.")
 
 -- Movement
 
@@ -106,7 +106,11 @@ visual('p', 'pgvy', "Put then re-yank the original selection.")
 
 normal('<leader>b', ':w<CR>:bd<CR>', "Save and close the current buffer.")
 
--- Terminal management and movement
+-- This moves the line the cursor is on up one line.
+normal('<A-k>', ':m .-2<CR>==', "Move the current cursor-line up one line.")
+normal('<A-j>', ':m .+1<CR>==', "Move the current cursor-line down one line.")
+
+-- TERMINAL MANAGEMENT AND MOVEMENT
 
 -- TODO [ ] Can we detect when we're in a terminal buffer?
 -- I.e. can we preface window movements with ESC so that we can move around freely.
@@ -128,9 +132,21 @@ normal('<leader>o', ':Oil<CR>', "Open the Oil file explorer.")
 -- TODO: Was this something to do with Oil interacting with the terminal?
 normal('<leader>e', '</<C-X><C-O>', "Unknown mapping related to Oil and terminal.")
 
--- Wrappin
+-- Visual Replace
 
--- Tests
+visual('<leader>r', '<Esc>:lua Visrep()<CR>', "Search for all instances then replace the visually selected text with a new string.")
+
+-- Misc
+
+normal('<n>', '<C-v>', "WIN: Fixes paste overlap within Visual Command Mode.")
+normal('<leader>l', ':Lazy<CR>', "Open the Lazy plugin manager.")
+normal("<leader>dt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d ')}, 'c', true, true)<CR>", "Insert current date at cursor.")
+normal("<leader>dtt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d %H:%M:%S')}, 'c', true, true)<CR>", "Insert current date and time at cursor.")
+normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.fn.expand("%:p") .. " sourced.")<CR>', "Source the current file.")
+
+-- ARCHIVE
+
+-- Wrappin Tests
 -- visual('<F2>', ':lua _G.Wrappin()<CR>')
 -- visual('<F3>', ':lua _G.WrappinTest()<CR>')
 -- normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
