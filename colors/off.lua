@@ -1,29 +1,8 @@
--- off.lua: A Neovim colorscheme inspired by a more pleasant version of `syntax off`
-
--- TODOs:
-
--- Add highlights for the following:
--- 'LeapBackdrop'
--- "LineNr"
--- "IndentBlanklineChar"
--- "@curlybraces"
--- 'SearchCounterDim'
-
 local M = {}
 
 -- Helper function to set highlights
 local function highlight(group, opts)
     vim.api.nvim_set_hl(0, group, opts)
-end
-
-vim.g.colors_name = "off"
-local colors_off_a_little = vim.g.colors_off_a_little or false
-
-if vim.g.colors_name then
-    vim.cmd("hi clear")
-    if vim.fn.exists("syntax_on") then
-        vim.cmd("syntax reset")
-    end
 end
 
 -- Color definitions
@@ -56,172 +35,165 @@ local colors = {
     dark_yellow     = "#A89C14",
 }
 
--- Set color palette based on background
-local background, bg_subtle, bg_subtle_comment, bg_very_subtle, norm, norm_subtle, purple, cyan, green, red, visual
+local function setup()
+    -- Check if colors should be off a little
+    local colors_off_a_little = vim.g.colors_off_a_little or false
 
-if vim.o.background == "dark" then
-    background = colors.black
-    bg_subtle = colors.light_black
-    bg_subtle_comment = colors.subtle_gray
-    bg_very_subtle = colors.subtle_black
-    norm = colors.lighter_gray
-    norm_subtle = colors.light_gray
-    purple = colors.light_purple
-    cyan = colors.light_cyan
-    green = colors.light_green
-    red = colors.light_red
-    visual = colors.lighter_black
-else
-    background = colors.actual_white
-    bg_subtle = colors.light_gray
-    bg_subtle_comment = colors.subtle_gray
-    bg_very_subtle = colors.lighter_gray
-    norm = colors.light_black
-    norm_subtle = colors.lighter_black
-    purple = colors.dark_purple
-    cyan = colors.dark_cyan
-    green = colors.dark_green
-    red = colors.dark_red
-    visual = colors.light_blue
-end
+    -- Set color palette based on background
+    local bg, bg_subtle, bg_subtle_comment, bg_very_subtle, norm, norm_subtle, purple, cyan, green, red, visual
 
--- Set highlights
-highlight("Normal", { background = background, fg = norm })
-highlight("Cursor", { background = colors.blue, fg = norm })
-highlight("Comment", { fg = bg_subtle_comment, italic = true })
+    if vim.o.background == "dark" then
+        bg = colors.black
+        bg_subtle = colors.light_black
+        bg_subtle_comment = colors.subtle_gray
+        bg_very_subtle = colors.subtle_black
+        norm = colors.lighter_gray
+        norm_subtle = colors.light_gray
+        purple = colors.light_purple
+        cyan = colors.light_cyan
+        green = colors.light_green
+        red = colors.light_red
+        visual = colors.lighter_black
+    else
+        bg = colors.actual_white
+        bg_subtle = colors.light_gray
+        bg_subtle_comment = colors.subtle_gray
+        bg_very_subtle = colors.lighter_gray
+        norm = colors.light_black
+        norm_subtle = colors.lighter_black
+        purple = colors.dark_purple
+        cyan = colors.dark_cyan
+        green = colors.dark_green
+        red = colors.dark_red
+        visual = colors.light_blue
+    end
 
--- Link similar highlight groups
-local links = {
-    {"Constant", "Normal"},
-    {"Character", "Constant"},
-    {"Number", "Constant"},
-    {"Boolean", "Constant"},
-    {"Float", "Constant"},
-    {"String", "Constant"},
-    {"Identifier", "Normal"},
-    {"Function", "Identifier"},
-    {"Statement", "Normal"},
-    {"Conditional", "Statement"},
-    {"Repeat", "Statement"},
-    {"Label", "Statement"},
-    {"Operator", "Statement"},
-    {"Keyword", "Statement"},
-    {"Exception", "Statement"},
-    {"PreProc", "Normal"},
-    {"Include", "PreProc"},
-    {"Define", "PreProc"},
-    {"Macro", "PreProc"},
-    {"PreCondit", "PreProc"},
-    {"Type", "Normal"},
-    {"StorageClass", "Type"},
-    {"Structure", "Type"},
-    {"Typedef", "Type"},
-    {"Special", "Normal"},
-    {"SpecialChar", "Special"},
-    {"Tag", "Special"},
-    {"Delimiter", "Special"},
-    {"SpecialComment", "Special"},
-    {"Debug", "Special"},
-}
+    -- Clear existing highlights
+    vim.cmd("highlight clear")
+    if vim.fn.exists("syntax_on") then
+        vim.cmd("syntax reset")
+    end
 
-for _, link in ipairs(links) do
-    vim.api.nvim_set_hl(0, link[1], { link = link[2] })
-end
+    -- Set colorscheme name
+    vim.g.colors_name = "off"
 
--- Set other highlights
-highlight("Underlined", { fg = norm, underline = true })
-highlight("Ignore", { fg = background })
-highlight("Error", { fg = colors.actual_white, background = red, bold = true })
-highlight("Todo", { fg = colors.actual_white, background = colors.pink, bold = true })
-highlight("SpecialKey", { fg = colors.light_green })
-highlight("NonText", { fg = colors.medium_gray })
-highlight("Directory", { fg = colors.dark_blue })
-highlight("ErrorMsg", { fg = colors.pink })
-highlight("IncSearch", { background = colors.yellow, fg = colors.light_black })
-highlight("Search", { background = bg_subtle, fg = norm })
-highlight("MoreMsg", { fg = colors.medium_gray, bold = true })
-highlight("ModeMsg", { link = "MoreMsg" })
-highlight("LineNr", { fg = bg_subtle })
-highlight("CursorLineNr", { fg = colors.blue, background = bg_very_subtle })
-highlight("Question", { fg = red })
-highlight("StatusLine", { background = bg_very_subtle })
-highlight("StatusLineNC", { background = bg_very_subtle, fg = colors.medium_gray })
-highlight("VertSplit", { background = bg_very_subtle, fg = bg_very_subtle })
-highlight("Title", { fg = colors.dark_blue })
-highlight("Visual", { background = visual })
-highlight("VisualNOS", { background = bg_subtle })
-highlight("WarningMsg", { fg = red })
-highlight("WildMenu", { fg = background, background = norm })
-highlight("Folded", { fg = colors.medium_gray })
-highlight("FoldColumn", { fg = bg_subtle })
-highlight("DiffAdd", { fg = green })
-highlight("DiffDelete", { fg = red })
-highlight("DiffChange", { fg = colors.dark_yellow })
-highlight("DiffText", { fg = colors.dark_blue })
-highlight("SignColumn", { fg = colors.light_green })
+    -- Define highlights
+    highlight("Normal", { fg = norm, bg = bg })
+    highlight("Cursor", { fg = norm, bg = colors.blue })
+    highlight("Comment", { fg = bg_subtle_comment, italic = true })
 
--- Set spell highlights
-if vim.fn.has("gui_running") == 1 then
+    -- Link common groups
+    local groups_to_link = {
+        "Constant", "Character", "Number", "Boolean", "Float", "String",
+        "Identifier", "Function",
+        "Statement", "Conditional", "Repeat", "Label", "Operator", "Keyword", "Exception",
+        "PreProc", "Include", "Define", "Macro", "PreCondit",
+        "Type", "StorageClass", "Structure", "Typedef",
+        "Special", "SpecialChar", "Tag", "Delimiter", "SpecialComment", "Debug"
+    }
+
+    for _, group in ipairs(groups_to_link) do
+        vim.api.nvim_set_hl(0, group, { link = "Normal" })
+    end
+
+    -- Set other highlights
+    highlight("Underlined", { fg = norm, underline = true })
+    highlight("Ignore", { fg = bg })
+    highlight("Error", { fg = colors.actual_white, bg = red, bold = true })
+    highlight("Todo", { fg = colors.actual_white, bg = colors.pink, bold = true })
+    highlight("SpecialKey", { fg = colors.light_green })
+    highlight("NonText", { fg = colors.medium_gray })
+    highlight("Directory", { fg = colors.dark_blue })
+    highlight("ErrorMsg", { fg = colors.pink })
+    highlight("IncSearch", { fg = colors.light_black, bg = colors.yellow })
+    highlight("Search", { fg = norm, bg = bg_subtle })
+    highlight("MoreMsg", { fg = colors.medium_gray, bold = true })
+    highlight("ModeMsg", { link = "MoreMsg" })
+    highlight("LineNr", { fg = bg_subtle })
+    highlight("CursorLineNr", { fg = colors.blue, bg = bg_very_subtle })
+    highlight("Question", { fg = red })
+    highlight("StatusLine", { bg = bg_very_subtle })
+    highlight("StatusLineNC", { fg = colors.medium_gray, bg = bg_very_subtle })
+    highlight("VertSplit", { fg = bg_very_subtle, bg = bg_very_subtle })
+    highlight("Title", { fg = colors.dark_blue })
+    highlight("Visual", { bg = visual })
+    highlight("VisualNOS", { bg = bg_subtle })
+    highlight("WarningMsg", { fg = red })
+    highlight("WildMenu", { fg = bg, bg = norm })
+    highlight("Folded", { fg = colors.medium_gray })
+    highlight("FoldColumn", { fg = bg_subtle })
+    highlight("DiffAdd", { fg = green })
+    highlight("DiffDelete", { fg = red })
+    highlight("DiffChange", { fg = colors.dark_yellow })
+    highlight("DiffText", { fg = colors.dark_blue })
+    highlight("SignColumn", { fg = colors.light_green })
+
+    -- Spelling
     highlight("SpellBad", { undercurl = true, sp = red })
     highlight("SpellCap", { undercurl = true, sp = colors.light_green })
     highlight("SpellRare", { undercurl = true, sp = colors.pink })
     highlight("SpellLocal", { undercurl = true, sp = colors.dark_green })
-else
-    highlight("SpellBad", { underline = true, fg = red })
-    highlight("SpellCap", { underline = true, fg = colors.light_green })
-    highlight("SpellRare", { underline = true, fg = colors.pink })
-    highlight("SpellLocal", { underline = true, fg = colors.dark_green })
+
+    -- Popup Menu
+    highlight("Pmenu", { fg = norm, bg = bg_subtle })
+    highlight("PmenuSel", { fg = norm, bg = colors.blue })
+    highlight("PmenuSbar", { fg = norm, bg = bg_subtle })
+    highlight("PmenuThumb", { fg = norm, bg = bg_subtle })
+
+    -- Tabs
+    highlight("TabLine", { fg = norm, bg = bg_very_subtle })
+    highlight("TabLineSel", { fg = colors.blue, bg = bg_subtle, bold = true })
+    highlight("TabLineFill", { fg = norm, bg = bg_very_subtle })
+
+    -- Cursor
+    highlight("CursorColumn", { bg = bg_very_subtle })
+    highlight("CursorLine", { bg = bg_very_subtle })
+    highlight("ColorColumn", { bg = bg_subtle })
+
+    -- Misc
+    highlight("MatchParen", { fg = norm, bg = bg_subtle })
+    highlight("qfLineNr", { fg = colors.medium_gray })
+
+    -- HTML headers
+    for i = 1, 6 do
+        highlight("htmlH" .. i, { fg = norm, bg = bg })
+    end
+
+    -- Diffs
+    highlight("diffRemoved", { link = "DiffDelete" })
+    highlight("diffAdded", { link = "DiffAdd" })
+
+    -- Signify, git-gutter
+    highlight("SignifySignAdd", { link = "LineNr" })
+    highlight("SignifySignDelete", { link = "LineNr" })
+    highlight("SignifySignChange", { link = "LineNr" })
+
+    if colors_off_a_little then
+        highlight("GitGutterAdd", { fg = colors.dark_green })
+        highlight("GitGutterChange", { fg = colors.dark_yellow })
+        highlight("GitGutterDelete", { fg = colors.dark_red })
+        highlight("GitGutterChangeDelete", { fg = colors.dark_red })
+    else
+        highlight("GitGutterAdd", { link = "LineNr" })
+        highlight("GitGutterDelete", { link = "LineNr" })
+        highlight("GitGutterChange", { link = "LineNr" })
+        highlight("GitGutterChangeDelete", { link = "LineNr" })
+    end
+
+    -- Fuzzy Search, Telescope & CtrlP
+    if colors_off_a_little then
+        highlight("CtrlPMatch", { fg = colors.light_green, bold = true })
+        highlight("TelescopeMatching", { fg = colors.light_green, bg = colors.subtle_black })
+        highlight("TelescopeSelection", { bg = colors.subtle_black, bold = true })
+    else
+        highlight("CtrlPMatch", { bold = true })
+        highlight("TelescopeMatching", {})
+        highlight("TelescopeSelection", { bg = colors.subtle_black, bold = true })
+    end
 end
 
--- Set other UI element highlights
-highlight("Pmenu", { fg = norm, background = bg_subtle })
-highlight("PmenuSel", { fg = norm, background = colors.blue })
-highlight("PmenuSbar", { fg = norm, background = bg_subtle })
-highlight("PmenuThumb", { fg = norm, background = bg_subtle })
-highlight("TabLine", { fg = norm, background = bg_very_subtle })
-highlight("TabLineSel", { fg = colors.blue, background = bg_subtle, bold = true })
-highlight("TabLineFill", { fg = norm, background = bg_very_subtle })
-highlight("CursorColumn", { background = bg_very_subtle })
-highlight("CursorLine", { fg = norm, background = bg_very_subtle })
-highlight("ColorColumn", { background = bg_subtle })
-highlight("MatchParen", { background = bg_subtle, fg = norm })
-highlight("qfLineNr", { fg = colors.medium_gray })
-
--- HTML highlights
-for i = 1, 6 do
-    highlight("htmlH" .. i, { background = background, fg = norm })
-end
-
--- Link diff highlights
-vim.api.nvim_set_hl(0, "diffRemoved", { link = "DiffDelete" })
-vim.api.nvim_set_hl(0, "diffAdded", { link = "DiffAdd" })
-
--- Signify, git-gutter
-vim.api.nvim_set_hl(0, "SignifySignAdd", { link = "LineNr" })
-vim.api.nvim_set_hl(0, "SignifySignDelete", { link = "LineNr" })
-vim.api.nvim_set_hl(0, "SignifySignChange", { link = "LineNr" })
-
-if colors_off_a_little then
-    highlight("GitGutterAdd", { fg = colors.dark_green })
-    highlight("GitGutterChange", { fg = colors.dark_yellow })
-    highlight("GitGutterDelete", { fg = colors.dark_red })
-    highlight("GitGutterChangeDelete", { fg = colors.dark_red })
-else
-    vim.api.nvim_set_hl(0, "GitGutterAdd", { link = "LineNr" })
-    vim.api.nvim_set_hl(0, "GitGutterDelete", { link = "LineNr" })
-    vim.api.nvim_set_hl(0, "GitGutterChange", { link = "LineNr" })
-    vim.api.nvim_set_hl(0, "GitGutterChangeDelete", { link = "LineNr" })
-end
-
--- Fuzzy Search, Telescope & CtrlP
-if colors_off_a_little then
-    highlight("CtrlPMatch", { fg = colors.light_green, bold = true })
-    highlight("TelescopeMatching", { fg = colors.light_green, background = colors.subtle_black })
-    highlight("TelescopeSelection", { background = colors.subtle_black, bold = true })
-else
-    highlight("CtrlPMatch", { bold = true })
-    highlight("TelescopeMatching", {})
-    highlight("TelescopeSelection", { background = colors.subtle_black, bold = true })
+function M.colorscheme()
+    setup()
 end
 
 return M

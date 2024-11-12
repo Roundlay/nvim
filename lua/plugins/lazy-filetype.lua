@@ -2,7 +2,7 @@
 
 return {
     "nathom/filetype.nvim",
-    enabled = true,
+    enabled = false,
     lazy = false,
     opts = {
         overrides = {

@@ -1,6 +1,7 @@
 -- telescope.nvim
 return {
     'nvim-telescope/telescope.nvim',
+    enabled = true,
     version = false,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
@@ -17,7 +18,22 @@ return {
     },
     opts = {
         defaults = {
-            -- layout_strategy = "bottom_pane",
+            layout_strategy = "horizontal",
+            layout_config = {
+                width = function(_, cols, _)
+                    if cols > 200 then
+                        return 170  -- Fixed width for large windows
+                    else
+                        return math.floor(cols * 0.87)  -- Dynamic width for smaller windows
+                    end
+                end,
+                height = function(_, _, max_lines)
+                    return math.floor(max_lines * 0.8)   -- 80% of the window height
+                end,
+                prompt_position = "bottom",
+                preview_width = 0.5,                     -- 50% split between preview and results
+                preview_cutoff = 120,                    -- Disable preview if width is less than 120
+            },
             previewer = true,
             prompt_title = "",
             results_title = "",
@@ -30,11 +46,6 @@ return {
             border = true,
             borderchars = { "━", "┃", "━", "┃", "┏", "┓", "┛", "┗" },
             preview = { msg_bg_fillchar = '' },
-            -- layout_config = {
-            --     width = 1.00,
-            --     height = 0.50,
-            --     prompt_position = "bottom",
-            -- },
         },
     },
     config = function(_, opts)

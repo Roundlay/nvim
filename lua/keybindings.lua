@@ -146,7 +146,8 @@ normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.f
 
 -- ARCHIVE
 
--- Wrappin Tests
+-- Wrappin' Tests
+
 -- visual('<F2>', ':lua _G.Wrappin()<CR>')
 -- visual('<F3>', ':lua _G.WrappinTest()<CR>')
 -- normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
@@ -162,3 +163,11 @@ normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.f
 -- normal("gP", "<Plug>(YankyGPutBefore)")
 -- normal("<C-p>", "<Plug>(YankyPreviousEntry)")
 -- normal("<C-n>", "<Plug>(YankyNextEntry)")
+
+-- Text to Colorscheme
+
+-- vim.api.nvim_set_keymap('n', '<f9>', ':T2CAddContrast -0.1<cr>', {noremap = true, silent = true})
+-- vim.api.nvim_set_keymap('n', '<f10>', ':T2CAddContrast 0.1<cr>', {noremap = true, silent = true})
+-- vim.api.nvim_set_keymap('n', '<f11>', ':T2CAddSaturation -0.1<cr>', {noremap = true, silent = true})
+-- vim.api.nvim_set_keymap('n', '<f12>', ':T2CAddSaturation 0.1<cr>', {noremap = true, silent = true})
+-- vim.api.nvim_set_keymap('n', '<f8>', ':T2CShuffleAccents<cr>', {noremap = true, silent = true})

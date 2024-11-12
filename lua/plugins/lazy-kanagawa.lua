@@ -16,11 +16,11 @@ return {
         end,
         compile = true,
         undercurl = true,
-        commentStyle = { italic = false },
+        commentStyle = { italic = true },
         functionStyle = { bold = true },
         keywordStyle = { italic = false },
         statementStyle = { bold = false },
-        typeStyle = { bold = false },
+        typeStyle = { bold = true },
         variablebuiltinStyle = { italic = false },
         specialReturn = true, -- Special highlight for the return keyword.
         specialException = true, -- Special highlight for exception handling keywords.

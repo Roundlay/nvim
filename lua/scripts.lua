@@ -6,6 +6,10 @@ end
 
 M = {}
 
+-- -------------------------------------------------------------------------- --
+
+-- Thought this was cool, not sure what to use it for.
+
 -- Get the operating system name using Neovim's LibUV bindings.
 local os_name = vim.loop.os_uname().sysname -- Windows_NT
 
@@ -45,6 +49,230 @@ end
 
 M:load_variables()
 
+-- -------------------------------------------------------------------------- --
+
+-- Custom diagnostic rendering setup
+
+function M:setup_diagnostics()
+    -- Namespace for diagnostic extmarks
+    local ns = vim.api.nvim_create_namespace("custom_diagnostics")
+    local diagnostic_extmark_start_id = 10000 -- Use a high ID for diagnostic-related extmarks
+
+    -- Function to check if the current buffer is "nofile"
+    local function is_nofile_buffer(bufnr)
+        return vim.bo[bufnr].buftype == "nofile"
+    end
+
+    -- Retrieve the DiagnosticError highlight group and use its foreground color
+    -- local diagnostic_error_hl = vim.api.nvim_get_hl_by_name("DiagnosticError", true)
+    -- local error_fg = string.format("#%06x", diagnostic_error_hl.foreground or 0xFF0000)  -- Default to red if not found
+    -- local error_bg = string.format("#%06x", diagnostic_error_hl.background or 0xFF0000)  -- Default to red if not found
+
+    -- Define the virtual text highlight to use both foreground and background color
+    vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = 0xf00823, bg = 0x360714 })
+
+    -- Function to wrap text to fit within the window width
+    local function wrap_text(text, width)
+        local wrapped_lines = {}
+        local current_line = ""
+
+        for word in text:gmatch("%S+") do
+            if #current_line + #word + 1 <= width then
+                current_line = current_line == "" and word or current_line .. " " .. word
+            else
+                table.insert(wrapped_lines, current_line)
+                current_line = word
+            end
+        end
+
+        -- Insert the last line
+        if current_line ~= "" then
+            table.insert(wrapped_lines, current_line)
+        end
+
+        return wrapped_lines
+    end
+
+    -- Function to render diagnostics above offending lines with padding and matching indentation
+    function M.render_diagnostics(bufnr, diagnostics)
+        -- Skip if the buffer type is "nofile"
+        if is_nofile_buffer(bufnr) then
+            return
+        end
+
+        vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+
+        if #diagnostics == 0 then
+            return
+        end
+
+        local win_width = vim.api.nvim_win_get_width(0) -- Get the current window width
+        local line_count = vim.api.nvim_buf_line_count(bufnr) -- Get the total number of lines in the buffer
+
+        local line_stacks = {}
+        for _, diagnostic in ipairs(diagnostics) do
+            -- Ensure the diagnostic line number is within range before processing
+            if diagnostic.lnum < line_count then
+                if not line_stacks[diagnostic.lnum] then
+                    line_stacks[diagnostic.lnum] = {}
+                end
+                table.insert(line_stacks[diagnostic.lnum], diagnostic)
+            end
+        end
+
+        local extmark_id = diagnostic_extmark_start_id
+        for lnum, diags in pairs(line_stacks) do
+            local virt_lines = {}
+
+            -- Calculate the indent level (number of leading spaces) for the line
+            local indent_level = vim.fn.indent(lnum + 1) -- +1 to match 1-based line number
+
+            for _, diagnostic in ipairs(diags) do
+                -- Wrap the message based on window width
+                local max_len = win_width - 10 -- Leave some padding
+                local wrapped_msg = wrap_text(diagnostic.message:gsub("\n", " "), max_len)
+
+                for _, msg_line in ipairs(wrapped_msg) do
+                    -- Calculate remaining spaces to pad the line fully
+                    local padding_spaces = win_width - #msg_line - 4 -- 4 accounts for gutter space
+                    local padded_msg_line = string.rep(" ", indent_level) .. msg_line .. string.rep(" ", padding_spaces)
+
+                    -- Add the padded and indented line with background and foreground color
+                    table.insert(virt_lines, {{ padded_msg_line, "DiagnosticVirtualTextError" }})
+                end
+            end
+
+            -- Ensure the line still exists before setting extmark
+            if lnum < line_count then
+                vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
+                    virt_lines = virt_lines,
+                    virt_lines_above = true,
+                    priority = 200,
+                    id = extmark_id, -- Assign a high extmark ID for diagnostics
+                })
+                extmark_id = extmark_id + 1 -- Increment extmark ID for next diagnostic
+            end
+        end
+    end
+
+    -- Function to highlight offending lines (full background)
+    function M.highlight_error_lines(bufnr, diagnostics)
+        -- Skip if the buffer type is "nofile"
+        if is_nofile_buffer(bufnr) then
+            return
+        end
+
+        local line_count = vim.api.nvim_buf_line_count(bufnr)
+        for _, diagnostic in ipairs(diagnostics) do
+            -- Highlight the full line (from column 0 to the end of the line) if it exists
+            if diagnostic.lnum < line_count then
+                vim.api.nvim_buf_add_highlight(bufnr, ns, "DiagnosticLineError", diagnostic.lnum, 0, -1)
+            end
+        end
+    end
+
+    -- Set up autocommands to update diagnostics on CursorMoved, TextChanged, InsertLeave, and WinResized
+    vim.api.nvim_create_autocmd({"CursorMoved", "TextChanged", "InsertLeave", "WinResized"}, {
+        buffer = 0,
+        callback = function()
+            -- Skip if the current buffer is "nofile"
+            if is_nofile_buffer(0) then
+                return
+            end
+
+            -- Refresh the diagnostics to keep them up-to-date while editing and when the window is resized
+            local diagnostics = vim.diagnostic.get(0)
+            M.render_diagnostics(0, diagnostics)
+            M.highlight_error_lines(0, diagnostics)
+        end,
+    })
+
+    -- Configure custom diagnostic handlers
+    vim.diagnostic.handlers.custom = {
+        show = function(namespace, bufnr, diagnostics)
+            -- Skip if the buffer type is "nofile"
+            if is_nofile_buffer(bufnr) then
+                return
+            end
+
+            M.render_diagnostics(bufnr, diagnostics)
+            M.highlight_error_lines(bufnr, diagnostics)
+        end,
+        hide = function(namespace, bufnr)
+            vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+        end,
+    }
+
+    -- Disable default virtual text diagnostics
+    vim.diagnostic.config({
+        virtual_text = false,
+    })
+end
+
+M:setup_diagnostics()
+
+--
+
+-- BUG: The active buffer determins the number of characters in the numberline 
+-- BUG: When swapping to a buffer with C-w, the newly active buffer's numberline gains extra buffer columns equal to the width of the numberline columns in the buffer with the largest number of numberline columns. The extra padding columns, and the extra prefix characters, disappears after entering Insert mode. E.g. Buffer 1 has 678 rows, Buffer 2 has 25, and Buffer 3 has 339. When the active buffer is Buffer 2, all other buffers have a numberline with width 2 (a huge issue when the other buffers have hundreds or thousands of lines). When the active buffer is Buffer 3, all buffers have a numberline with width 3 (even Buffer 2, which has 25 lines. This causes the padding column to the right of the numberline to shrink and expand based on the active buffer.
+-- [X] Check if this has something to do with any of the buffers being in READONLY mode.
+    -- Doesn't
+-- [X] Check if this has something to do with conflicting plugins that affect the numberline. E.g. Focus.
+    -- Doesn't
+
+function _G.format_line_number()
+  local lnum, rnum, virtnum = vim.v.lnum, vim.v.relnum, vim.v.virtnum
+
+  -- If the current line is virtual (i.e., it's part of virtual diagnostics or wrapped text), skip displaying the line number
+  if virtnum ~= 0 then
+    return string.rep(" ", #tostring(vim.fn.line("$"))) -- Return blank space for virtual lines
+  end
+
+  local total_lines = vim.fn.line("$")
+  local max_width = #tostring(total_lines)
+
+  -- Check if this is a wrapped line
+  if virtnum > 0 then
+    -- Determine if this wrapped line is part of the active line
+    local is_active_wrapped = (rnum == 0)
+    local dot_hl = is_active_wrapped and "CursorLineNr" or "LineNr"
+    -- Return dots for wrapped lines with appropriate highlight
+    return string.format("%%#%s#%s %%*", dot_hl, string.rep("·", max_width))
+  end
+
+  local number_to_display
+  local is_active_line = (rnum == 0)
+  if vim.wo.relativenumber then
+    number_to_display = is_active_line and lnum or math.abs(rnum)
+  else
+    number_to_display = lnum
+  end
+
+  -- Convert number to string and pad with zeros
+  local num_str = string.format("%0" .. max_width .. "d", number_to_display)
+
+  -- Always split into prefix and actual number, even for special windows
+  local prefix = string.match(num_str, "^0+") or ""
+  local actual_num = string.sub(num_str, #prefix + 1)
+
+  -- Determine highlight groups
+  local prefix_hl = "LineNrPrefix"
+  local number_hl = is_active_line and "CursorLineNr" or "LineNr"
+
+  -- Construct the formatted string with different highlights
+  local result = string.format("%%#%s#%s%%#%s#%s %%*",
+                               prefix_hl, prefix,
+                               number_hl, actual_num)
+
+  return result
+end
+
+-- Set the statuscolumn option to use the new formatter
+-- This enables the custom numberline.
+-- vim.opt.statuscolumn = "%!v:lua.format_line_number()"
+
+-- -------------------------------------------------------------------------- --
+
 function M.cowboy()
 	---@type table?
 	local id
@@ -80,6 +308,8 @@ function M.cowboy()
 	end
 end
 
+-- -------------------------------------------------------------------------- --
+
 -- Function to reload scripts
 -- _G.ReloadScripts = function()
 --     local initial_state = package.loaded['scripts']
@@ -93,6 +323,8 @@ end
 --         end
 --     end
 -- end
+
+-- -------------------------------------------------------------------------- --
 
 -- Function to show region marks and lines
 _G.show_region_marks_and_lines = function()
@@ -115,6 +347,10 @@ _G.show_region_marks_and_lines = function()
         range_table[#range_table] = string.sub(range_table[#range_table], 1, end_column)
     end
 end
+
+-- -------------------------------------------------------------------------- --
+
+-- Wrappin
 
 -- Test function for Wrappin
 _G.WrappinTest = function()
@@ -145,9 +381,6 @@ _G.WrappinTest = function()
         print("buffer:\n", k, v)
     end
 end
-
--- Wrappin
--- -----------------------------------------------------------------------------
 
 -- Function to wrap lines and add comments
 _G.Wrappin = function()
@@ -205,6 +438,8 @@ _G.Wrappin = function()
     -- Replacing lines in buffer with new wrapped lines
     vim.api.nvim_buf_set_lines(0, start_line, end_line+1, false, new_lines)
 end
+
+-- -------------------------------------------------------------------------- --
 
 -- Replace the visually selected text with a new string globally.
 _G.Visrep = function()
