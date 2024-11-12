@@ -22,9 +22,12 @@ return {
         },
         preview = {
             border = "none",
+            win_options = {
+                winblend = 1,
+            },
         },
         progress = {
-            border = "none",
+            border = "rounded",
         },
     },
     config = function(_, opts)

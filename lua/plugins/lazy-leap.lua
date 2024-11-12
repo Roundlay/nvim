@@ -4,7 +4,7 @@ return {
     "ggandor/leap.nvim",
     -- commit = "8facf2eb6a378fd7691dce8c8a7b2726823e2408", -- Temporarily rolling back to previous commit due to https://github.com/ggandor/leap.nvim/issues/171
     -- name = "leap",
-    enabled = true,
+    enabled = false,
     lazy = true,
     keys = {
         { "s",  mode = { "n", "x", "o" }, desc = "Leap forwards to"},
@@ -19,6 +19,8 @@ return {
         end
 
         leap.setup(opts)
+
+        require('leap').opts.highlight_unlabeled_phase_one_targets = true
 
         for k, v in pairs(opts) do
             leap.opts[k] = v

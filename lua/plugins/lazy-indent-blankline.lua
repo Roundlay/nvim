@@ -14,7 +14,7 @@ return {
             char = "│",
             smart_indent_cap = true,
             highlight = {
-                "winter_blue",
+                "gates_grey",
             },
         },
         scope = {
@@ -31,7 +31,8 @@ return {
         -- This changes the indentation line colour to Kanagawa's Winter Blue.
         hooks.register(
             hooks.type.HIGHLIGHT_SETUP, function()
-                vim.api.nvim_set_hl(0, "winter_blue", { fg = "#252535" })
+                -- vim.api.nvim_set_hl(0, "winter_blue", { fg = "#252535" }) -- Kanagawa
+                vim.api.nvim_set_hl(0, "gates_grey", { fg = "#2d2d2d" })
             end
         )
 

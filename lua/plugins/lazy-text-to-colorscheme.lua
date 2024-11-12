@@ -1,12 +1,12 @@
 return {
     "svermeulen/text-to-colorscheme",
-    enabled = true,
+    enabled = false,
     opts = {
         ai = {
             openai_api_key = os.getenv("OPENAI_API_KEY"),
             get_model = "gpt-4o",
-            minimum_foreground_contrast = 0.0,
-            enable_minimum_foreground_contrast = false,
+            minimum_foreground_contrast = 0.5,
+            enable_minimum_foreground_contrast = true,
             temperature = 0.0,
         },
         undercurl = true,
@@ -44,6 +44,21 @@ return {
                  "#9e9e9e",
                  "#c7c7c7",
                  "#d8d8d8",
+              },
+           },
+           {
+              name = "monochrome with 032c red syntax elements like strings numbers etc",
+              background_mode = "dark",
+              background = {0, 0, 13}, -- #202020
+              foreground = {0, 0, 74}, -- #bcbcbc
+              accents = {
+                 {0, 78, 83}, -- #d32f2f
+                 {0, 0, 100}, -- #ffffff
+                 {0, 0, 50}, -- #7f7f7f
+                 {0, 0, 63}, -- #a0a0a0
+                 {0, 0, 75}, -- #c0c0c0
+                 {0, 0, 88}, -- #e0e0e0
+                 {0, 0, 94}, -- #f0f0f0
               },
            },
         },
