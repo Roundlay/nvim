@@ -148,11 +148,11 @@ normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.f
 
 -- Wrappin' Tests
 
--- visual('<F2>', ':lua _G.Wrappin()<CR>')
--- visual('<F3>', ':lua _G.WrappinTest()<CR>')
--- normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
--- normal('<F6>', ':lua _G.Slect()<CR>')
--- visual('<F6>', ':lua _G.Slect()<CR>')
+visual('<F2>', ':lua _G.Wrappin()<CR>')
+visual('<F3>', ':lua _G.WrappinTest()<CR>')
+normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
+normal('<F6>', ':lua _G.Slect()<CR>')
+visual('<F6>', ':lua _G.Slect()<CR>')
 
 -- Yanky
 
