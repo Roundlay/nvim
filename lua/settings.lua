@@ -67,7 +67,7 @@ vim.o.mouse = 'a' -- Enable all mouse modes.
 vim.o.timeoutlen = 300 -- Mapping timeout.
 vim.o.ttimeoutlen = 0 -- Key code timeout.
 vim.o.updatetime = 4000 -- Swap file write frequency. (Default: 4000)
-vim.g.redrawtime = 16 -- Time in ms to redraw the screen. (Default: 2000)
+vim.g.redrawtime = 1 -- Time in ms to redraw the screen. (Default: 2000)
 vim.o.filetype = 'on' -- Disables filetype detection. NOTE: Handled by filetype. Can I disable this?
 
 -- Text Formatting
