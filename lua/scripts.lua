@@ -8,67 +8,30 @@ M = {}
 
 -- -------------------------------------------------------------------------- --
 
--- Thought this was cool, not sure what to use it for.
-
--- Get the operating system name using Neovim's LibUV bindings.
-local os_name = vim.loop.os_uname().sysname -- Windows_NT
-
-function M:load_variables()
-    self.is_mac      = os_name == "Darwin" -- Set to true if the operating system is macOS, otherwise false.
-    self.is_linux    = os_name == "Linux" -- Set to true if the operating system is Linux, otherwise false.
-    self.is_windows  = os_name == "Windows_NT" -- Set to true if the operating system is Windows, otherwise false.
-    self.is_wsl      = vim.fn.has("wsl") == 1 -- Set to true if running on Windows Subsystem for Linux (WSL), otherwise false.
-    self.vim_path    = vim.fn.stdpath("config") -- Get the Neovim configuration directory path.
-    local path_sep   = self.is_windows and "\\" or "/"  -- Set the path separator based on the operating system.
-    local home       = vim.loop.os_homedir() -- Store the user's home directory in the global table
-    self.plugins_dir = self.vim_path .. path_sep .. "plugins" -- Set the Neovim modules directory path.
-    self.home        = home -- Store the user's home directory in the global table
-    self.data_dir    = string.format("%s/site/", vim.fn.stdpath("data")) -- Set the Neovim data directory path
-    -- local home    = self.is_windows and os.getenv("USERPROFILE") or os.getenv("HOME")  -- Get the user's home directory.
-    -- self.cache_dir = home .. path_sep .. ".cache" .. path_sep .. "nvim" .. path_sep  -- Set the Neovim cache directory path.
-
-    -- Logging the system variables
-
-    -- if self.is_mac then
-    --     print("Operating System: macOS")
-    -- elseif self.is_linux then
-    --     print("Operating System: Linux")
-    -- elseif self.is_windows then
-    --     print("Operating System: Windows")
-    -- end
-
-    -- if self.is_wsl then
-    --     print("Running on Windows Subsystem for Linux (WSL)")
-    -- end
-
-    -- print("Vim Path: " .. self.vim_path)
-    -- print("Plugins Directory: " .. self.plugins_dir)
-    -- print("Home Directory: " .. self.home)
-    -- print("Data Directory: " .. self.data_dir)
-end
-
-M:load_variables()
-
--- -------------------------------------------------------------------------- --
-
--- Custom diagnostic rendering setup
+-- DIAGNOSTICS/ERROR RENDERER
 
 function M:setup_diagnostics()
     -- Namespace for diagnostic extmarks
     local ns = vim.api.nvim_create_namespace("custom_diagnostics")
-    local diagnostic_extmark_start_id = 10000 -- Use a high ID for diagnostic-related extmarks
+    local diagnostic_extmark_start_id = 10000
+    local max_diagnostics_per_line = 5 -- Configure maximum diagnostics per line
 
     -- Function to check if the current buffer is "nofile"
     local function is_nofile_buffer(bufnr)
         return vim.bo[bufnr].buftype == "nofile"
     end
 
-    -- Retrieve the DiagnosticError highlight group and use its foreground color
-    -- local diagnostic_error_hl = vim.api.nvim_get_hl_by_name("DiagnosticError", true)
-    -- local error_fg = string.format("#%06x", diagnostic_error_hl.foreground or 0xFF0000)  -- Default to red if not found
-    -- local error_bg = string.format("#%06x", diagnostic_error_hl.background or 0xFF0000)  -- Default to red if not found
+    -- Function to calculate gutter width
+    local function get_gutter_width()
+        local has_numbers = vim.wo.number or vim.wo.relativenumber
+        if not has_numbers then
+            return 0
+        end
+        return vim.wo.numberwidth
+    end
 
-    -- Define the virtual text highlight to use both foreground and background color
+    -- Define the virtual text highlight to use both foreground and background
+    -- color
     vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = 0xf00823, bg = 0x360714 })
 
     -- Function to wrap text to fit within the window width
@@ -93,9 +56,9 @@ function M:setup_diagnostics()
         return wrapped_lines
     end
 
-    -- Function to render diagnostics above offending lines with padding and matching indentation
+    -- Function to render diagnostics above offending lines with padding and
+    -- matching indentation
     function M.render_diagnostics(bufnr, diagnostics)
-        -- Skip if the buffer type is "nofile"
         if is_nofile_buffer(bufnr) then
             return
         end
@@ -106,12 +69,12 @@ function M:setup_diagnostics()
             return
         end
 
-        local win_width = vim.api.nvim_win_get_width(0) -- Get the current window width
-        local line_count = vim.api.nvim_buf_line_count(bufnr) -- Get the total number of lines in the buffer
+        local win_width = vim.api.nvim_win_get_width(0)
+        local gutter_width = get_gutter_width()
+        local line_count = vim.api.nvim_buf_line_count(bufnr)
 
         local line_stacks = {}
         for _, diagnostic in ipairs(diagnostics) do
-            -- Ensure the diagnostic line number is within range before processing
             if diagnostic.lnum < line_count then
                 if not line_stacks[diagnostic.lnum] then
                     line_stacks[diagnostic.lnum] = {}
@@ -123,78 +86,116 @@ function M:setup_diagnostics()
         local extmark_id = diagnostic_extmark_start_id
         for lnum, diags in pairs(line_stacks) do
             local virt_lines = {}
-
-            -- Calculate the indent level (number of leading spaces) for the line
-            local indent_level = vim.fn.indent(lnum + 1) -- +1 to match 1-based line number
-
-            for _, diagnostic in ipairs(diags) do
-                -- Wrap the message based on window width
-                local max_len = win_width - 10 -- Leave some padding
-                local wrapped_msg = wrap_text(diagnostic.message:gsub("\n", " "), max_len)
-
-                for _, msg_line in ipairs(wrapped_msg) do
-                    -- Calculate remaining spaces to pad the line fully
-                    local padding_spaces = win_width - #msg_line - 4 -- 4 accounts for gutter space
-                    local padded_msg_line = string.rep(" ", indent_level) .. msg_line .. string.rep(" ", padding_spaces)
-
-                    -- Add the padded and indented line with background and foreground color
-                    table.insert(virt_lines, {{ padded_msg_line, "DiagnosticVirtualTextError" }})
+            local indent_level = vim.fn.indent(lnum + 1)
+            -- Determine if we need to limit diagnostics for this line
+            local total_diagnostics = #diags
+            local diagnostics_to_show = diags
+            if total_diagnostics > max_diagnostics_per_line then
+                -- Take only the first max_diagnostics_per_line diagnostics
+                diagnostics_to_show = {}
+                for i = 1, max_diagnostics_per_line do
+                    diagnostics_to_show[i] = diags[i]
                 end
             end
 
-            -- Ensure the line still exists before setting extmark
+            -- Process the diagnostics we're going to show
+            for _, diagnostic in ipairs(diagnostics_to_show) do
+                local max_len = win_width - gutter_width - 6
+                local wrapped_msg = wrap_text(diagnostic.message:gsub("\n", " "), max_len)
+
+                for _, msg_line in ipairs(wrapped_msg) do
+                    local total_width = win_width - gutter_width
+                    local prefixed_msg = string.rep(" ", indent_level) .. msg_line
+                    local remaining_space = total_width - #prefixed_msg
+                    local full_line = prefixed_msg .. string.rep(" ", remaining_space)
+                    table.insert(virt_lines, {{ full_line, "DiagnosticVirtualTextError" }})
+                end
+            end
+
+            -- Add the summary line if we limited diagnostics
+            if total_diagnostics > max_diagnostics_per_line then
+                local remaining = total_diagnostics - max_diagnostics_per_line
+                local summary_msg = string.format("...and %d more diagnostic%s on this line",
+                    remaining,
+                    remaining > 1 and "s" or ""
+                )
+                local total_width = win_width - gutter_width
+                local prefixed_msg = string.rep(" ", indent_level) .. summary_msg
+                local remaining_space = total_width - #prefixed_msg
+                local full_line = prefixed_msg .. string.rep(" ", remaining_space)
+                table.insert(virt_lines, {{ full_line, "DiagnosticVirtualTextError" }})
+            end
+
             if lnum < line_count then
                 vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
                     virt_lines = virt_lines,
                     virt_lines_above = true,
                     priority = 200,
-                    id = extmark_id, -- Assign a high extmark ID for diagnostics
+                    id = extmark_id,
                 })
-                extmark_id = extmark_id + 1 -- Increment extmark ID for next diagnostic
+                extmark_id = extmark_id + 1
             end
         end
     end
 
     -- Function to highlight offending lines (full background)
     function M.highlight_error_lines(bufnr, diagnostics)
-        -- Skip if the buffer type is "nofile"
         if is_nofile_buffer(bufnr) then
             return
         end
 
         local line_count = vim.api.nvim_buf_line_count(bufnr)
         for _, diagnostic in ipairs(diagnostics) do
-            -- Highlight the full line (from column 0 to the end of the line) if it exists
             if diagnostic.lnum < line_count then
                 vim.api.nvim_buf_add_highlight(bufnr, ns, "DiagnosticLineError", diagnostic.lnum, 0, -1)
             end
         end
     end
 
-    -- Set up autocommands to update diagnostics on CursorMoved, TextChanged, InsertLeave, and WinResized
-    vim.api.nvim_create_autocmd({"CursorMoved", "TextChanged", "InsertLeave", "WinResized"}, {
-        buffer = 0,
-        callback = function()
-            -- Skip if the current buffer is "nofile"
+    -- Create a debounced refresh function to prevent excessive updates
+    local refresh_timer = nil
+    local function refresh_diagnostics()
+        if refresh_timer then
+            vim.fn.timer_stop(refresh_timer)
+        end
+        refresh_timer = vim.fn.timer_start(10, function()
             if is_nofile_buffer(0) then
                 return
             end
-
-            -- Refresh the diagnostics to keep them up-to-date while editing and when the window is resized
             local diagnostics = vim.diagnostic.get(0)
             M.render_diagnostics(0, diagnostics)
             M.highlight_error_lines(0, diagnostics)
+            refresh_timer = nil
+        end)
+    end
+
+    -- Set up autocommands with immediate response for option changes
+    local option_group = vim.api.nvim_create_augroup("DiagnosticUpdates", { clear = true })
+    -- Watch for number and relativenumber changes specifically
+    vim.api.nvim_create_autocmd("OptionSet", {
+        pattern = {"number", "relativenumber", "numberwidth"},
+        group = option_group,
+        callback = function()
+            vim.schedule(refresh_diagnostics)
         end,
     })
+
+    -- Watch for window/buffer changes
+    vim.api.nvim_create_autocmd(
+        {"CursorMoved", "TextChanged", "InsertLeave", "VimResized", "WinScrolled"},
+        {
+            group = option_group,
+            buffer = 0,
+            callback = refresh_diagnostics,
+        }
+    )
 
     -- Configure custom diagnostic handlers
     vim.diagnostic.handlers.custom = {
         show = function(namespace, bufnr, diagnostics)
-            -- Skip if the buffer type is "nofile"
             if is_nofile_buffer(bufnr) then
                 return
             end
-
             M.render_diagnostics(bufnr, diagnostics)
             M.highlight_error_lines(bufnr, diagnostics)
         end,
@@ -211,7 +212,11 @@ end
 
 M:setup_diagnostics()
 
---
+-----
+
+-- NUMBERLINE RENDERER
+
+-- Buggy.
 
 -- BUG: The active buffer determins the number of characters in the numberline 
 -- BUG: When swapping to a buffer with C-w, the newly active buffer's numberline gains extra buffer columns equal to the width of the numberline columns in the buffer with the largest number of numberline columns. The extra padding columns, and the extra prefix characters, disappears after entering Insert mode. E.g. Buffer 1 has 678 rows, Buffer 2 has 25, and Buffer 3 has 339. When the active buffer is Buffer 2, all other buffers have a numberline with width 2 (a huge issue when the other buffers have hundreds or thousands of lines). When the active buffer is Buffer 3, all buffers have a numberline with width 3 (even Buffer 2, which has 25 lines. This causes the padding column to the right of the numberline to shrink and expand based on the active buffer.
@@ -273,6 +278,8 @@ end
 
 -- -------------------------------------------------------------------------- --
 
+-- WOAH THERE, COWBOY
+
 function M.cowboy()
 	---@type table?
 	local id
@@ -310,7 +317,8 @@ end
 
 -- -------------------------------------------------------------------------- --
 
--- Function to reload scripts
+-- RELOAD SCRIPTS
+
 -- _G.ReloadScripts = function()
 --     local initial_state = package.loaded['scripts']
 --     if package.loaded['scripts'] then
@@ -326,7 +334,8 @@ end
 
 -- -------------------------------------------------------------------------- --
 
--- Function to show region marks and lines
+-- SHOW REGION MARKS AND LINES (?)
+
 _G.show_region_marks_and_lines = function()
     local buffer = 0
     local start_table  = vim.api.nvim_buf_get_mark(buffer, '<')
@@ -350,100 +359,114 @@ end
 
 -- -------------------------------------------------------------------------- --
 
--- Wrappin
+-- WRAPPIN'
 
--- Test function for Wrappin
-_G.WrappinTest = function()
-    local start_line = vim.fn.getpos("'<")[2] - 1
-    local end_line = vim.fn.getpos("'>")[2] - 1
-    local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line+1, false)
-    local comment_block = false
+-- Reversably soft wrap lines that are longer than n characters at the nth
+-- column. The default wrap column is column 80. The script respects comment
+-- prefixes and inline comments. It also respects the initial indentation of the
+-- first line in the selection.
 
-    local buffer = {}
-    local words = {}
+-- TODO: We should add support for rewrapping multiple lines, where one or more
+-- of the lines are already wrapped. E.g. if we have a selection of 4 lines,
+-- where lines 1, 2, and 4 are already within the wrap boundary, but 3 has a
+-- length longer than our wrap column, we should be able to reflow everything
+-- below the offending line.
 
-    -- Check if key 1 in lines starts with "--"
-    if lines[1]:sub(1, 2) == "--" then
-        comment_block = true
-        table.insert(buffer, lines[1]:sub(1, 2))
-    end
-
-    for i, line in ipairs(lines) do
-        if line ~= nil then
-            print("#line: "..#line[i])
-        end
-        for word in line:gmatch("%S+") do
-            table.insert(words, word)
-        end
-    end
-
-    for k, v in ipairs(buffer) do
-        print("buffer:\n", k, v)
-    end
-end
-
--- Function to wrap lines and add comments
 _G.Wrappin = function()
     local start_line = vim.fn.getpos("'<")[2] - 1
     local end_line = vim.fn.getpos("'>")[2] - 1
+    local max_width = 80
 
-    -- Fetch the comment string into 'commentstring'
-    local commentstring = "--"
-
-    -- Extract the comment character from the comment string
-    local comment_char = commentstring:match("^%s*(.-)%s*$") or ""
-
-    -- Check if the first few characters in line 1 are a comment string:
-    local line1 = vim.api.nvim_buf_get_lines(0, start_line, start_line+1, false)[1]
-    vim.notify(os.date("[%H:%M:%S] ")..line1, vim.log.levels.WARN)
-
-    -- Fetch lines from the visual selection
     local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line+1, false)
-    local new_lines = {}
-
-    -- Check if initial line is a comment
+    if #lines == 0 then return end
+    -- Analyze first line for comment pattern
     local initial_indent = lines[1]:match("^(%s*)")
-    -- Check if the first line is a comment
-    local is_commented =  lines[1]:sub(1, #comment_char) == comment_char
-
-    -- Join all lines into one line
-    local joined_line = table.concat(lines, " ")
-
-    -- Segmenting the line into words
-    local words = {}
-    for word in joined_line:gmatch("%S+") do
-        table.insert(words, word)
-    end
-
-    -- Initialize line with comment character if initial line was a comment
-    local line = is_commented and (lines[1]:sub(1, #comment_char) == comment_char and "" or (commentstring .. " ")) or ""
-
-    -- Adding words until line exceeds 80 characters
-    for i, word in ipairs(words) do
-        -- If adding next word would cause line to exceed 80 characters, insert line into 'new_lines' and start new line
-        if #line + #word + (is_commented and #comment_char or 0) + 1 > 80 then
-            table.insert(new_lines, line:match("^%s*(.-)%s*$")) -- Remove leading and trailing whitespace
-            line = ((is_commented or lines[1]:sub(1, #comment_char) == comment_char) and (comment_char .. " ") or "") .. word
+    local comment_prefix = lines[1]:match("^%s*([%-/]+%s*)") or ""
+    -- Detect if we're in wrapped state (B) or single-line state (A)
+    local is_wrapped = #lines > 1 and lines[2]:match("^%s*" .. vim.pesc(comment_prefix))
+    if is_wrapped then
+        -- UNWRAP: Join lines, removing duplicate comment prefixes
+        local content = {}
+        for _, line in ipairs(lines) do
+            local cleaned = line:gsub("^%s*" .. vim.pesc(comment_prefix), "", 1)
+            table.insert(content, cleaned)
+        end
+        local single_line = initial_indent .. comment_prefix ..
+                           table.concat(content, " "):gsub("%s+", " ")
+        vim.api.nvim_buf_set_lines(0, start_line, end_line+1, false, {single_line})
+    else
+        -- WRAP: Split into multiple lines with comment prefix
+        local content = lines[1]
+        local words = {}
+        -- If this is already a comment line, don't look for inline comments
+        if content:match("^%s*[%-/]+%s+") then
+            content = content:gsub("^%s*" .. vim.pesc(comment_prefix), "")
+            for word in content:gmatch("%S+") do
+                table.insert(words, word)
+            end
         else
-            line = line .. (i > 1 and " " or "") .. word
+            -- Only look for inline comments in non-comment lines
+            content = content:gsub("^%s*" .. vim.pesc(comment_prefix), "")
+            local code_part, comment_part = content:match("^(.-)%s*(//.*)$")
+            if code_part and comment_part then
+                -- Process code part
+                for word in code_part:gmatch("%S+") do
+                    table.insert(words, word)
+                end
+                -- Add comment as a single unit
+                table.insert(words, comment_part)
+            else
+                -- No inline comment, process normally
+                for word in content:gmatch("%S+") do
+                    table.insert(words, word)
+                end
+            end
         end
-        -- If the line is a comment, add the comment string to the start of the line
-        if is_commented then
-            line = comment_char .. " " .. line
+        local new_lines = {}
+        local current_line = initial_indent .. comment_prefix
+        local line_width = #current_line
+        for i, word in ipairs(words) do
+            local space_needed = i > 1 and 1 or 0
+            local word_width = #word + space_needed
+            -- Special handling for comments, but only if we're not already in a comment
+            local is_comment = not content:match("^%s*[%-/]+%s+") and word:match("^//")
+            if is_comment then
+                -- If current line plus comment would exceed width, wrap first
+                if line_width > #initial_indent then
+                    table.insert(new_lines, current_line)
+                    current_line = initial_indent
+                    line_width = #current_line
+                end
+                -- Add comment as a single unit
+                current_line = current_line .. word
+                line_width = #current_line
+            else
+                -- Normal word handling
+                if line_width + word_width > max_width then
+                    table.insert(new_lines, current_line)
+                    current_line = initial_indent .. comment_prefix .. word
+                    line_width = #current_line
+                else
+                    current_line = current_line .. (space_needed > 0 and " " or "") .. word
+                    line_width = line_width + word_width
+                end
+            end
         end
+        if current_line ~= "" then
+            table.insert(new_lines, current_line)
+        end
+        vim.api.nvim_buf_set_lines(0, start_line, end_line+1, false, new_lines)
     end
-    -- Push remaining line to 'new_lines'
-    table.insert(new_lines, line:match("^%s*(.-)%s*$")) -- Remove leading and trailing whitespace
-
-    -- Replacing lines in buffer with new wrapped lines
-    vim.api.nvim_buf_set_lines(0, start_line, end_line+1, false, new_lines)
 end
 
 -- -------------------------------------------------------------------------- --
 
--- Replace the visually selected text with a new string globally.
+-- VISREP
+
+-- Replace visually selected text globally with a new string. Respects word
+-- boundaries.
+
 _G.Visrep = function()
-    -- Save the current cursor position
     local cursor_pos = vim.fn.getpos('.')
 
     local start_pos = vim.fn.getpos("'<")
@@ -454,21 +477,49 @@ _G.Visrep = function()
     -- Concatenate all selected lines into a single pattern
     for i, line in ipairs(selected_text) do
         if i > 1 then pattern = pattern .. '\n' end
-        pattern = pattern .. line:sub(start_pos[3], end_pos[3])
+        local start_col = 1
+        local end_col = #line
+        if i == 1 then
+            start_col = start_pos[3]
+        end
+        if i == #selected_text then
+            end_col = end_pos[3]
+        end
+        pattern = pattern .. line:sub(start_col, end_col)
     end
 
     local new_string = vim.fn.input('Replace "' .. pattern .. '" with: ')
     if new_string ~= "" then
-        vim.cmd(':%s/' .. pattern .. '/' .. new_string .. '/g')
+        -- Pick a separator that is not in pattern or new_string
+        local separators = { '/', '#', '%', '!', '@', '$', '^', '&', '*', '+', '=', '?', '|', '~' }
+        local sep = nil
+        for _, s in ipairs(separators) do
+            if not pattern:find(s, 1, true) and not new_string:find(s, 1, true) then
+                sep = s
+                break
+            end
+        end
+        if not sep then
+            print("Could not find a suitable separator for the pattern and replacement.")
+            return
+        end
+
+        local regex_specials = '().%+-*?[]^$\\|/'
+        local escaped_pattern = vim.fn.escape(pattern, sep .. '\\' .. regex_specials)
+        local escaped_new_string = vim.fn.escape(new_string, sep .. '\\')
+
+        local final_pattern = '\\v(\\k)@<!' .. escaped_pattern .. '(\\k)@!'
+
+        vim.cmd(':%s' .. sep .. final_pattern .. sep .. escaped_new_string .. sep .. 'g')
     end
 
-    -- Restore the cursor position
     vim.fn.setpos('.', cursor_pos)
 end
 
+-- -----------------------------------------------------------------------------
+
 -- Slect 0.1.0
 -- Draw virtual text over selected text or at the cursor position.
--- -----------------------------------------------------------------------------
 
 -- local ns_id = vim.api.nvim_create_namespace("SlectNamespace")
 --
