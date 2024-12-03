@@ -96,6 +96,11 @@ return {
             icons_enabled = false,
             theme = "vscode",
             -- theme = "kanagawa",
+            refresh = {
+              statusline = 1,  -- Note these are in mili second and default is 1000
+              tabline = 1,
+              winbar = 1,
+            }
         },
         extension = {
             "mason",
