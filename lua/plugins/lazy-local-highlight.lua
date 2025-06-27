@@ -5,20 +5,20 @@
 
 return {
     "tzachar/local-highlight.nvim",
-    enabled = true,
+    enabled = false,
     lazy = true,
     version = false,
     event = "BufReadPost",
     condition = function() if (vim.g.vscode) then return false end end,
     opts = {
-        -- file_types = {"python", "cpp"}, -- Attach to these file types
-        -- disable_file_types = {"tex"}, -- Attach to filetypes except these
+        disable_file_types = { "terminal", }, -- Exclude terminal buffers and empty filetypes
         hlgroup = "Search",
-        -- cw_hlgroup = "CurSearch", -- Specify highlight group for word under cursor
+        cw_hlgroup = "CurSearch", -- Specify highlight group for word under cursor
         insert_mode = false,
         min_match_len = 1,
         max_match_len = math.huge,
         highlight_single_match = true,
+        debounce_timeout = 1,
     },
     config = function(_, opts)
         local local_highlight_ok, local_highlight = pcall(require, "local-highlight")

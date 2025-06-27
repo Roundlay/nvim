@@ -3,6 +3,7 @@
 return {
     "williamboman/mason.nvim",
     lazy = true,
+    enabled = true,
     build = ":MasonUpdate",
     cmd = "Mason",
     opts = {
