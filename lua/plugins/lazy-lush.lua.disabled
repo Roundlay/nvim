@@ -1,5 +1,0 @@
-return {
-    "rktjmp/lush.nvim",
-    enabled = false,
-    { dir = "C:/Users/Christopher/Projects/nvim/plugs/Juniper/lua/lush_theme ", lazy = true, enabled = false },
-}
