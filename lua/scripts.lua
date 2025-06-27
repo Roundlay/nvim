@@ -1,319 +1,678 @@
 -- scripts.lua
-
 if vim.g.vscode then
     return
 end
 
-M = {}
+-- local M = _G.M or {}
+-- local M = {}
+_G.M = M or {}
 
--- -------------------------------------------------------------------------- --
+-- -----------------------------------------------------------------------------
 
--- DIAGNOSTICS/ERROR RENDERER
+-- C Return Type Helper
+-- Shows the return type of C functions inline alongside the function call.
+-- E.g. `int foo(int a, int b);` becomes `int foo(int a, int b); ← int`
+-- This also works for functions called from header files.
+-- E.g. `fopen(path, "rb")` becomes `fopen(path, "rb"); ← FILE*`
 
-function M:setup_diagnostics()
-    -- Namespace for diagnostic extmarks
+-- 1. TODO: EXPLAIN OR FIX: The current implementation relies on various hashes and variables that exist in the global scope. If this is better for performance, please document the reasons why, but if we can keep the gloabal scope clean, we should do that. We want to remain data-oriented at all times.
+
+-- 2. 2025-06-25 21:37:37 [X] TODO: BUG: virtual type helper text appears duplicated when opening a file for the first time. E.g. with `nvim file.c`. The duplicate virtual text disappears as soon as we modify the file (e.g. enter insert mode, type something, then exit insert mode). It also disappears when we hit `o` to start a new line, etc.
+
+-- 3. 2025-06-25 21:37:49 [X] TODO: BUG: Virtual text doesn't disappear immediately when we delete the associated function call. E.g. if we delete `fopen(path, "rb"); <- FILE*` (keeping in mind that `<- FILE*` is virtual text), the virtual text remains until we modify the file in some way (e.g. enter insert mode, type something, use `o` to start a new line, etc.). We need to make sure that everything updates instantaneously. You can find some ideas about how you might be able to do this in the custom_diagnostics_formatter() function, which had to deal with a similar issue.
+
+-- 4. 2025-06-25 21:37:59 [ ] TODO: BUG: When we use e.g. dd to delete some line, the virtual text flashes briefly and a duplicate virtual text appears. E.g. <- int becomes <-int <- int very briefly. Anything to do with overlapping autocmds or something like that in /lua/autocmds.lua?
+
+-- 5. 2025-06-25 21:38:53  [ ] TODO: FIX: We need to ensure that the virutal text appears, clears, etc., immediately! No delay! See the pretty_number_line() function for ideas.
+
+-- Track last processed content hash per buffer
+
+-- /////////////////////////////////////////////////////////////////////////////
+-- @Codex Internal state -------------------------------------------------------
+-- Keep all mutable state in locals instead of polluting the global namespace.
+-- The C-Return-Type helper only needs to remember per-buffer hashes/retries and
+-- hold on to a single namespace handle.  Storing these in up-values is both
+-- faster (one less table lookup compared to _G.M.*) and keeps the public API
+-- surface of the module clean.  Access from outside this file is unnecessary –
+-- everything is driven from autocommands inside this module.
+--
+-- Note: Lua up-values are JIT-promoted to registers and are therefore cheaper
+-- than global‐table accesses (see LuaJIT byte-code listings).  This change is
+-- therefore a net performance win while satisfying the “data-oriented, keep
+-- the global scope clean” guideline from AGENTS.md.
+-- /////////////////////////////////////////////////////////////////////////////
+
+-- local c_return_hashes  = {} ---@type table<integer,string>  -- bufnr → sha256
+-- local c_return_retries = {} ---@type table<integer,integer> -- bufnr → retry-count
+--
+-- -- One namespace for all extmarks so we can clear/update them deterministically.
+-- local c_return_ns = vim.api.nvim_create_namespace('c_return_types')
+--
+-- -- Track extmark ids we own per buffer so we can update/delete incrementally.
+-- local c_return_marks = {} ---@type table<integer, table<integer, integer>> -- bufnr → { row → mark_id }
+--
+-- function M:show_c_return_types()
+--   -- Only process C/C++ files
+--   local ft = vim.bo.filetype
+--   if ft ~= 'c' and ft ~= 'cpp' and ft ~= 'h' then
+--     return
+--   end
+--
+--   -- clangd (and some other servers) can show their own return-type inlay hints
+--   -- which would duplicate the helper text we are about to render.  Disable
+--   -- inlay hints for this buffer to avoid visual clutter.  (Neovim ≥0.10)
+--   pcall(function()
+--     local ih = vim.lsp.inlay_hint
+--     if ih and type(ih.enable) == 'function' then
+--       -- Signature (nvim 0.10): enable(buf, bool) or enable(bool, buf)
+--       local ok = pcall(ih.enable, vim.api.nvim_get_current_buf(), false)
+--       if not ok then pcall(ih.enable, false, vim.api.nvim_get_current_buf()) end
+--     end
+--   end)
+--   
+--   local bufnr = vim.api.nvim_get_current_buf()
+--   
+--   -- Get buffer content hash to check if anything changed
+--   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+--   local content_hash = vim.fn.sha256(table.concat(lines, "\n"))
+--   
+--   -- Skip if content hasn't changed
+--   if c_return_hashes[bufnr] == content_hash then
+--     return
+--   end
+--   
+--   -- Prepare per-buffer mark table
+--   local mark_tbl = c_return_marks[bufnr]
+--   if not mark_tbl then
+--     mark_tbl = {}
+--     c_return_marks[bufnr] = mark_tbl
+--   end
+--   
+--   -- Check if LSP is attached
+--   local clients = vim.lsp.get_clients({bufnr = bufnr})
+--   if #clients == 0 then
+--     -- No LSP yet, set a flag to process this buffer when LSP attaches
+--     c_return_hashes[bufnr] = nil  -- Clear hash to force reprocess
+--     return
+--   end
+--   
+--   -- Track if we found any return types
+--   local found_any = false
+--   
+--   -- Get first client for position encoding
+--   local client = clients[1]
+--   
+--   -- For .h files, try C parser first, fallback to cpp
+--   local lang = ft
+--   if ft == 'h' then
+--     lang = 'c'
+--   end
+--   
+--   -- Get tree-sitter parser with error handling
+--   local ok, parser = pcall(vim.treesitter.get_parser, bufnr, lang)
+--   if not ok and ft == 'h' then
+--     -- Try cpp parser for .h files if c parser fails
+--     ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'cpp')
+--   end
+--   if not ok then
+--     return
+--   end
+--   
+--   local tree = parser:parse()[1]
+--   local root = tree:root()
+--   
+--   -- Query for function calls
+--   local query_ok, query = pcall(vim.treesitter.query.parse, lang, [[
+--     (call_expression
+--       function: (identifier) @func
+--     ) @call
+--   ]])
+--   if not query_ok then
+--     return
+--   end
+--   
+--   -- Track processed lines to avoid duplicate work within a single pass
+--   local processed = {}
+--   
+--   -- Keep a set of rows we touched this pass to later delete stale marks.
+--   local seen_rows = {}
+--
+--   -- Process each function call
+--   for id, node in query:iter_captures(root, bufnr, 0, -1) do
+--     if query.captures[id] == "func" then
+--       local parent = node:parent()
+--       local end_row, end_col = parent:end_()
+--
+--       -- Skip if already processed (see comment above)
+--       if processed[end_row] then
+--         goto continue
+--       end
+--       processed[end_row] = true
+--       
+--       local func_name = vim.treesitter.get_node_text(node, bufnr)
+--       local start_row, start_col = node:start()
+--       
+--       -- Make LSP hover request with proper position encoding
+--       local params = vim.lsp.util.make_position_params(0, client.offset_encoding)
+--       params.position.line = start_row
+--       params.position.character = start_col
+--       
+--       -- Use synchronous request to get immediate results
+--       local result = vim.lsp.buf_request_sync(bufnr, 'textDocument/hover', params, 500)
+--       
+--       if result then
+--         for _, res in pairs(result) do
+--           if res.result and res.result.contents then
+--             local content = ""
+--             if type(res.result.contents) == "string" then
+--               content = res.result.contents
+--             elseif res.result.contents.value then
+--               content = res.result.contents.value
+--             end
+--             
+--             if content ~= "" then
+--               -- Parse return type from clangd format: → `type`
+--               local return_type = content:match("→%s*`([^`]+)`")
+--               
+--               if return_type and return_type ~= "void" then
+--                 -- Simplify complex types
+--                 -- Remove "aka" information: "FILE * (aka struct _iobuf *)" -> "FILE*"
+--                 return_type = return_type:gsub("%s*%(aka[^)]+%)", "")
+--                 -- Keep array notation together: "char []" -> "char[]"
+--                 return_type = return_type:gsub("(%S)%s+(%[%])", "%1%2")
+--                 -- Remove extra spaces around pointers: "FILE *" -> "FILE*"
+--                 return_type = return_type:gsub("(%S)%s+%*", "%1*")
+--                 -- Clean up remaining whitespace
+--                 return_type = return_type:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+--                 
+--                 -- Check if there's a semicolon right after the function call
+--                 local line = vim.api.nvim_buf_get_lines(bufnr, end_row, end_row + 1, false)[1]
+--                 local char_after = line:sub(end_col + 1, end_col + 1)
+--                 
+--                 local virt_col = (char_after == ";") and (end_col + 1) or end_col
+--
+--                 local opts = {
+--                   virt_text = {{" ← " .. return_type, "CReturnType"}},
+--                   virt_text_pos = "inline",
+--                 }
+--
+--                 -- Re-use existing mark on that row if present.
+--                 local prev_id = mark_tbl[end_row]
+--                 if prev_id then opts.id = prev_id end
+--
+--                 local new_id = vim.api.nvim_buf_set_extmark(bufnr, c_return_ns, end_row, virt_col, opts)
+--
+--                 mark_tbl[end_row] = new_id
+--                 seen_rows[end_row] = true
+--                 found_any = true
+--               end
+--             end
+--             break -- Only process first LSP client result
+--           end
+--         end
+--       end
+--       
+--       ::continue::
+--     end
+--   end
+--   
+--   -- If we found any results, mark as processed
+--   if found_any then
+--     c_return_hashes[bufnr] = content_hash
+--     c_return_retries[bufnr] = nil
+--   else
+--     -- No results found, maybe LSP isn't ready yet
+--     local retries = c_return_retries[bufnr] or 0
+--     if retries < 3 then
+--       -- Try again in a moment
+--       c_return_retries[bufnr] = retries + 1
+--       vim.defer_fn(function()
+--         if vim.api.nvim_buf_is_valid(bufnr) then
+--           M:show_c_return_types()
+--         end
+--       end, 300 * (retries + 1))  -- Increasing delay: 300ms, 600ms, 900ms
+--     else
+--       -- Give up and mark as processed to avoid infinite retries
+--       c_return_hashes[bufnr] = content_hash
+--       c_return_retries[bufnr] = nil
+--     end
+--   end
+--
+--   -- Remove stale marks (function call deleted)
+--   for row, id in pairs(mark_tbl) do
+--     if not seen_rows[row] then
+--       vim.api.nvim_buf_del_extmark(bufnr, c_return_ns, id)
+--       mark_tbl[row] = nil
+--     end
+--   end
+-- end
+--
+-- -- Setup autocmd group
+-- local group = vim.api.nvim_create_augroup("CReturnTypeHelper", { clear = true })
+--
+-- -- Trigger on buffer events and LSP attach
+-- vim.api.nvim_create_autocmd({"BufReadPost", "BufWritePost", "InsertLeave", "TextChanged"}, {
+--   group = group,
+--   pattern = {"*.c", "*.h", "*.cpp", "*.cc", "*.cxx", "*.hpp"},
+--   callback = function()
+--     -- Small delay to ensure LSP is ready
+--     vim.defer_fn(function()
+--       M:show_c_return_types()
+--     end, 50)
+--   end,
+-- })
+--
+-- -- Special handling for initial file load from command line
+-- vim.api.nvim_create_autocmd("VimEnter", {
+--   group = group,
+--   callback = function()
+--     local ft = vim.bo.filetype
+--     if ft == 'c' or ft == 'cpp' or ft == 'h' then
+--       -- Longer delay for initial startup
+--       vim.defer_fn(function()
+--         M:show_c_return_types()
+--       end, 500)
+--     end
+--   end,
+-- })
+--
+-- -- Also trigger when LSP attaches
+-- vim.api.nvim_create_autocmd("LspAttach", {
+--   group = group,
+--   callback = function(args)
+--     local bufnr = args.buf
+--     local ft = vim.bo[bufnr].filetype
+--     if ft == 'c' or ft == 'cpp' or ft == 'h' then
+--       vim.defer_fn(function()
+--         M:show_c_return_types()
+--       end, 100)
+--     end
+--   end,
+-- })
+--
+-- -- Clean up hash and retries when buffer is deleted
+-- vim.api.nvim_create_autocmd("BufDelete", {
+--   group = group,
+--   callback = function(args)
+--     c_return_hashes[args.buf] = nil
+--     c_return_retries[args.buf] = nil
+--   end,
+-- })
+--
+-- M:show_c_return_types()
+
+-- -----------------------------------------------------------------------------
+
+-- Custom Diagnostics Formatting & Highlighting
+-- This is a custom diagnostics renderer that uses extmarks to display
+-- diagnostics above the target line.
+
+-- TODO FEATURE Don't display diagnostics if the file has been modified but not
+-- saved.
+
+function M:custom_diagnostics_formatter()
+
+    -- TODO: Rename namespace
     local ns = vim.api.nvim_create_namespace("custom_diagnostics")
-    local diagnostic_extmark_start_id = 10000
-    local max_diagnostics_per_line = 5 -- Configure maximum diagnostics per line
 
-    -- Function to check if the current buffer is "nofile"
-    local function is_nofile_buffer(bufnr)
-        return vim.bo[bufnr].buftype == "nofile"
-    end
+    vim.diagnostic.config({
+        virtual_text     = false,
+        virtual_lines    = false,
+        underline        = false,
+        signs            = false,
+        update_in_insert = false,
+    })
 
-    -- Function to calculate gutter width
-    local function get_gutter_width()
-        local has_numbers = vim.wo.number or vim.wo.relativenumber
-        if not has_numbers then
-            return 0
-        end
-        return vim.wo.numberwidth
-    end
+    local provider = {}
 
-    -- Define the virtual text highlight to use both foreground and background
-    -- color
-    vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = 0xf00823, bg = 0x360714 })
+    -- Show at most this many diagnostic banners per source line
+    local MAX_VIRTUAL_DIAGNOSTIC_BANNERS_PER_TARGET = 3
 
-    -- Function to wrap text to fit within the window width
-    local function wrap_text(text, width)
-        local wrapped_lines = {}
-        local current_line = ""
+    provider.on_win = function(_, win, buf, topline, botline)
+        vim.api.nvim_buf_clear_namespace(buf, ns, topline, botline + 1)
 
-        for word in text:gmatch("%S+") do
-            if #current_line + #word + 1 <= width then
-                current_line = current_line == "" and word or current_line .. " " .. word
-            else
-                table.insert(wrapped_lines, current_line)
-                current_line = word
+        -- Pull visible error diagnostics.
+        local errs = vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.ERROR })
+        if #errs == 0 then return end
+
+        local grouped = {} -- [lnum] = { diag1, diag2, … }
+        for _, d in ipairs(errs) do
+            if d.lnum >= topline and d.lnum <= botline then
+                grouped[d.lnum] = grouped[d.lnum] or {}
+                table.insert(grouped[d.lnum], d) -- Preserves original order.
             end
         end
+        if next(grouped) == nil then return end
 
-        -- Insert the last line
-        if current_line ~= "" then
-            table.insert(wrapped_lines, current_line)
-        end
+        -- Render one extmark per lnum, with all virt_lines inside it.
+        local win_width = vim.api.nvim_win_get_width(win)
 
-        return wrapped_lines
-    end
+        for lnum, diags in pairs(grouped) do
+            -- Instead of:
+            -- local indent   = vim.fn.indent(lnum + 1)
+            local text = (vim.api.nvim_buf_get_lines(buf, lnum, lnum+1, false)[1] or "")
+            local indent = #text:match("^[\t ]*")
 
-    -- Function to render diagnostics above offending lines with padding and
-    -- matching indentation
-    function M.render_diagnostics(bufnr, diagnostics)
-        if is_nofile_buffer(bufnr) then
-            return
-        end
+            local prefix   = (" "):rep(indent)
+            local avail    = math.max(1, win_width - indent)
 
-        vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
-
-        if #diagnostics == 0 then
-            return
-        end
-
-        local win_width = vim.api.nvim_win_get_width(0)
-        local gutter_width = get_gutter_width()
-        local line_count = vim.api.nvim_buf_line_count(bufnr)
-
-        local line_stacks = {}
-        for _, diagnostic in ipairs(diagnostics) do
-            if diagnostic.lnum < line_count then
-                if not line_stacks[diagnostic.lnum] then
-                    line_stacks[diagnostic.lnum] = {}
-                end
-                table.insert(line_stacks[diagnostic.lnum], diagnostic)
-            end
-        end
-
-        local extmark_id = diagnostic_extmark_start_id
-        for lnum, diags in pairs(line_stacks) do
             local virt_lines = {}
-            local indent_level = vim.fn.indent(lnum + 1)
-            -- Determine if we need to limit diagnostics for this line
-            local total_diagnostics = #diags
-            local diagnostics_to_show = diags
-            if total_diagnostics > max_diagnostics_per_line then
-                -- Take only the first max_diagnostics_per_line diagnostics
-                diagnostics_to_show = {}
-                for i = 1, max_diagnostics_per_line do
-                    diagnostics_to_show[i] = diags[i]
+
+            -- Real error banners
+            for i = 1, math.min(MAX_VIRTUAL_DIAGNOSTIC_BANNERS_PER_TARGET, #diags) do
+                local msg = diags[i].message:gsub("[%s\r\n]+", " "):gsub("%s+$", "")
+                if vim.fn.strdisplaywidth(msg) > avail then
+                    msg = msg:sub(1, avail - 1) .. "…"
                 end
+
+                local line = prefix .. msg
+                local pad  = win_width - vim.fn.strdisplaywidth(line)
+                if pad > 0 then line = line .. (" "):rep(pad) end
+
+                table.insert(virt_lines, { { line, "CustomDiagText" } })
             end
 
-            -- Process the diagnostics we're going to show
-            for _, diagnostic in ipairs(diagnostics_to_show) do
-                local max_len = win_width - gutter_width - 6
-                local wrapped_msg = wrap_text(diagnostic.message:gsub("\n", " "), max_len)
+            local hidden = #diags - MAX_VIRTUAL_DIAGNOSTIC_BANNERS_PER_TARGET
+            if hidden > 0 then
+                local msg = prefix .. string.format("… %d more error%s truncated …", hidden, hidden == 1 and "" or "s")
+                local pad = win_width - vim.fn.strdisplaywidth(msg)
+                if pad > 0 then msg = msg .. (" "):rep(pad) end
 
-                for _, msg_line in ipairs(wrapped_msg) do
-                    local total_width = win_width - gutter_width
-                    local prefixed_msg = string.rep(" ", indent_level) .. msg_line
-                    local remaining_space = total_width - #prefixed_msg
-                    local full_line = prefixed_msg .. string.rep(" ", remaining_space)
-                    table.insert(virt_lines, {{ full_line, "DiagnosticVirtualTextError" }})
-                end
+                table.insert(virt_lines, { { msg, "CustomDiagText" } })
             end
 
-            -- Add the summary line if we limited diagnostics
-            if total_diagnostics > max_diagnostics_per_line then
-                local remaining = total_diagnostics - max_diagnostics_per_line
-                local summary_msg = string.format("...and %d more diagnostic%s on this line",
-                    remaining,
-                    remaining > 1 and "s" or ""
-                )
-                local total_width = win_width - gutter_width
-                local prefixed_msg = string.rep(" ", indent_level) .. summary_msg
-                local remaining_space = total_width - #prefixed_msg
-                local full_line = prefixed_msg .. string.rep(" ", remaining_space)
-                table.insert(virt_lines, {{ full_line, "DiagnosticVirtualTextError" }})
-            end
-
-            if lnum < line_count then
-                vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
-                    virt_lines = virt_lines,
-                    virt_lines_above = true,
-                    priority = 200,
-                    id = extmark_id,
-                })
-                extmark_id = extmark_id + 1
-            end
+            -- one extmark does the whole job
+            vim.api.nvim_buf_set_extmark(buf, ns, lnum, 0, {
+                virt_lines       = virt_lines,
+                virt_lines_above = true,
+                line_hl_group    = "CustomDiagLine",
+                hl_mode          = "combine",
+                priority         = 1,
+            })
         end
     end
 
-    -- Function to highlight offending lines (full background)
-    function M.highlight_error_lines(bufnr, diagnostics)
-        if is_nofile_buffer(bufnr) then
-            return
-        end
-
-        local line_count = vim.api.nvim_buf_line_count(bufnr)
-        for _, diagnostic in ipairs(diagnostics) do
-            if diagnostic.lnum < line_count then
-                vim.api.nvim_buf_add_highlight(bufnr, ns, "DiagnosticLineError", diagnostic.lnum, 0, -1)
-            end
-        end
+    local enabled = false
+    local function enable()
+        if enabled then return end
+        vim.api.nvim_set_decoration_provider(ns, provider)
+        enabled = true
     end
 
-    -- Create a debounced refresh function to prevent excessive updates
-    local refresh_timer = nil
-    local function refresh_diagnostics()
-        if refresh_timer then
-            vim.fn.timer_stop(refresh_timer)
-        end
-        refresh_timer = vim.fn.timer_start(10, function()
-            if is_nofile_buffer(0) then
-                return
-            end
-            local diagnostics = vim.diagnostic.get(0)
-            M.render_diagnostics(0, diagnostics)
-            M.highlight_error_lines(0, diagnostics)
-            refresh_timer = nil
-        end)
+    local function disable()
+        if not enabled then return end
+        vim.api.nvim_set_decoration_provider(ns, {})
+        enabled = false
     end
 
-    -- Set up autocommands with immediate response for option changes
-    local option_group = vim.api.nvim_create_augroup("DiagnosticUpdates", { clear = true })
-    -- Watch for number and relativenumber changes specifically
-    vim.api.nvim_create_autocmd("OptionSet", {
-        pattern = {"number", "relativenumber", "numberwidth"},
-        group = option_group,
-        callback = function()
-            vim.schedule(refresh_diagnostics)
+    enable()
+
+
+    vim.api.nvim_create_autocmd("InsertEnter", {
+        callback = disable
+    })
+
+    vim.api.nvim_create_autocmd("InsertLeave", {
+        callback = function(args)
+            enable()
+            vim.schedule(function()
+                vim.diagnostic.show(nil, 0)
+                vim.cmd("redraw!")
+            end)
         end,
     })
 
-    -- Watch for window/buffer changes
-    vim.api.nvim_create_autocmd(
-        {"CursorMoved", "TextChanged", "InsertLeave", "VimResized", "WinScrolled"},
-        {
-            group = option_group,
-            buffer = 0,
-            callback = refresh_diagnostics,
-        }
-    )
+    vim.api.nvim_create_autocmd("DiagnosticChanged", {
+        callback = function(args)
+            vim.schedule(function()
+                for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
+                    vim.api.nvim_win_call(win, function() vim.cmd("redraw!") end)
+                end
+            end)
+        end,
+    })
 
-    -- Configure custom diagnostic handlers
-    vim.diagnostic.handlers.custom = {
-        show = function(namespace, bufnr, diagnostics)
-            if is_nofile_buffer(bufnr) then
-                return
-            end
-            M.render_diagnostics(bufnr, diagnostics)
-            M.highlight_error_lines(bufnr, diagnostics)
-        end,
-        hide = function(namespace, bufnr)
-            vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
-        end,
+end
+
+M:custom_diagnostics_formatter()
+
+-- ========================================================================== --
+-- Custom Numberline
+-- ========================================================================== --
+
+-- [X] TODO Numberline turns on when swapping windows even when set to off in
+-- settings! Example: Open Neovim with 'nvim', move to a file with Oil in the
+-- Oil file browser, use keybinding to open it in a vertical split to the right
+-- (still no numberline), use C-wl to move to the new split to the right, the
+-- numberline appears, but not ours (?), because there's no prefix numbers (!),
+-- hit o to start inputting something on the line below, and now OUR numberline
+-- loads, the prefix charactres pop into existence. Now, our numberline remains
+-- on for all subsequent buffers we open without delay. This occurs even when
+-- the pretty_line_numbers() function is not called, i.e. the entire function is
+-- commented out right now. So maybe that means it's something to do with
+-- autocommands?
+
+-- [ ] TODO Diagnostics script still breaks in Python files, where many
+-- diagnostics can reamain around on certain lines, never being cleared up, even
+-- after the offending code has been removed.
+
+-- [ ] TODO Find a way to reduce calls to the Vim/Neovim API. E.g. we call
+-- vim.api.nvim_win_get_option() and vim.api.nvim_buf_get_option() a lot. We
+-- should be able to cache these values and only update them when they change.
+-- But we also need to ensure that each buffer/window is updated independently.
+-- There may be no way around the current implementation?
+
+-- [ ] TODO Doesn't work in help files. Is that because they're READ-ONLY?
+
+-- [ ] TODO Add support for plugin style setup functions within package
+-- managers, e.g. Lazy. I.e. refactor this as a plugin.
+    -- [ ] Check Lazy documentation and other plugins.
+    -- [ ] Add support for toggleable options like colours, highlighting the
+    -- active line in the numberline, padding, etc.
+
+-- [ ] TODO Rename this!
+function M:pretty_line_numbers()
+    -- [!] Document functionality. E.g. why we need to get the winid every
+    -- iteration (to ensure all windows update independently, etc.).
+    if vim.g._pln_loaded then return end
+    vim.g._pln_loaded = true
+
+    local buf_digit_counts = {}
+
+    local excluded_filetypes = {
+        help = true,
+        lazy = true,
+        TelescopePrompt = true,
     }
 
-    -- Disable default virtual text diagnostics
-    vim.diagnostic.config({
-        virtual_text = false,
+    local excluded_buftypes = {
+        terminal = true,
+        prompt = true,
+        nofile = true,
+    }
+
+    local function update_window(winid)
+        winid = winid or vim.api.nvim_get_current_win()
+        if not vim.api.nvim_win_is_valid(winid) then return end
+
+        local num_on  = vim.api.nvim_win_get_option(winid, 'number')
+        local rnum_on = vim.api.nvim_win_get_option(winid, 'relativenumber')
+
+        if not num_on and not rnum_on then
+            -- User disabled both -> clear our statuscolumn & return early.
+            if vim.api.nvim_win_get_option(winid, 'statuscolumn') ~= '' then
+                pcall(vim.api.nvim_win_set_option, winid, 'statuscolumn', '')
+            end
+            return
+        end
+
+        local buf = vim.api.nvim_win_get_buf(winid)
+        if not vim.api.nvim_buf_is_valid(buf) then return end
+
+        local ft = vim.api.nvim_get_option_value("filetype", { buf = buf })
+        local bt = vim.api.nvim_get_option_value("buftype",  { buf = buf })
+
+        if excluded_filetypes[ft] or excluded_buftypes[bt] then
+            return
+        end
+
+        local cursor_line_status = vim.api.nvim_get_option_value("cursorline", { scope = "global", win = winid })
+
+        if not cursor_line_status then
+            -- Remember the user’s original cursorlineopt just once per window
+            if vim.w._pln_user_cursorlineopt == nil then
+                vim.w._pln_user_cursorlineopt =
+                vim.api.nvim_get_option_value('cursorlineopt', { win = winid })
+            end
+
+            -- Keep the highlight invisible but allow CursorLineNr to refresh
+            -- [!] TODO Document this! I.e. we're actually highlighting the
+            -- active line number in the numberline with the cursorline feature,
+            -- but hiding the actual line highlight if the user hasn't enabled
+            -- cursorline highlighting.
+            vim.api.nvim_set_option_value('cursorlineopt', 'number', { win = winid })
+            vim.api.nvim_set_option_value('cursorline', true,        { win = winid })
+
+            vim.w._pln_cursorline_forced = true
+        end
+
+        -- Literally: How many decimal line_count does my total line-count have?
+        local line_count = #tostring(vim.api.nvim_buf_line_count(buf))
+        -- [!] TODO The n-cell gutter width should be a customisable setting
+        -- available in the configuration. '+1' lines the edge of the code up
+        -- with the right side of our numberline. +1 adds a single column gap
+        -- between the code and the numberline.
+        local required_width = math.max(2, line_count + 2) -- +2 = one-cell gutter between code and numberline.
+
+        if vim.api.nvim_win_get_option(winid, 'numberwidth') ~= required_width then
+            pcall(vim.api.nvim_win_set_option, winid, 'numberwidth', required_width)
+        end
+
+        local use_relative = vim.api.nvim_win_get_option(winid, 'relativenumber') and 1 or 0
+        local formatted_status_column = string.format('%%!v:lua.FormatLineNr(%d,%d)', line_count, use_relative)
+
+        if vim.api.nvim_win_get_option(winid, 'statuscolumn') ~= formatted_status_column then
+            pcall(vim.api.nvim_win_set_option, winid, 'statuscolumn', formatted_status_column)
+        end
+
+        buf_digit_counts[buf] = line_count
+    end
+
+    for _, window in ipairs(vim.api.nvim_list_wins()) do
+        update_window(window)
+    end
+
+    -- [!] TODO Find a way to simplify this. I.e. we don't need to create a new
+    -- augroup every time we call this function?
+    -- [!] TODO Document these autocommands.
+
+    local aug = vim.api.nvim_create_augroup('PrettyLineNumbers', { clear = true })
+
+    vim.api.nvim_create_autocmd({'BufWinEnter', 'WinEnter', 'WinNew', 'WinResized'}, {
+        group = aug,
+        callback = function(ev) update_window(ev.win) end
     })
+
+    vim.api.nvim_create_autocmd("OptionSet", {
+        group   = aug,
+        pattern = {"relativenumber", "number"},
+        callback = function() update_window() end,
+    })
+
+    vim.api.nvim_create_autocmd({'TextChanged','TextChangedI','BufWritePost'}, {
+        group = aug,
+        callback = function(ev)
+            local buf = ev.buf
+            if not vim.api.nvim_buf_is_valid(buf) then return end
+
+            local line_count = vim.api.nvim_buf_line_count(buf)
+            local new_digits = #tostring(line_count)
+            local old_digits = buf_digit_counts[buf] or 0
+
+            if new_digits ~= old_digits then
+                buf_digit_counts[buf] = new_digits
+                for _, window_id in ipairs(vim.fn.win_findbuf(buf)) do
+                    update_window(window_id)
+                end
+            end
+        end,
+    })
+
+    vim.api.nvim_create_autocmd("OptionSet", {
+        pattern = "cursorline",
+        group   = aug,
+        callback = function(ev)
+            local w = ev.win
+            local now_on = vim.api.nvim_get_option_value('cursorline', { scope = "global", win = w })
+
+            if now_on then
+                -- User turned cursorline ON → restore their original setting.
+                local restore = vim.w._pln_user_cursorlineopt or 'line,number'
+                vim.api.nvim_set_option_value('cursorlineopt', restore, { scope = "global", win = w })
+                vim.w._pln_cursorline_forced = false
+            else
+                -- User turned cursorline OFF → keep numbers updating silently.
+                vim.api.nvim_set_option_value('cursorlineopt', 'number', { scope = "global", win = w })
+                vim.w._pln_cursorline_forced = true
+            end
+            update_window(w)
+        end,
+    })
+
+    -- [!] TODO Surely there's a better way to do this that doesn't involve
+    -- string manipulation?
+    _G.FormatLineNr = function(width, use_rel)
+        if vim.v.virtnum ~= 0 then return '' end
+        local rel = vim.v.relnum
+        local num = (use_rel == 1 and rel ~= 0) and math.abs(rel) or vim.v.lnum
+        local hl  = (rel == 0) and 'CursorLineNr' or 'LineNr'
+        local padded = ('%0' .. width .. 'd'):format(num)
+        local zeros, rest = padded:match('^(0*)(.*)$')
+
+        return ('%%#LineNrPrefix#%s%%#%s#%s %%*'):format(zeros, hl, rest)
+    end
 end
 
-M:setup_diagnostics()
-
------
-
--- NUMBERLINE RENDERER
-
--- Buggy.
-
--- BUG: The active buffer determins the number of characters in the numberline 
--- BUG: When swapping to a buffer with C-w, the newly active buffer's numberline gains extra buffer columns equal to the width of the numberline columns in the buffer with the largest number of numberline columns. The extra padding columns, and the extra prefix characters, disappears after entering Insert mode. E.g. Buffer 1 has 678 rows, Buffer 2 has 25, and Buffer 3 has 339. When the active buffer is Buffer 2, all other buffers have a numberline with width 2 (a huge issue when the other buffers have hundreds or thousands of lines). When the active buffer is Buffer 3, all buffers have a numberline with width 3 (even Buffer 2, which has 25 lines. This causes the padding column to the right of the numberline to shrink and expand based on the active buffer.
--- [X] Check if this has something to do with any of the buffers being in READONLY mode.
-    -- Doesn't
--- [X] Check if this has something to do with conflicting plugins that affect the numberline. E.g. Focus.
-    -- Doesn't
-
-function _G.format_line_number()
-  local lnum, rnum, virtnum = vim.v.lnum, vim.v.relnum, vim.v.virtnum
-
-  -- If the current line is virtual (i.e., it's part of virtual diagnostics or wrapped text), skip displaying the line number
-  if virtnum ~= 0 then
-    return string.rep(" ", #tostring(vim.fn.line("$"))) -- Return blank space for virtual lines
-  end
-
-  local total_lines = vim.fn.line("$")
-  local max_width = #tostring(total_lines)
-
-  -- Check if this is a wrapped line
-  if virtnum > 0 then
-    -- Determine if this wrapped line is part of the active line
-    local is_active_wrapped = (rnum == 0)
-    local dot_hl = is_active_wrapped and "CursorLineNr" or "LineNr"
-    -- Return dots for wrapped lines with appropriate highlight
-    return string.format("%%#%s#%s %%*", dot_hl, string.rep("·", max_width))
-  end
-
-  local number_to_display
-  local is_active_line = (rnum == 0)
-  if vim.wo.relativenumber then
-    number_to_display = is_active_line and lnum or math.abs(rnum)
-  else
-    number_to_display = lnum
-  end
-
-  -- Convert number to string and pad with zeros
-  local num_str = string.format("%0" .. max_width .. "d", number_to_display)
-
-  -- Always split into prefix and actual number, even for special windows
-  local prefix = string.match(num_str, "^0+") or ""
-  local actual_num = string.sub(num_str, #prefix + 1)
-
-  -- Determine highlight groups
-  local prefix_hl = "LineNrPrefix"
-  local number_hl = is_active_line and "CursorLineNr" or "LineNr"
-
-  -- Construct the formatted string with different highlights
-  local result = string.format("%%#%s#%s%%#%s#%s %%*",
-                               prefix_hl, prefix,
-                               number_hl, actual_num)
-
-  return result
-end
-
--- Set the statuscolumn option to use the new formatter
--- This enables the custom numberline.
--- vim.opt.statuscolumn = "%!v:lua.format_line_number()"
+M:pretty_line_numbers()
 
 -- -------------------------------------------------------------------------- --
 
 -- WOAH THERE, COWBOY
 
-function M.cowboy()
-	---@type table?
-	local id
-	local ok = true
-	for _, key in ipairs({ "h", "j", "k", "l", "+", "-" }) do
-		local count = 0
-		local timer = assert(vim.loop.new_timer())
-		local map = key
-		vim.keymap.set("n", key, function()
-			if vim.v.count > 0 then
-				count = 0
-			end
-			if count >= 10 then
-				ok, id = pcall(vim.notify, "Hold it Cowboy!", vim.log.levels.WARN, {
-					icon = ">:(",
-					replace = id,
-					keep = function()
-						return count >= 10
-					end,
-				})
-				if not ok then
-					id = nil
-					return map
-				end
-			else
-				count = count + 1
-				timer:start(2000, 0, function()
-					count = 0
-				end)
-				return map
-			end
-		end, { expr = true, silent = true })
-	end
-end
+-- function M.cowboy()
+-- 	---@type table?
+-- 	local id
+-- 	local ok = true
+-- 	for _, key in ipairs({ "h", "j", "k", "l", "+", "-" }) do
+-- 		local count = 0
+-- 		local timer = assert(vim.loop.new_timer())
+-- 		local map = key
+-- 		vim.keymap.set("n", key, function()
+-- 			if vim.v.count > 0 then
+-- 				count = 0
+-- 			end
+-- 			if count >= 10 then
+-- 				ok, id = pcall(vim.notify, "Hold it Cowboy!", vim.log.levels.WARN, {
+-- 					icon = ">:(",
+-- 					replace = id,
+-- 					keep = function()
+-- 						return count >= 10
+-- 					end,
+-- 				})
+-- 				if not ok then
+-- 					id = nil
+-- 					return map
+-- 				end
+-- 			else
+-- 				count = count + 1
+-- 				timer:start(2000, 0, function()
+-- 					count = 0
+-- 				end)
+-- 				return map
+-- 			end
+-- 		end, { expr = true, silent = true })
+-- 	end
+-- end
 
 -- -------------------------------------------------------------------------- --
 
@@ -334,31 +693,6 @@ end
 
 -- -------------------------------------------------------------------------- --
 
--- SHOW REGION MARKS AND LINES (?)
-
-_G.show_region_marks_and_lines = function()
-    local buffer = 0
-    local start_table  = vim.api.nvim_buf_get_mark(buffer, '<')
-    local start_line   = start_table[1] - 1
-    local start_column = start_table[2]
-    local end_table    = vim.api.nvim_buf_get_mark(buffer, '>')
-    local end_line     = end_table[1]
-    local end_column   = end_table[2]
-    local range_table  = vim.api.nvim_buf_get_lines(buffer, start_line, end_line, true)
-    -- If start_col > 0 or end_col < 100000, then it's a per character
-    -- (character-wise) visual mode selection/range.
-    -- So, adjust the first and last line.
-    -- I do not know how to find out if it's a block-wise (rectangular) selection.
-    if start_column > 0 then
-        range_table[1] = string.sub(range_table[1], start_column + 1)
-    end
-    if end_column < 100000 then
-        range_table[#range_table] = string.sub(range_table[#range_table], 1, end_column)
-    end
-end
-
--- -------------------------------------------------------------------------- --
-
 -- WRAPPIN'
 
 -- Reversably soft wrap lines that are longer than n characters at the nth
@@ -366,7 +700,7 @@ end
 -- prefixes and inline comments. It also respects the initial indentation of the
 -- first line in the selection.
 
--- TODO: We should add support for rewrapping multiple lines, where one or more
+-- [ ] TODO We should add support for rewrapping multiple lines, where one or more
 -- of the lines are already wrapped. E.g. if we have a selection of 4 lines,
 -- where lines 1, 2, and 4 are already within the wrap boundary, but 3 has a
 -- length longer than our wrap column, we should be able to reflow everything
@@ -466,53 +800,65 @@ end
 -- Replace visually selected text globally with a new string. Respects word
 -- boundaries.
 
+-- [ ] TODO I see room here for serious performance improvements.
+-- [ ] TODO This still has issues with targetting words within other words. E.g.
+-- when we select something like my_word and replace it with something else,
+-- other variables that contain my_word will will have their instance of my_word
+-- replaced as well. This is because the pattern is not actually word-boundary
+-- aware? We need to ensure that the pattern only matches whole words, not
+-- substrings within other words.
+
 _G.Visrep = function()
     local cursor_pos = vim.fn.getpos('.')
-
     local start_pos = vim.fn.getpos("'<")
     local end_pos = vim.fn.getpos("'>")
     local selected_text = vim.fn.getline(start_pos[2], end_pos[2])
     local pattern = ''
 
-    -- Concatenate all selected lines into a single pattern
+    -- Concatenate selected lines into a single string
     for i, line in ipairs(selected_text) do
-        if i > 1 then pattern = pattern .. '\n' end
-        local start_col = 1
-        local end_col = #line
-        if i == 1 then
-            start_col = start_pos[3]
+        if i > 1 then
+            pattern = pattern .. '\n'
         end
-        if i == #selected_text then
-            end_col = end_pos[3]
-        end
+        local start_col = (i == 1) and start_pos[3] or 1
+        local end_col = (i == #selected_text) and end_pos[3] or #line
         pattern = pattern .. line:sub(start_col, end_col)
     end
 
+    -- Prompt for the replacement string
     local new_string = vim.fn.input('Replace "' .. pattern .. '" with: ')
-    if new_string ~= "" then
-        -- Pick a separator that is not in pattern or new_string
-        local separators = { '/', '#', '%', '!', '@', '$', '^', '&', '*', '+', '=', '?', '|', '~' }
-        local sep = nil
-        for _, s in ipairs(separators) do
-            if not pattern:find(s, 1, true) and not new_string:find(s, 1, true) then
-                sep = s
-                break
-            end
-        end
-        if not sep then
-            print("Could not find a suitable separator for the pattern and replacement.")
-            return
-        end
-
-        local regex_specials = '().%+-*?[]^$\\|/'
-        local escaped_pattern = vim.fn.escape(pattern, sep .. '\\' .. regex_specials)
-        local escaped_new_string = vim.fn.escape(new_string, sep .. '\\')
-
-        local final_pattern = '\\v(\\k)@<!' .. escaped_pattern .. '(\\k)@!'
-
-        vim.cmd(':%s' .. sep .. final_pattern .. sep .. escaped_new_string .. sep .. 'g')
+    if new_string == "" then
+        return
     end
 
+    -- Pick a separator that is not in pattern or new_string
+    local separators = { '/', '#', '%', '!', '@', '$', '^', '&', '*', '+', '=', '?', '|', '~' }
+    local sep = nil
+    for _, s in ipairs(separators) do
+        if not pattern:find(s, 1, true) and not new_string:find(s, 1, true) then
+            sep = s
+            break
+        end
+    end
+    if not sep then
+        print("Could not find a suitable separator for the pattern and replacement.")
+        return
+    end
+
+    -- Convert the pattern to a sequence of byte matches
+    -- \V makes the pattern very literal, and \%xXX matches a byte with hex code XX
+    local final_pattern = '\\V'
+    for i = 1, #pattern do
+        final_pattern = final_pattern .. string.format("\\%%x%02X", pattern:byte(i))
+    end
+
+    local regex_specials = '().%+-*?[]^$\\|/'
+    local escaped_new_string = vim.fn.escape(new_string, sep .. '\\' .. regex_specials)
+
+    -- Perform the substitution globally
+    vim.cmd(':%s' .. sep .. final_pattern .. sep .. escaped_new_string .. sep .. 'g')
+
+    -- Restore the cursor position
     vim.fn.setpos('.', cursor_pos)
 end
 
@@ -525,13 +871,13 @@ end
 --
 -- _G.Slect = function()
 --   print("Slect called")
---   
+--
 --   local bufnr = vim.api.nvim_get_current_buf()
 --   local cursor_pos = vim.api.nvim_win_get_cursor(0)
 --   local line, col = cursor_pos[1] - 1, cursor_pos[2]
 --   local virtual_text = ""
 --   local extmark_id
---   
+--
 --   local function update_virtual_text(text)
 --     print("Updating virtual text")
 --     vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
@@ -543,7 +889,7 @@ end
 --     vim.api.nvim_win_set_cursor(0, cursor_pos)
 --     vim.api.nvim_command("redraw")
 --   end
---   
+--
 --   while true do
 --     local key = vim.fn.getchar()
 --     local c = vim.fn.nr2char(key)
@@ -563,74 +909,75 @@ end
 --   end
 -- end
 
--- Slect 0.2.0
--- Move a virtual cursor around the screen and add text to the buffer.
 -- -----------------------------------------------------------------------------
 
-local api = vim.api
-local ns_id = api.nvim_create_namespace('Slect')
+-- SLECT 0.2.0
+-- The idea here was to play around with idea for a Neovim paintbrush. I.e. Move
+-- a virtual cursor around the screen and add text to the buffer.
 
-local function validate_cursor(buf, cursor)
-    local line_count = api.nvim_buf_line_count(buf)
-    local max_col = api.nvim_buf_get_lines(buf, cursor[1], cursor[1]+1, false)[1]:len()
-    cursor[1] = math.max(0, math.min(line_count - 1, cursor[1]))
-    cursor[2] = math.max(0, math.min(max_col, cursor[2]))
-    return cursor
-end
-
-local function update_virtual_text(buf, virtual_cursor, vcursor_id)
-    -- Update the extmark to the new position
-    print("Updating text:", virtual_cursor, vcursor_id) 
-    api.nvim_buf_set_extmark(buf, ns_id, virtual_cursor[1], virtual_cursor[2], {
-        virt_text = {{"|", "Comment"}},
-        -- Make it right-aligned so it behaves more like a cursor
-        virt_text_pos = "overlay",
-        id = vcursor_id
-    })
-end
-
-_G.Slect = function()
-
-    local buf = api.nvim_get_current_buf()
-    print("Buffer:", buf)
-    local win = api.nvim_get_current_win()
-
-    local cursor = api.nvim_win_get_cursor(win)
-    local virtual_cursor = {cursor[1] - 1, cursor[2]} -- 0-based indexing
-
-    -- Set the initial virtual cursor and save its ID
-    local vcursor_id = api.nvim_buf_set_extmark(buf, ns_id, virtual_cursor[1], virtual_cursor[2], {
-        virt_text = {{"x", "Search"}},
-        -- Make it right-aligned so it behaves more like a cursor
-        virt_text_pos = "overlay",
-    })
-
-    local function on_input(key)
-        virtual_cursor = validate_cursor(buf, virtual_cursor)
-        if key == 'j' then
-            virtual_cursor[1] = virtual_cursor[1] + 1
-        elseif key == 'k' then
-            virtual_cursor[1] = virtual_cursor[1] - 1
-        elseif key == 'h' then
-            virtual_cursor[2] = virtual_cursor[2] - 1
-        elseif key == 'l' then
-            virtual_cursor[2] = virtual_cursor[2] + 1
-        else
-            return true
-        end
-        -- Update the virtual cursor's position
-        update_virtual_text(buf, virtual_cursor, vcursor_id)
-        vim.cmd("redraw")
-        return false
-    end
-    local success = vim.fn.input({prompt = '', func = 'v:lua.Slect_on_input', cancelreturn = ''})
-    api.nvim_buf_del_extmark(buf, ns_id, vcursor_id)
-    api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
-end
-
-function _G.Slect_on_input(key)
-  return on_input(key)
-end
+-- local api = vim.api
+-- local ns_id = api.nvim_create_namespace('Slect')
+--
+-- local function validate_cursor(buf, cursor)
+--     local line_count = api.nvim_buf_line_count(buf)
+--     local max_col = api.nvim_buf_get_lines(buf, cursor[1], cursor[1]+1, false)[1]:len()
+--     cursor[1] = math.max(0, math.min(line_count - 1, cursor[1]))
+--     cursor[2] = math.max(0, math.min(max_col, cursor[2]))
+--     return cursor
+-- end
+--
+-- local function update_virtual_text(buf, virtual_cursor, vcursor_id)
+--     -- Update the extmark to the new position
+--     print("Updating text:", virtual_cursor, vcursor_id)
+--     api.nvim_buf_set_extmark(buf, ns_id, virtual_cursor[1], virtual_cursor[2], {
+--         virt_text = {{"|", "Comment"}},
+--         -- Make it right-aligned so it behaves more like a cursor
+--         virt_text_pos = "overlay",
+--         id = vcursor_id
+--     })
+-- end
+--
+-- _G.Slect = function()
+--     local buf = api.nvim_get_current_buf()
+--     print("Buffer:", buf)
+--     local win = api.nvim_get_current_win()
+--
+--     local cursor = api.nvim_win_get_cursor(win)
+--     local virtual_cursor = {cursor[1] - 1, cursor[2]} -- 0-based indexing
+--
+--     -- Set the initial virtual cursor and save its ID
+--     local vcursor_id = api.nvim_buf_set_extmark(buf, ns_id, virtual_cursor[1], virtual_cursor[2], {
+--         virt_text = {{"x", "Search"}},
+--         -- Make it right-aligned so it behaves more like a cursor
+--         virt_text_pos = "overlay",
+--     })
+--
+--     local function on_input(key)
+--         virtual_cursor = validate_cursor(buf, virtual_cursor)
+--         if key == 'j' then
+--             virtual_cursor[1] = virtual_cursor[1] + 1
+--         elseif key == 'k' then
+--             virtual_cursor[1] = virtual_cursor[1] - 1
+--         elseif key == 'h' then
+--             virtual_cursor[2] = virtual_cursor[2] - 1
+--         elseif key == 'l' then
+--             virtual_cursor[2] = virtual_cursor[2] + 1
+--         else
+--             return true
+--         end
+--         -- Update the virtual cursor's position
+--         update_virtual_text(buf, virtual_cursor, vcursor_id)
+--         vim.cmd("redraw")
+--         return false
+--     end
+--     local success = vim.fn.input({prompt = '', func = 'v:lua.Slect_on_input', cancelreturn = ''})
+--     api.nvim_buf_del_extmark(buf, ns_id, vcursor_id)
+--     api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
+-- end
+--
+-- function _G.Slect_on_input(key)
+--   return on_input(key)
+-- end
 
 --------------------------------------------------------------------------------
 
@@ -639,7 +986,7 @@ end
 -- _G.auto_close_tags = function()
 --     local bufnr = vim.api.nvim_get_current_buf()
 --     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
---     
+--
 --     for i, line in ipairs(lines) do
 --         -- This simple pattern matches tags that might require self-closing
 --         -- Note: Lua patterns do not support lookbehind; thus, the solution is basic
@@ -658,7 +1005,7 @@ end
 --     end
 -- end
 
--- DO NOT EDIT: 
+-- DO NOT EDIT:
 
 -- I think this was something to do with the accelerate_jk plugin.
 
@@ -846,21 +1193,21 @@ end
 --         vim.api.nvim_win_set_height(winid,10)
 --     end
 --     local current_win = vim.fn.win_getid()
---     local winids = vim.fn.win_findbuf(bufnr) 
---     for _, winid in ipairs(winids) do 
---         if winid ~= current_win then 
---             pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',true) 
+--     local winids = vim.fn.win_findbuf(bufnr)
+--     for _, winid in ipairs(winids) do
+--         if winid ~= current_win then
+--             pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',true)
 --             pcall(vim.api.nvim_win_call,
 --             winid,
 --             function()
---                 pcall(vim.api.nvim_buf_set_lines,bufnr,0,-1,false,output) 
---             end) 
---             pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',false)  
---         end  
---     end  
+--                 pcall(vim.api.nvim_buf_set_lines,bufnr,0,-1,false,output)
+--             end)
+--             pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',false)
+--         end
+--     end
 -- end
 -- function odin_live()
---     vim.cmd('autocmd BufWritePost <buffer> lua on_save()') 
+--     vim.cmd('autocmd BufWritePost <buffer> lua on_save()')
 -- end
 
 -- local bufnr = nil
@@ -873,10 +1220,10 @@ end
 --     end
 --     local tempname = tempdir .. '/' .. vim.fn.expand('%:t') .. '.tmp'
 --     vim.api.nvim_command('silent w! ' .. tempname)
---     
+--
 --     -- Run odin command on temporary file
 --     local output = vim.fn.systemlist('odin run ' .. tempname .. ' -file')
---     
+--
 --     if not bufnr then
 --         bufnr = vim.api.nvim_create_buf(false, true)
 --         vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
@@ -895,29 +1242,29 @@ end
 --         -- Set window height to 10 lines
 --         vim.api.nvim_win_set_height(winid,10)
 --     end
---     
---     -- Update buffer content in background without taking control away from cursor in main buffer 
+--
+--     -- Update buffer content in background without taking control away from cursor in main buffer
 --     local current_win = vim.fn.win_getid()
---     local winids = vim.fn.win_findbuf(bufnr) 
---     for _, winid in ipairs(winids) do 
---       if winid ~= current_win then 
---           -- Temporarily set modifiable to true to update buffer content 
---           pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',true) 
---           -- Update buffer content without moving cursor from main window 
+--     local winids = vim.fn.win_findbuf(bufnr)
+--     for _, winid in ipairs(winids) do
+--       if winid ~= current_win then
+--           -- Temporarily set modifiable to true to update buffer content
+--           pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',true)
+--           -- Update buffer content without moving cursor from main window
 --           pcall(vim.api.nvim_win_call,
 --             winid,
 --             function()
---               pcall(vim.api.nvim_buf_set_lines,bufnr,0,-1,false,output) 
---             end) 
---           -- Set modifiable back to false after updating content  
---           pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',false)  
---       end  
---     end  
+--               pcall(vim.api.nvim_buf_set_lines,bufnr,0,-1,false,output)
+--             end)
+--           -- Set modifiable back to false after updating content
+--           pcall(vim.api.nvim_buf_set_option,bufnr,'modifiable',false)
+--       end
+--     end
 -- end
 
 -- function odin_live()
---   -- Register autocommand to run on_save function when the current buffer is written 
---   vim.cmd('autocmd BufWritePost <buffer> lua on_save()') 
+--   -- Register autocommand to run on_save function when the current buffer is written
+--   vim.cmd('autocmd BufWritePost <buffer> lua on_save()')
 -- end
 
 -- This is a temporary function for calling `ebert.bat` on the Eebs folder for ebook testing.
@@ -992,8 +1339,10 @@ end
 -- Lualine
 -- -------------------------------------------------------------------------- --
 
--- Trigger re-render of status line every second. 
+-- Trigger re-render of status line every second.
 -- -------------------------------------------------------------------------- --
+
+-- NOTE Was this related to including a clock in the statusline?
 
 -- function M.rerender_lualine()
 --     if _G.Statusline_timer == nil then
@@ -1016,7 +1365,7 @@ end
 --     inactive_buffer_numbers = {}
 --     for i, buffer in ipairs(vim.api.nvim_list_bufs()) do
 --         buffer_number = vim.fn.bufnr(buffer)
---         buffer_name = vim.fn.bufname(buffer) 
+--         buffer_name = vim.fn.bufname(buffer)
 --         if buffer_number ~= vim.fn.bufnr('%') then
 --             if buffer_name:match("^\\[\"#]") or buffer_name:match("^\\[No Name\\]") then
 --                 goto continue
@@ -1054,58 +1403,21 @@ end
 --     return string.format("%s", active_buffer)
 -- end
 
--- -------------------------------------------------------------------------- --
--- Nvim-tree
--- -------------------------------------------------------------------------- --
-
--- local old_path = package.path
--- package.path = package.path .. ";<C:/Users/Christopher/.config/nvim/plugs/nvim-tree.lua>/?.lua"
--- package.path = package.path .. ";C:\\Users\\Christopher\\.config\\nvim\\plugs\\nvim-tree.lua\\lua\\nvim-tree\\api.lua"
-
--- local lib = require('nvim-tree.lib')
--- local view = require('nvim-tree.view')
-
--- package.path = old_path
-
--- Open and closes the file tree
+-- Key testing function to diagnose terminal key sequences
 -- -------------------------------------------------------------------------- --
 
--- function M.collapse_all()
---     require("nvim-tree.actions.tree-modifiers.collapse-all").fn()
--- end
-
--- Open file without closing the tree with 'l'
--- -------------------------------------------------------------------------- --
-
--- function M.edit_or_open()
---     action = "edit"
---     node = lib.get_node_at_cursor()
---     if node.link_to and not node.nodes then
---         require('nvim-tree.actions.node.open-file').fn(action, node.link_to)
---         view.close() -- Close the tree if file was opened
---     elseif node.nodes ~= nil then
---         lib.expand_or_collapse(node)
+-- function _G.TestKey()
+--     print("Press a key combination (or 'q' to quit):")
+--     local key = vim.fn.getchar()
+--     if type(key) == "number" then
+--         local char = vim.fn.nr2char(key)
+--         print(string.format("Received: char='%s', code=%d (0x%X)", char, key, key))
 --     else
---         require('nvim-tree.actions.node.open-file').fn(action, node.absolute_path)
---         view.close() -- Close the tree if file was opened
+--         print(string.format("Received: %s", vim.inspect(key)))
 --     end
--- end
-
--- TODO: fix opening and closing with 'L'.
-
--- 'L' should preview in a split then close again when L is pressed a second time.
--- function M.vsplit_preview()
---     action = "vsplit"
---     node = lib.get_node_at_cursor()
---     if node.link_to and not node.nodes and not vsplitpreview then
---         require('nvim-tree.actions.node.open-file').fn(action, node.link_to)
---         vsplitpreview = true
---     elseif node.nodes ~= nil then
---         lib.expand_or_collapse(node)
---     else
---         require('nvim-tree.actions.node.open-file').fn(action, node.absolute_path)
+--     if key ~= 113 then -- 'q' = 113
+--         _G.TestKey()
 --     end
---     view.focus()
 -- end
 
 return M
