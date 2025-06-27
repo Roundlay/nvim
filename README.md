@@ -18,3 +18,9 @@
 - Simply listing a plugin as a _dependency_ will trigger its installation and setup, regardless of whether you've explicitly defined it in your own configuration files.
 > "First of all, lua dependencies don't need to be explicitly set. So if a package uses lua modules from another plugin, you don't need to add those dependencies. That's being done automatically." [↗](https://github.com/folke/lazy.nvim/discussions/611#discussioncomment-5175400)
 - Using the `name` attribute to rename plugins can result in duplicate entries in the Lazy dashboard. This seems to occur when the renamed plugin is also a _dependency_.
+
+- - -
+
+**TODOs:**
+
+- [Script]: Add virtual date and time on/near lines whenever a line begins with a TODO flag.
