@@ -1,27 +1,16 @@
 -- settings.lua
--- -------------------------------------------------------------------------- --
-
--- Helpers: `:h quickref.txt`
--- Defaults: https://neovim.io/doc/user/vim_diff.html
-
--- -------------------------------------------------------------------------- --
-
--- VSCode
--- -------------------------------------------------------------------------- --
 
 if vim.g.vscode then
+    vim.o.clipboard = 'unnamed,unnamedplus' -- Use both the system clipboard and the local clipboard.
     return
 end
 
--- Neovide
--- -------------------------------------------------------------------------- --
--- https://neovide.dev/configuration.html
-
 if vim.g.neovide then
-    vim.o.guifont = "PragmataPro:h14"
+    -- See: https://neovide.dev/configuration.html
+    vim.o.guifont = "Pragmasevka:h14"
     vim.o.linespace = 1
-    vim.g.neovide_cursor_animation_length = 0.05
-    vim.g.neovide_cursor_trail_size = 0.10
+    vim.g.neovide_cursor_animation_length = 0.02
+    vim.g.neovide_cursor_trail_size = 0.05
     vim.g.neovide_scroll_animation_length = 0.1
     vim.g.neovide_underline_stroke_scale = 1.0
     vim.g.neovide_cursor_antialiasing = true
@@ -36,141 +25,154 @@ if vim.g.neovide then
     vim.g.neovide_scale_factor = 1.00
 end
 
--- Neovim
--- -------------------------------------------------------------------------- --
+NVIM_STATE = vim.fn.stdpath('state')
+-- TODD: SHADA_DIRECTORY is referenced in autocmds.lua... I don't like this... Should everything be in one file?
+SHADA_DIRECTORY = NVIM_STATE .. '/shada' -- Set the directory for shada files.
+
+vim.fn.mkdir(SHADA_DIRECTORY, 'p') -- Create dir if missing.
+vim.opt.shadafile = SHADA_DIRECTORY .. ('/main-%d.shada'):format(vim.fn.getpid()) -- Write unique temp. files so that force-closing a window never collides with another instance.
+
+local undo_dir = NVIM_STATE .. '/undo' -- Set the directory for undo files.
+vim.fn.mkdir(undo_dir, 'p') -- Create dir if missing.
+vim.opt.undofile = true -- Save undo history to a file for persistence across sessions.
+vim.opt.undodir = undo_dir
+vim.opt.undolevels = 1000000 -- Maximum number of undo levels to keep.
+vim.opt.undoreload = 1000000 -- Number of lines to save for undo history.
 
 -- Standard Plugins
-
--- Note: Tell Vim's 'standard plugins' to finish early. In other words, tell Vim
--- that the following standard plugins have already been loaded even though they
--- haven't. This doesn't seem very reliable though, as the plugins still eat
--- into `startuptime` when `rtp plugins` are sourced.
-
--- See: `:h standard-plugin`, `:h standard-plugin-list` and `:h load-plugins`.
-
-vim.g.loaded_netrw = 1 -- Disable the 'netrw' plugin.
-vim.g.loaded_netrwPlugin = 1 -- Disable the 'netrw' plugin.
-vim.g.loaded_zip = 1 -- Disables 'zip' plugin.
-vim.g.loaded_zipPlugin = 1 -- Disables 'zip' plugin.
-vim.g.loaded_gzip = 1 -- Disables 'gzip' plugin.
-vim.g.loaded_tutor = 1 -- Disable the 'tutor' plugin.
-vim.g.loaded_tarPlugin = 1 -- Disables 'tar' plugin.
-vim.g.loaded_tar = 1 -- Disables 'tar' plugin.
+-- Tell Vim's 'standard plugins' to finish early. In other words, mark these as
+-- loaded to prevent them from eating into startup time when `rtp plugins` are
+-- sourced. Note: This isn't always reliable as they may still load.
+-- See: `:h standard-plugin`, `:h standard-plugin-list`, `:h load-plugins`.
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+vim.g.loaded_zip = 1
+vim.g.loaded_zipPlugin = 1
+vim.g.loaded_gzip = 1
+vim.g.loaded_tutor = 1
+vim.g.loaded_tarPlugin = 1
+vim.g.loaded_tar = 1
 
 -- Core Environment
+vim.g.hidden = true
+vim.g.mouse = 'a'
+vim.g.timeoutlen = 500
+vim.g.ttimeoutlen = 0
+vim.g.redrawtime = 1
 
-vim.o.hidden = true -- Retain undo information when a buffer is unloaded.
-vim.o.backup = false -- (Don't) make a backup before overwriting a file, and leave it around afterwards.
-vim.o.writebackup = true -- Make a backup before overwriting a file, but delete it afterwards.
-vim.o.undofile = true -- Save undo history to a file.
-vim.o.mouse = 'a' -- Enable all mouse modes.
-vim.o.timeoutlen = 300 -- Mapping timeout.
-vim.o.ttimeoutlen = 0 -- Key code timeout.
-vim.o.updatetime = 4000 -- Swap file write frequency. (Default: 4000)
-vim.g.redrawtime = 1 -- Time in ms to redraw the screen. (Default: 2000)
-vim.o.filetype = 'on' -- Disables filetype detection. NOTE: Handled by filetype. Can I disable this?
+-- Display
+vim.o.number = true
+vim.o.cursorline = false
+vim.o.signcolumn = 'no'
+vim.o.fillchars = 'eob: ,vert:│'
 
 -- Text Formatting
+vim.o.linebreak = true
+vim.o.breakindent = true
+vim.o.wrap = true
 
-vim.o.linebreak = true -- Wrap text on word boundaries.
-vim.o.wrap = true -- Wrap lines. 
-vim.o.breakindent = true -- Visually indent wrapped lines.
-
--- Syntax
-
-vim.o.syntax = 'on' -- Enable syntax highlighting.
-vim.wo.conceallevel = 0 -- Determines how text with the 'conceal' syntax attribute is shown. Was experimenting with hiding curly braces in .odin files.
-vim.o.list = false
-vim.o.spelllang = 'en_gb' -- Set the spell-checking language.
-vim.o.spell = true
-vim.opt.listchars = { trail = '⋅'} -- Show trailing whitespace as a middle-dot.
-
--- Line/Column
-
-vim.o.cursorline = true -- Highlight the current line. Known to cause performance issues.
-vim.o.rnu = true
-vim.o.numberwidth = 2
--- vim.opt.statuscolumn = "%=%#DimmedZeros#%{v:virtnum < 1 ? repeat('0', strlen(line('$')) - strlen(abs(v:relnum > 0 ? v:relnum : v:lnum))) : ''}%#LineNr#%{v:virtnum < 1 ? (v:relnum ? abs(v:relnum) : v:lnum) : ''} %*%=%s"
--- vim.opt.statuscolumn = "%!v:lua.format_line_number()"
-vim.o.relativenumber = false
-vim.o.fillchars = 'eob: ' -- This needs to be called after 'laststatus'. Remove empty buffer symbols.
-vim.o.signcolumn = 'no' -- Force the signcolumn to remain hidden.
-
--- Colours
-
-vim.o.termguicolors = true -- Enable true 24bit colour support; use 'gui' instead of 'cterm' in highlights.
-vim.o.background = 'dark'
+-- Colors
 
 -- Status Line
-
-vim.o.laststatus = 2 -- This needs to be called before 'fillchars'. 2: ensures that all windows have a status line. 3: enables the global status line.
-vim.o.showcmd = false -- Show input in the status line.
-vim.o.showmode = false -- Don't show the command line mode (e.g. '-- INSERT --') below the status line. (I implement my own mode presentation logic in `scripts.lua`.)
+vim.o.laststatus = 2
+vim.o.showcmd = false
+vim.o.showmode = false
 
 -- Search
-
-vim.o.synmaxcol = 0 -- Max columns to search for syntax items; 0 = infinity.
-vim.o.incsearch = true -- Show search results as you type.
-vim.o.hlsearch = true -- Highlight search results.
-vim.o.showmatch  = true -- Highlight matching braces, etc.
-vim.o.ignorecase = true -- Ignore case when searching in lowercase (case insensitive search)...
-vim.o.smartcase = true -- Unless there's a capital letter in the query (case sensitive search).
-vim.o.inccommand = 'nosplit' -- Shows the results of a command (like ':%s') in the buffer.
+vim.o.incsearch = true
+vim.o.hlsearch = true
+vim.o.showmatch = true
+vim.o.ignorecase = true
+vim.o.smartcase = true
+vim.o.inccommand = 'nosplit'
 
 -- Indentation
-
-vim.o.shiftwidth = 4 -- Number spaces to use for each step of 'autoindent'; used for 'cindent', >>, <<, etc.
-vim.o.tabstop = 4 -- Number of spaces that a <Tab> in the file counts for.
-vim.o.expandtab = true -- In Insert mode, use the appropriate number of spaces when inserting a <Tab>.
-vim.o.autoindent = true -- Copy indent from current line when starting a new line.
-vim.o.smartindent = true
--- vim.o.showbreak = '␤ ' -- TODO: String at the start of wrapped lines.
--- vim.o.breakindentopt = 'shift:-2' -- TODO: Shift the wrapped line's beginning by 'n' spaces after applying 'breakindent'.
-
--- Timing
-
+vim.o.shiftwidth = 4
+vim.o.tabstop = 4
+vim.o.expandtab = true
+vim.o.autoindent = true
+vim.o.smartindent = false
 
 -- Folds
-
-vim.o.foldmethod = 'syntax' -- Line folds are specified by syntax highlighting.
--- vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
-vim.o.foldlevel = 99 -- Zero closes all folds. Lower numbers close more folds, higher numbers open more folds. Keeping this at 99 to ensure folds don't appear.
--- vim.w.foldcolumn = 1 -- How many columns to use when drawing a fold.
+vim.o.foldmethod = 'syntax'
+vim.o.foldlevel = 99
 
 -- Buffers
-
-vim.o.splitright = true -- Split new windows to the right.
-
--- Autocmds
-
--- Highlight yanked text on yank
--- https://www.reddit.com/r/neovim/comments/ypvrwp/comment/ivnl294/
-vim.api.nvim_create_autocmd('TextYankPost', {
-    group = vim.api.nvim_create_augroup('yank_highlight', {}),
-    pattern = '*',
-    callback = function ()
-        vim.highlight.on_yank { higroup = 'IncSearch', timeout = 600 }
-    end,
-})
+vim.o.splitright = true
 
 -- LSP and Diagnostics
+-- vim.diagnostic.config({ underline = false })          -- Disable underlining for diagnostics.
+vim.lsp.handlers["workspace/didChangeWatchedFiles"] = { dynamic_registration = true } -- Enable dynamic file watching.
 
-vim.diagnostic.config({ underline = false })
-vim.lsp.set_log_level("ERROR") -- Reduced logging verbosity by setting the log level to 'ERROR'.
-vim.lsp.handlers["workspace/didChangeWatchedFiles"] = { dynamic_registration = true }
+-- WSL Clipboard Configuration
+-- if vim.fn.has('wsl') == 1 then
+--     local clipboard_cache = { content = '', timestamp = 0 }
+--     local cache_ttl = 100  -- Cache for 100ms to reduce calls
+--     
+--     local function get_clipboard()
+--         local now = vim.loop.hrtime() / 1000000  -- Convert to milliseconds
+--         if now - clipboard_cache.timestamp < cache_ttl and clipboard_cache.content then
+--             return vim.split(clipboard_cache.content, '\n')
+--         end
+--         
+--         local handle = io.popen('win32yank.exe -o --lf 2>/dev/null')
+--         if handle then
+--             local result = handle:read('*a') or ''
+--             handle:close()
+--             clipboard_cache.content = result
+--             clipboard_cache.timestamp = now
+--             return vim.split(result, '\n')
+--         end
+--         return {''}
+--     end
+--     
+--     local function set_clipboard(lines)
+--         local content = table.concat(lines, '\n')
+--         clipboard_cache.content = content
+--         clipboard_cache.timestamp = vim.loop.hrtime() / 1000000
+--         
+--         -- Use job API for non-blocking copy
+--         vim.fn.jobstart({'win32yank.exe', '-i', '--crlf'}, {
+--             stdin = 'pipe',
+--             on_stdin = function(_, data, _)
+--                 if data then
+--                     for _, line in ipairs(data) do
+--                         vim.fn.chansend(_, line)
+--                     end
+--                     vim.fn.chanclose(_, 'stdin')
+--                 end
+--             end
+--         })
+--     end
+--     
+--     if vim.fn.executable('win32yank.exe') == 1 then
+--         vim.g.clipboard = {
+--             name = 'win32yank-wsl-optimized',
+--             copy = {
+--                 ['+'] = set_clipboard,
+--                 ['*'] = set_clipboard,
+--             },
+--             paste = {
+--                 ['+'] = get_clipboard,
+--                 ['*'] = get_clipboard,
+--             },
+--             cache_enabled = 1,
+--         }
+--     end
+-- end
 
--- Vim Commands
+-- vim.o.clipboard = 'unnamed,unnamedplus' -- Commented out to keep clipboards separate
+vim.o.shortmess = vim.o.shortmess .. "I" -- Don't show the intro message when starting Neovim.
 
--- vim.cmd [[ set ttyfast ]]
-vim.cmd [[ autocmd FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o ]] -- Disable auto-comments
-vim.cmd [[ autocmd BufWinEnter,WinEnter term://* startinsert ]]
-vim.cmd [[ autocmd BufLeave term://* stopinsert]]
+-- Make background transparent:
+vim.cmd [[
+    highlight Normal guibg=NONE ctermbg=NONE
+    highlight NonText guibg=NONE ctermbg=NONE
+    highlight SignColumn guibg=NONE ctermbg=NONE
+    highlight EndOfBuffer guibg=NONE ctermbg=NONE
+]]
 
 -- ARCHIVE
-
--- This activates cowboy mode, which complains when you spam movement keys.
--- local discipline = require("scripts")
--- discipline.cowboy()
 
 -- Open files in tabs
 -- vim.api.nvim_create_autocmd("BufNewFile,BufRead", {
@@ -182,9 +184,4 @@ vim.cmd [[ autocmd BufLeave term://* stopinsert]]
 --     end,
 -- })
 
--- vim.cmd [[ au BufNewFile,BufRead *.odin map=<C-P> :w<Return>:%!odinfmt %<Return> ]]
--- vim.cmd [[ au BufNewFile,BufRead *.odin set syntax=odin ]] -- Set Odin syntax highlighting for .odin files.
--- vim.cmd [[ au BufNewFile,BufRead *.odin set filetype=odin ]] -- Set Odin filetype for .odin files. (Handled by filetype plugin.)
--- vim.cmd [[ au BufNewFile,BufRead *.go set syntax=go ]]
--- vim.cmd [[ au BufNewFile,BufRead *.go set filetype=go ]]
--- vim.cmd [[ let g:dracula_underline = 0 ]] -- Disable underlines in Dracula theme.
+-- vim.cmd [[ let g:dracula_underline = 0:]] -- Disable underlines in Dracula theme.

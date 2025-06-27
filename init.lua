@@ -18,8 +18,24 @@
 -- Initialisation
 -- -------------------------------------------------------------------------- --
 
-require("settings")
-require("keybindings")
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
+
+-- WSL detection
+local function is_wsl()
+    local proc_version = '/proc/version'
+    if vim.fn.filereadable(proc_version) == 1 then
+        local content = vim.fn.readfile(proc_version, '', 1)
+        return content[1] and content[1]:lower():match('microsoft') ~= nil
+    end
+    return false
+end
+
+vim.g.is_wsl = is_wsl()
+
 require("lazy-init")
-require("highlights")
+require("settings")
+require("autocmds")
 require("scripts")
+require("highlights")
+require("keybindings")
