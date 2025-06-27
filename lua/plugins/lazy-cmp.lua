@@ -1,6 +1,6 @@
 return {
     "hrsh7th/nvim-cmp",
-    enable = true,
+    enabled = false,
     lazy = true,
     event = "InsertCharPre",
     dependencies = {
@@ -17,6 +17,16 @@ return {
         end
 
         cmp.setup({
+            enabled = function()
+                local buftype = vim.api.nvim_get_option_value("buftype", {buf = 0})
+                local filetype = vim.api.nvim_get_option_value("filetype", {buf = 0})
+
+                if buftype == "prompt" or filetype == "TelescopePrompt" then
+                    return false
+                end
+
+                return true
+            end,
             completion = {
                 completeopt = "menu,menuone,noinsert,noselect",
             },

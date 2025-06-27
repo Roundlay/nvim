@@ -4,18 +4,20 @@ return {
     'lukas-reineke/indent-blankline.nvim',
     -- name = "indent-blankline",
     main = "ibl", -- Required after v3.0.0
-    enabled = true,
+    enabled = false,
     lazy = true,
     event = {
         "BufReadPost"
     },
     opts = {
+        debounce = 1,
         indent = {
             char = "│",
             smart_indent_cap = true,
             highlight = {
                 "gates_grey",
             },
+            priority = 2,
         },
         scope = {
             enabled = false

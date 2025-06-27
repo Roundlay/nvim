@@ -12,7 +12,6 @@
 --     event = "InsertEnter", 
 -- }
 
-
 -- copilot.lua
 -- -----------------------------------------------------------------------------
 
@@ -28,18 +27,22 @@ return {
     cmd = "Copilot",
     event = "InsertEnter",
     opts = {
+        copilot_node_command = 'node',
+        copilot_model = "gpt-4o-copilot",
+        workspace_folders = {
+          "C:\\Users\\Christopher\\scoop\\apps\\odin\\current\\examples",
+        },
         filetypes = {
             markdown = false,
             text = false,
         },
-        copilot_node_command = 'node',
         server_opts_overrides = {},
         suggestion = {
             enabled = true,
             auto_trigger = true,
             debounce = 1,
             keymap = {
-                accept = "<C-CR>",
+                accept = false,
             },
         },
         panel = {
@@ -50,6 +53,9 @@ return {
             position = "bottom",
             ratio = 0.4,
         },
+      root_dir = function()
+        return vim.fs.dirname(vim.fs.find(".git", { upward = true })[1])
+      end,
     },
     config = function(_, opts)
         local copilot_ok, copilot = pcall(require, "copilot")
@@ -59,16 +65,15 @@ return {
         end
         copilot.setup(opts)
 
-        -- This keymap makes accepting suggestions work similarly to the
-        -- official Copilot plugin, allowing you to use <Tab> for
-        -- indentation as well as for accepting Copilot suggestions.
-
-        -- vim.keymap.set('i', '<C-CR>', function()
-        --     if require("copilot.suggestion").is_visible() then
-        --         require("copilot.suggestion").accept()
-        --     else
-        --         vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", false)
-        --     end
-        -- end, {desc = "Super Tab"})
+        -- Set up keybindings to accept Copilot suggestions
+        local accept_suggestion = function()
+            require("copilot.suggestion").accept()
+        end
+        
+        -- Standard <C-CR> - requires proper terminal configuration
+        vim.keymap.set('i', '<C-CR>', accept_suggestion, {desc = "Accept Copilot suggestion"})
+        
+        -- Keep C-\ as backup
+        vim.keymap.set('i', '<C-\\>', accept_suggestion, {desc = "Accept Copilot suggestion (backup)"})
     end
 }

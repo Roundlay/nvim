@@ -6,9 +6,6 @@ return {
     lazy = true,
     cmd = "Oil",
     opts = {
-        columns = {
-            -- {"mtime", highlight = "Comment"}, -- File modification time column
-        },
         buf_options = {
             buflisted = false,
             bufhidden = "hide",
@@ -26,11 +23,32 @@ return {
                 winblend = 1,
             },
         },
-        progress = {
-            border = "rounded",
+        view_options = {
+            show_hidden = true,
+        },
+        float = {
+            padding = 2,
+            max_width = 0.33,
+        },
+        confirmation = {
+            max_width = 0.33,
+            border = "none",
         },
     },
     config = function(_, opts)
+        -- TODO: Doesn't even work?
+        -- Declare a global function to retrieve the current directory
+        function _G.get_oil_winbar()
+          local bufnr = vim.api.nvim_win_get_buf(vim.g.statusline_winid)
+          local dir = require("oil").get_current_dir(bufnr)
+          if dir then
+            return vim.fn.fnamemodify(dir, ":~")
+          else
+            -- If there is no current directory (e.g. over ssh), just show the buffer name
+            return vim.api.nvim_buf_get_name(0)
+          end
+        end
+
         local oil_ok, oil = pcall(require, "oil")
         if not oil_ok then
             vim.notify(vim.inspect(oil), vim.log.levels.ERROR)

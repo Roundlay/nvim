@@ -10,7 +10,7 @@
 
 return {
     "ap29600/tree-sitter-odin",
-    enabled = true,
+    enabled = false,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
     ft = "odin",

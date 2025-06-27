@@ -29,7 +29,7 @@ local function truncated_file_status()
             if vim.bo.modified then
                 state = "MODIFIED"
             elseif vim.bo.readonly then
-                state = "READ"
+                state = "READ-ONLY"
             elseif file_path == "" then
                 state = "UNNAMED"
             end
@@ -95,9 +95,8 @@ return {
             globalstatus = false,
             icons_enabled = false,
             theme = "vscode",
-            -- theme = "kanagawa",
             refresh = {
-              statusline = 1,  -- Note these are in mili second and default is 1000
+              statusline = 1,  -- In miliseconds, default 1000.
               tabline = 1,
               winbar = 1,
             }
