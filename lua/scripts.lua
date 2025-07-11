@@ -3,11 +3,15 @@ if vim.g.vscode then
     return
 end
 
--- local M = _G.M or {}
--- local M = {}
-_G.M = M or {}
+-------------------------------------------------------------------------------
+-- Module boiler-plate ---------------------------------------------------------
+-------------------------------------------------------------------------------
 
--- -----------------------------------------------------------------------------
+---@type table<string,any>
+local M = _G.M or {}
+_G.M = M  -- expose for other modules/old code paths
+
+-------------------------------------------------------------------------------
 
 -- C Return Type Helper
 -- Shows the return type of C functions inline alongside the function call.
@@ -15,291 +19,295 @@ _G.M = M or {}
 -- This also works for functions called from header files.
 -- E.g. `fopen(path, "rb")` becomes `fopen(path, "rb"); ← FILE*`
 
--- 1. TODO: EXPLAIN OR FIX: The current implementation relies on various hashes and variables that exist in the global scope. If this is better for performance, please document the reasons why, but if we can keep the gloabal scope clean, we should do that. We want to remain data-oriented at all times.
+-- [!] TODO: Our solution seems to occassinally report the wrong return type. Example:
+-- `fread(buf, size, count, file)` reports `<- unsigned long long` instead of `<- size_t`.
 
--- 2. 2025-06-25 21:37:37 [X] TODO: BUG: virtual type helper text appears duplicated when opening a file for the first time. E.g. with `nvim file.c`. The duplicate virtual text disappears as soon as we modify the file (e.g. enter insert mode, type something, then exit insert mode). It also disappears when we hit `o` to start a new line, etc.
+local c_return_hashes  = {} ---@type table<integer,string>  -- bufnr → sha256
+local c_return_retries = {} ---@type table<integer,integer> -- bufnr → retry-count
+local c_return_parsers = {} ---@type table<integer,any>     -- bufnr → parser cache
+local c_return_changedtick = {} ---@type table<integer,integer> -- bufnr → changedtick
 
--- 3. 2025-06-25 21:37:49 [X] TODO: BUG: Virtual text doesn't disappear immediately when we delete the associated function call. E.g. if we delete `fopen(path, "rb"); <- FILE*` (keeping in mind that `<- FILE*` is virtual text), the virtual text remains until we modify the file in some way (e.g. enter insert mode, type something, use `o` to start a new line, etc.). We need to make sure that everything updates instantaneously. You can find some ideas about how you might be able to do this in the custom_diagnostics_formatter() function, which had to deal with a similar issue.
+-- One namespace for all extmarks so we can clear/update them deterministically.
+local c_return_ns = vim.api.nvim_create_namespace('c_return_types')
 
--- 4. 2025-06-25 21:37:59 [ ] TODO: BUG: When we use e.g. dd to delete some line, the virtual text flashes briefly and a duplicate virtual text appears. E.g. <- int becomes <-int <- int very briefly. Anything to do with overlapping autocmds or something like that in /lua/autocmds.lua?
+-- Track extmark ids we own per buffer so we can update/delete incrementally.
+local c_return_marks = {} ---@type table<integer, table<integer, integer>> -- bufnr → { row → mark_id }
 
--- 5. 2025-06-25 21:38:53  [ ] TODO: FIX: We need to ensure that the virutal text appears, clears, etc., immediately! No delay! See the pretty_number_line() function for ideas.
+function M:show_c_return_types()
+    -- Only process C/C++ files
+    local ft = vim.bo.filetype
+    if ft ~= 'c' and ft ~= 'cpp' and ft ~= 'h' then
+        return
+    end
 
--- Track last processed content hash per buffer
+    -- clangd (and some other servers) can show their own return-type inlay hints
+    -- which would duplicate the helper text we are about to render.  Disable
+    -- inlay hints for this buffer to avoid visual clutter.  (Neovim ≥0.10)
+    pcall(function()
+        local ih = vim.lsp.inlay_hint
+        if ih and type(ih.enable) == 'function' then
+            -- Signature (nvim 0.10): enable(buf, bool) or enable(bool, buf)
+            local ok = pcall(ih.enable, vim.api.nvim_get_current_buf(), false)
+            if not ok then pcall(ih.enable, false, vim.api.nvim_get_current_buf()) end
+        end
+    end)
 
--- /////////////////////////////////////////////////////////////////////////////
--- @Codex Internal state -------------------------------------------------------
--- Keep all mutable state in locals instead of polluting the global namespace.
--- The C-Return-Type helper only needs to remember per-buffer hashes/retries and
--- hold on to a single namespace handle.  Storing these in up-values is both
--- faster (one less table lookup compared to _G.M.*) and keeps the public API
--- surface of the module clean.  Access from outside this file is unnecessary –
--- everything is driven from autocommands inside this module.
---
--- Note: Lua up-values are JIT-promoted to registers and are therefore cheaper
--- than global‐table accesses (see LuaJIT byte-code listings).  This change is
--- therefore a net performance win while satisfying the “data-oriented, keep
--- the global scope clean” guideline from AGENTS.md.
--- /////////////////////////////////////////////////////////////////////////////
+    local bufnr = vim.api.nvim_get_current_buf()
 
--- local c_return_hashes  = {} ---@type table<integer,string>  -- bufnr → sha256
--- local c_return_retries = {} ---@type table<integer,integer> -- bufnr → retry-count
---
--- -- One namespace for all extmarks so we can clear/update them deterministically.
--- local c_return_ns = vim.api.nvim_create_namespace('c_return_types')
---
--- -- Track extmark ids we own per buffer so we can update/delete incrementally.
--- local c_return_marks = {} ---@type table<integer, table<integer, integer>> -- bufnr → { row → mark_id }
---
--- function M:show_c_return_types()
---   -- Only process C/C++ files
---   local ft = vim.bo.filetype
---   if ft ~= 'c' and ft ~= 'cpp' and ft ~= 'h' then
---     return
---   end
---
---   -- clangd (and some other servers) can show their own return-type inlay hints
---   -- which would duplicate the helper text we are about to render.  Disable
---   -- inlay hints for this buffer to avoid visual clutter.  (Neovim ≥0.10)
---   pcall(function()
---     local ih = vim.lsp.inlay_hint
---     if ih and type(ih.enable) == 'function' then
---       -- Signature (nvim 0.10): enable(buf, bool) or enable(bool, buf)
---       local ok = pcall(ih.enable, vim.api.nvim_get_current_buf(), false)
---       if not ok then pcall(ih.enable, false, vim.api.nvim_get_current_buf()) end
---     end
---   end)
---   
---   local bufnr = vim.api.nvim_get_current_buf()
---   
---   -- Get buffer content hash to check if anything changed
---   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
---   local content_hash = vim.fn.sha256(table.concat(lines, "\n"))
---   
---   -- Skip if content hasn't changed
---   if c_return_hashes[bufnr] == content_hash then
---     return
---   end
---   
---   -- Prepare per-buffer mark table
---   local mark_tbl = c_return_marks[bufnr]
---   if not mark_tbl then
---     mark_tbl = {}
---     c_return_marks[bufnr] = mark_tbl
---   end
---   
---   -- Check if LSP is attached
---   local clients = vim.lsp.get_clients({bufnr = bufnr})
---   if #clients == 0 then
---     -- No LSP yet, set a flag to process this buffer when LSP attaches
---     c_return_hashes[bufnr] = nil  -- Clear hash to force reprocess
---     return
---   end
---   
---   -- Track if we found any return types
---   local found_any = false
---   
---   -- Get first client for position encoding
---   local client = clients[1]
---   
---   -- For .h files, try C parser first, fallback to cpp
---   local lang = ft
---   if ft == 'h' then
---     lang = 'c'
---   end
---   
---   -- Get tree-sitter parser with error handling
---   local ok, parser = pcall(vim.treesitter.get_parser, bufnr, lang)
---   if not ok and ft == 'h' then
---     -- Try cpp parser for .h files if c parser fails
---     ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'cpp')
---   end
---   if not ok then
---     return
---   end
---   
---   local tree = parser:parse()[1]
---   local root = tree:root()
---   
---   -- Query for function calls
---   local query_ok, query = pcall(vim.treesitter.query.parse, lang, [[
---     (call_expression
---       function: (identifier) @func
---     ) @call
---   ]])
---   if not query_ok then
---     return
---   end
---   
---   -- Track processed lines to avoid duplicate work within a single pass
---   local processed = {}
---   
---   -- Keep a set of rows we touched this pass to later delete stale marks.
---   local seen_rows = {}
---
---   -- Process each function call
---   for id, node in query:iter_captures(root, bufnr, 0, -1) do
---     if query.captures[id] == "func" then
---       local parent = node:parent()
---       local end_row, end_col = parent:end_()
---
---       -- Skip if already processed (see comment above)
---       if processed[end_row] then
---         goto continue
---       end
---       processed[end_row] = true
---       
---       local func_name = vim.treesitter.get_node_text(node, bufnr)
---       local start_row, start_col = node:start()
---       
---       -- Make LSP hover request with proper position encoding
---       local params = vim.lsp.util.make_position_params(0, client.offset_encoding)
---       params.position.line = start_row
---       params.position.character = start_col
---       
---       -- Use synchronous request to get immediate results
---       local result = vim.lsp.buf_request_sync(bufnr, 'textDocument/hover', params, 500)
---       
---       if result then
---         for _, res in pairs(result) do
---           if res.result and res.result.contents then
---             local content = ""
---             if type(res.result.contents) == "string" then
---               content = res.result.contents
---             elseif res.result.contents.value then
---               content = res.result.contents.value
---             end
---             
---             if content ~= "" then
---               -- Parse return type from clangd format: → `type`
---               local return_type = content:match("→%s*`([^`]+)`")
---               
---               if return_type and return_type ~= "void" then
---                 -- Simplify complex types
---                 -- Remove "aka" information: "FILE * (aka struct _iobuf *)" -> "FILE*"
---                 return_type = return_type:gsub("%s*%(aka[^)]+%)", "")
---                 -- Keep array notation together: "char []" -> "char[]"
---                 return_type = return_type:gsub("(%S)%s+(%[%])", "%1%2")
---                 -- Remove extra spaces around pointers: "FILE *" -> "FILE*"
---                 return_type = return_type:gsub("(%S)%s+%*", "%1*")
---                 -- Clean up remaining whitespace
---                 return_type = return_type:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
---                 
---                 -- Check if there's a semicolon right after the function call
---                 local line = vim.api.nvim_buf_get_lines(bufnr, end_row, end_row + 1, false)[1]
---                 local char_after = line:sub(end_col + 1, end_col + 1)
---                 
---                 local virt_col = (char_after == ";") and (end_col + 1) or end_col
---
---                 local opts = {
---                   virt_text = {{" ← " .. return_type, "CReturnType"}},
---                   virt_text_pos = "inline",
---                 }
---
---                 -- Re-use existing mark on that row if present.
---                 local prev_id = mark_tbl[end_row]
---                 if prev_id then opts.id = prev_id end
---
---                 local new_id = vim.api.nvim_buf_set_extmark(bufnr, c_return_ns, end_row, virt_col, opts)
---
---                 mark_tbl[end_row] = new_id
---                 seen_rows[end_row] = true
---                 found_any = true
---               end
---             end
---             break -- Only process first LSP client result
---           end
---         end
---       end
---       
---       ::continue::
---     end
---   end
---   
---   -- If we found any results, mark as processed
---   if found_any then
---     c_return_hashes[bufnr] = content_hash
---     c_return_retries[bufnr] = nil
---   else
---     -- No results found, maybe LSP isn't ready yet
---     local retries = c_return_retries[bufnr] or 0
---     if retries < 3 then
---       -- Try again in a moment
---       c_return_retries[bufnr] = retries + 1
---       vim.defer_fn(function()
---         if vim.api.nvim_buf_is_valid(bufnr) then
---           M:show_c_return_types()
---         end
---       end, 300 * (retries + 1))  -- Increasing delay: 300ms, 600ms, 900ms
---     else
---       -- Give up and mark as processed to avoid infinite retries
---       c_return_hashes[bufnr] = content_hash
---       c_return_retries[bufnr] = nil
---     end
---   end
---
---   -- Remove stale marks (function call deleted)
---   for row, id in pairs(mark_tbl) do
---     if not seen_rows[row] then
---       vim.api.nvim_buf_del_extmark(bufnr, c_return_ns, id)
---       mark_tbl[row] = nil
---     end
---   end
--- end
---
--- -- Setup autocmd group
--- local group = vim.api.nvim_create_augroup("CReturnTypeHelper", { clear = true })
---
--- -- Trigger on buffer events and LSP attach
--- vim.api.nvim_create_autocmd({"BufReadPost", "BufWritePost", "InsertLeave", "TextChanged"}, {
---   group = group,
---   pattern = {"*.c", "*.h", "*.cpp", "*.cc", "*.cxx", "*.hpp"},
---   callback = function()
---     -- Small delay to ensure LSP is ready
---     vim.defer_fn(function()
---       M:show_c_return_types()
---     end, 50)
---   end,
--- })
---
--- -- Special handling for initial file load from command line
--- vim.api.nvim_create_autocmd("VimEnter", {
---   group = group,
---   callback = function()
---     local ft = vim.bo.filetype
---     if ft == 'c' or ft == 'cpp' or ft == 'h' then
---       -- Longer delay for initial startup
---       vim.defer_fn(function()
---         M:show_c_return_types()
---       end, 500)
---     end
---   end,
--- })
---
--- -- Also trigger when LSP attaches
--- vim.api.nvim_create_autocmd("LspAttach", {
---   group = group,
---   callback = function(args)
---     local bufnr = args.buf
---     local ft = vim.bo[bufnr].filetype
---     if ft == 'c' or ft == 'cpp' or ft == 'h' then
---       vim.defer_fn(function()
---         M:show_c_return_types()
---       end, 100)
---     end
---   end,
--- })
---
--- -- Clean up hash and retries when buffer is deleted
--- vim.api.nvim_create_autocmd("BufDelete", {
---   group = group,
---   callback = function(args)
---     c_return_hashes[args.buf] = nil
---     c_return_retries[args.buf] = nil
---   end,
--- })
---
--- M:show_c_return_types()
+    -- Early exit for empty buffers.
+    local line_count = vim.api.nvim_buf_line_count(bufnr)
+    if line_count == 0 or (line_count == 1 and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == "") then
+        return
+    end
+
+    -- Detect if the buffer has changed since last processing.
+    local tick = vim.api.nvim_buf_get_changedtick(bufnr)
+
+    -- Skip if content hasn't changed.
+    if c_return_changedtick[bufnr] == tick then
+        return
+    end
+
+    -- Prepare per-buffer mark table.
+    local mark_tbl = c_return_marks[bufnr]
+    if not mark_tbl then
+        mark_tbl = {}
+        c_return_marks[bufnr] = mark_tbl
+    end
+
+    -- Check if LSP is attached.
+    local clients = vim.lsp.get_clients({bufnr = bufnr})
+    if #clients == 0 then
+        -- No LSP yet, so clear changedtick to force reprocess when LSP attaches.
+        c_return_changedtick[bufnr] = nil
+        return
+    end
+
+    -- Track if we found any return types.
+    local found_any = false
+
+    -- Get first client for position encoding
+    local client = clients[1]
+
+    -- Cache parser for performance
+    local parser = c_return_parsers[bufnr]
+    if not parser then
+        -- For .h files, try C parser first, fallback to cpp
+        local lang = ft
+        if ft == 'h' then
+            lang = 'c'
+        end
+
+        -- Get tree-sitter parser with error handling
+        local ok
+        ok, parser = pcall(vim.treesitter.get_parser, bufnr, lang)
+        if not ok and ft == 'h' then
+            -- Try cpp parser for .h files if c parser fails
+            ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'cpp')
+        end
+        if not ok then
+            return
+        end
+        c_return_parsers[bufnr] = parser
+    end
+
+    local tree = parser:parse()[1]
+    local root = tree:root()
+
+    -- Query for function calls
+    local lang = ft == 'h' and 'c' or ft -- Use cached lang from parser
+    local query_ok, query = pcall(vim.treesitter.query.parse, lang, [[
+    (call_expression
+    function: (identifier) @func
+    ) @call
+    ]])
+    if not query_ok then
+        return
+    end
+
+    -- Collect all function calls first for batch processing
+    local function_calls = {} -- Array of {node, parent, start_row, start_col, end_row, end_col}
+    local processed = {}
+
+    for id, node in query:iter_captures(root, bufnr, 0, -1) do
+        if query.captures[id] == "func" then
+            local parent = node:parent()
+            local end_row, end_col = parent:end_()
+
+            -- Skip if already processed
+            if not processed[end_row] then
+                processed[end_row] = true
+                local start_row, start_col = node:start()
+                table.insert(function_calls, {
+                    node = node,
+                    parent = parent,
+                    start_row = start_row,
+                    start_col = start_col,
+                    end_row = end_row,
+                    end_col = end_col,
+                    func_name = vim.treesitter.get_node_text(node, bufnr)
+                })
+            end
+        end
+    end
+
+    -- Keep a set of rows we touched this pass to later delete stale marks.
+    local seen_rows = {}
+
+    -- Process all function calls
+    for _, call_info in ipairs(function_calls) do
+        local start_row = call_info.start_row
+        local start_col = call_info.start_col
+        local end_row = call_info.end_row
+        local end_col = call_info.end_col
+
+        -- Make LSP hover request with proper position encoding
+        local params = vim.lsp.util.make_position_params(0, client.offset_encoding)
+        params.position.line = start_row
+        params.position.character = start_col
+
+        -- Use synchronous request to get immediate results
+        local result = vim.lsp.buf_request_sync(bufnr, 'textDocument/hover', params, 500)
+
+        if result then
+            for _, res in pairs(result) do
+                if res.result and res.result.contents then
+                    local content = ""
+                    if type(res.result.contents) == "string" then
+                        content = res.result.contents
+                    elseif res.result.contents.value then
+                        content = res.result.contents.value
+                    end
+
+                    if content ~= "" then
+                        -- Parse return type from clangd format: → `type`
+                        local return_type = content:match("→%s*`([^`]+)`")
+
+                        if return_type and return_type ~= "void" then
+                            -- Simplify complex types
+                            -- Remove "aka" information: "FILE * (aka struct _iobuf *)" -> "FILE*"
+                            return_type = return_type:gsub("%s*%(aka[^)]+%)", "")
+                            -- Keep array notation together: "char []" -> "char[]"
+                            return_type = return_type:gsub("(%S)%s+(%[%])", "%1%2")
+                            -- Remove extra spaces around pointers: "FILE *" -> "FILE*"
+                            return_type = return_type:gsub("(%S)%s+%*", "%1*")
+                            -- Clean up remaining whitespace
+                            return_type = return_type:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+
+                            -- Check if there's a semicolon right after the function call
+                            local line = vim.api.nvim_buf_get_lines(bufnr, end_row, end_row + 1, false)[1]
+                            local char_after = line:sub(end_col + 1, end_col + 1)
+
+                            local virt_col = (char_after == ";") and (end_col + 1) or end_col
+
+                            local opts = {
+                                virt_text = {{" ← " .. return_type, "CReturnType"}},
+                                virt_text_pos = "inline",
+                                undo_restore = false,
+                                invalidate = true,
+                            }
+
+                            -- Re-use existing mark on that row if present.
+                            local prev_id = mark_tbl[end_row]
+                            if prev_id then opts.id = prev_id end
+
+                            local new_id = vim.api.nvim_buf_set_extmark(bufnr, c_return_ns, end_row, virt_col, opts)
+
+                            mark_tbl[end_row] = new_id
+                            seen_rows[end_row] = true
+                            found_any = true
+                        end
+                    end
+                    break -- Only process first LSP client result
+                end
+            end
+        end
+    end
+
+    -- If we found any results, mark as processed
+    if found_any then
+        c_return_changedtick[bufnr] = tick
+        c_return_retries[bufnr] = nil
+    else
+        -- No results found, maybe LSP isn't ready yet
+        local retries = c_return_retries[bufnr] or 0
+        if retries < 3 then
+            -- Try again in a moment
+            c_return_retries[bufnr] = retries + 1
+            vim.defer_fn(function()
+                if vim.api.nvim_buf_is_valid(bufnr) then
+                    M:show_c_return_types()
+                end
+            end, 300 * (retries + 1))  -- Increasing delay: 300ms, 600ms, 900ms
+        else
+            -- Give up and mark as processed to avoid infinite retries
+            c_return_changedtick[bufnr] = tick
+            c_return_retries[bufnr] = nil
+        end
+    end
+
+    -- Remove stale marks (function call deleted)
+    for row, id in pairs(mark_tbl) do
+        if not seen_rows[row] then
+            vim.api.nvim_buf_del_extmark(bufnr, c_return_ns, id)
+            mark_tbl[row] = nil
+        end
+    end
+end
+
+-- Setup autocmd group
+local group = vim.api.nvim_create_augroup("CReturnTypeHelper", { clear = true })
+
+-- Trigger on buffer events and LSP attach
+vim.api.nvim_create_autocmd({"BufReadPost", "BufWritePost", "InsertLeave", "TextChanged"}, {
+    group = group,
+    pattern = {"*.c", "*.h", "*.cpp", "*.cc", "*.cxx", "*.hpp"},
+    callback = function()
+        -- Call directly without delay for better responsiveness
+        M:show_c_return_types()
+    end,
+})
+
+-- Special handling for initial file load from command line
+vim.api.nvim_create_autocmd("VimEnter", {
+    group = group,
+    callback = function()
+        local ft = vim.bo.filetype
+        if ft == 'c' or ft == 'cpp' or ft == 'h' then
+            -- Longer delay for initial startup
+            vim.defer_fn(function()
+                M:show_c_return_types()
+            end, 500)
+        end
+    end,
+})
+
+-- Also trigger when LSP attaches
+vim.api.nvim_create_autocmd("LspAttach", {
+    group = group,
+    callback = function(args)
+        local bufnr = args.buf
+        local ft = vim.bo[bufnr].filetype
+        if ft == 'c' or ft == 'cpp' or ft == 'h' then
+            vim.defer_fn(function()
+                M:show_c_return_types()
+            end, 100)
+        end
+    end,
+})
+
+-- Clean up cached data when buffer is deleted
+vim.api.nvim_create_autocmd("BufDelete", {
+    group = group,
+    callback = function(args)
+        c_return_changedtick[args.buf] = nil
+        c_return_retries[args.buf] = nil
+        c_return_parsers[args.buf] = nil
+        c_return_marks[args.buf] = nil
+    end,
+})
+
+M:show_c_return_types()
 
 -- -----------------------------------------------------------------------------
 
@@ -307,8 +315,8 @@ _G.M = M or {}
 -- This is a custom diagnostics renderer that uses extmarks to display
 -- diagnostics above the target line.
 
--- TODO FEATURE Don't display diagnostics if the file has been modified but not
--- saved.
+-- TODO FEATURE Don't display diagnostics if the file has been modified but not saved.
+-- TODO: Occasionally, diagnostics aren't cleared up properly, and they remain in place, often at the end of the file, even after the offending code has been removed.
 
 function M:custom_diagnostics_formatter()
 
@@ -795,18 +803,140 @@ end
 
 -- -------------------------------------------------------------------------- --
 
+-- TAG WRAPPER
+
+-- Wrap normal and visual block selections with configurable tags.
+-- Tags are placed on their own lines above and below the selection.
+-- Example: <tag>selection</tag> or [START]selection[END]
+
+_G.WrapWithTags = function()
+    -- First, exit visual mode if we're in it to ensure marks are set
+    local mode = vim.api.nvim_get_mode().mode
+    if mode == 'v' or mode == 'V' or mode == '\22' then
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), 'n', false)
+        -- Small delay to ensure visual mode exit completes
+        vim.cmd("sleep 10m")
+    end
+    
+    local start_tag = vim.fn.input('Start tag (e.g. <div>, [START]): ')
+    if start_tag == "" then return end
+    
+    local end_tag = vim.fn.input('End tag (e.g. </div>, [END]): ')
+    if end_tag == "" then return end
+    
+    local buf = vim.api.nvim_get_current_buf()
+    
+    -- Check if we have visual marks
+    local start_pos = vim.fn.getpos("'<")
+    local end_pos = vim.fn.getpos("'>")
+    local has_visual_selection = start_pos[2] ~= 0 and end_pos[2] ~= 0
+    
+    if not has_visual_selection then
+        -- Normal mode: wrap current line
+        local line_num = vim.api.nvim_win_get_cursor(0)[1]
+        local lines = vim.api.nvim_buf_get_lines(buf, line_num - 1, line_num, false)
+        if #lines == 0 then return end
+        
+        -- Get indentation from current line
+        local indent = lines[1]:match("^(%s*)")
+        
+        -- Insert tags with same indentation
+        local new_lines = {
+            indent .. start_tag,
+            lines[1],
+            indent .. end_tag
+        }
+        
+        vim.api.nvim_buf_set_lines(buf, line_num - 1, line_num, false, new_lines)
+        
+    elseif mode == '\22' or (start_pos[3] > 1 or end_pos[3] < 2147483647) then
+        -- Visual block mode (when columns are constrained)
+        local start_line = start_pos[2] - 1
+        local end_line = end_pos[2] - 1
+        local start_col = start_pos[3] - 1
+        local end_col = end_pos[3] - 1
+        
+        -- Ensure columns are in correct order
+        if start_col > end_col then
+            start_col, end_col = end_col, start_col
+        end
+        
+        local lines = vim.api.nvim_buf_get_lines(buf, start_line, end_line + 1, false)
+        if #lines == 0 then return end
+        
+        -- Extract block content and find common indentation
+        local block_lines = {}
+        local min_indent = math.huge
+        
+        for i, line in ipairs(lines) do
+            local content = line:sub(start_col + 1, end_col + 1)
+            table.insert(block_lines, content)
+            
+            -- Calculate indentation up to start column
+            local indent_chars = line:sub(1, start_col):match("^(%s*)")
+            if indent_chars then
+                min_indent = math.min(min_indent, #indent_chars)
+            end
+        end
+        
+        -- Use the minimum indentation found
+        local indent = (" "):rep(min_indent)
+        
+        -- Build replacement lines
+        local new_lines = {indent .. start_tag}
+        for _, content in ipairs(block_lines) do
+            table.insert(new_lines, indent .. content:match("^%s*(.*)"))
+        end
+        table.insert(new_lines, indent .. end_tag)
+        
+        -- Calculate where to insert the wrapped content
+        -- Insert at the beginning of the selection
+        vim.api.nvim_buf_set_lines(buf, start_line, start_line, false, new_lines)
+        
+        -- Remove the original selected lines
+        vim.api.nvim_buf_set_lines(buf, start_line + #new_lines, end_line + #new_lines + 1, false, {})
+    else
+        -- Visual line mode: wrap full lines
+        local start_line = math.min(start_pos[2], end_pos[2]) - 1
+        local end_line = math.max(start_pos[2], end_pos[2])
+        
+        local lines = vim.api.nvim_buf_get_lines(buf, start_line, end_line, false)
+        if #lines == 0 then return end
+        
+        -- Get indentation from first non-empty line
+        local indent = ""
+        for _, line in ipairs(lines) do
+            if line:match("%S") then
+                indent = line:match("^(%s*)") or ""
+                break
+            end
+        end
+        
+        -- Build new lines array
+        local new_lines = {indent .. start_tag}
+        for _, line in ipairs(lines) do
+            table.insert(new_lines, line)
+        end
+        table.insert(new_lines, indent .. end_tag)
+        
+        vim.api.nvim_buf_set_lines(buf, start_line, end_line, false, new_lines)
+    end
+end
+
+-- -------------------------------------------------------------------------- --
+
 -- VISREP
 
 -- Replace visually selected text globally with a new string. Respects word
 -- boundaries.
 
--- [ ] TODO I see room here for serious performance improvements.
--- [ ] TODO This still has issues with targetting words within other words. E.g.
+-- [!] TODO This still has issues with targetting words within other words. E.g.
 -- when we select something like my_word and replace it with something else,
 -- other variables that contain my_word will will have their instance of my_word
 -- replaced as well. This is because the pattern is not actually word-boundary
 -- aware? We need to ensure that the pattern only matches whole words, not
 -- substrings within other words.
+-- [ ] TODO I see room here for serious performance improvements.
 
 _G.Visrep = function()
     local cursor_pos = vim.fn.getpos('.')
