@@ -68,6 +68,8 @@ end
 
 -- Leaders
 
+-- These are defined in init.lua as per Lazy's documentation.
+
 -- vim.g.mapleader = ' '
 -- vim.g.maplocalleader = ' '
 
@@ -84,8 +86,6 @@ visual('<C-Down>', 'xp`[V`]', "Move selection down.")
 visual('<C-Up>', 'xkP`[V`]', "Move selection up.")
 
 normal('<C-i>', '<C-e>', "Scroll window down one line.")
-
--- Scroll keybindings here.
 
 -- Yank and put
 
@@ -149,6 +149,11 @@ normal('<leader>e', '</<C-X><C-O>', "Unknown mapping related to Oil and terminal
 -- Visual Replace
 
 visual('<leader>r', '<Esc>:lua Visrep()<CR>', "Search for all instances then replace the visually selected text with a new string.")
+
+-- Tag Wrapper
+
+normal('<leader>w', ':lua WrapWithTags()<CR>', "Wrap current line with tags on separate lines.")
+visual('<leader>w', '<Esc>:lua WrapWithTags()<CR>', "Wrap selection with tags on separate lines.")
 
 -- Misc
 
