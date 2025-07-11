@@ -2,6 +2,13 @@
 
 Change log for completed improvements, fixes, and tweaks.
 
+## 2025-01-11: [SCRIPTS] Added tag wrapper functionality for wrapping selections with configurable tags (files: scripts.lua, keybindings.lua)
+- Feature: New WrapWithTags() function to wrap text selections with custom start/end tags on separate lines
+- Implementation: Supports normal mode (current line), visual mode (selected lines), and visual block mode
+- Usage: <leader>w prompts for start tag (e.g., <div>, [START]) and end tag (e.g., </div>, [END])
+- Behavior: Preserves indentation from the first line of selection, places tags on their own lines
+- Files modified: `lua/scripts.lua:812-924` (added WrapWithTags function), `lua/keybindings.lua:155-156` (added keybindings)
+
 ## 2025-01-24: [CLIPBOARD] Fixed WSL clipboard sync interfering with separate register behavior (files: autocmds.lua)
 - Issue: <leader>y and y, then p and <leader>p were pasting the same content despite separate keybindings
 - Root cause: WSL clipboard sync autocmds were synchronizing default register (@) with system clipboard (+) on focus events
@@ -50,3 +57,17 @@ Change log for completed improvements, fixes, and tweaks.
 - Solution: Disabled default keymap and manually set both keybindings in config function
 - Impact: Both <C-CR> and <C-\> now work for accepting Copilot suggestions
 - Files modified: `lua/plugins/lazy-copilot.lua:44-47, 69-75`
+
+## 2025-06-28: [LSP] Fixed clangd exit-code 1 on file open (files: lazy-lspconfig.lua)
+
+- Issue: Opening any C/C++ file showed “Client clangd quit with exit code 1”.
+- Root cause: The `cmd` array still contained the deprecated flags
+  `--inlay-hints` and `--function-arg-placeholders` – the latter now
+  requires an explicit value in clangd ≥ 20.1 and makes the server abort
+  when omitted.
+- Solution: Removed both obsolete flags; the same functionality is
+  provided through the `InlayHints.*` settings block already present in
+  the config.
+- Impact: clangd starts cleanly again, inlay hints and argument
+  placeholders continue to work.
+- Files modified: `lua/plugins/lazy-lspconfig.lua:69-80`
