@@ -31,6 +31,15 @@ return {
                 },
             },
             menu = {
+                -- Restrict the floating completion window to exactly 40 columns.  In
+                -- Blink v0.7.0+ the size of the popup can be controlled through the
+                -- `win_config` table which is forwarded to `nvim_open_win`.  Setting
+                -- both the minimum and maximum width guarantees that the menu never
+                -- grows beyond ‑ or shrinks below ‑ 40 characters.
+                win_config = {
+                    max_width = 40,
+                    min_width = 40,
+                },
                 scrollbar = true,
                 draw = {
                     columns = {{"label", "label_description", gap = 1}, {"kind"}},
