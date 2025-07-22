@@ -74,7 +74,17 @@ return {
             jsonls = {},
 
             clangd = {
-                cmd = { "clangd", "--background-index", "--clang-tidy", "--inlay-hints", "--function-arg-placeholders" }, -- UPDATED: Added --function-arg-placeholders
+                --
+                -- NOTE: Upstream clangd >= 20.1 changed several CLI flags:
+                --   * `--inlay-hints` is now a no-op (inlay hints are configured via
+                --     `InlayHints.*` in the LSP settings instead)
+                --   * `--function-arg-placeholders` now requires an explicit boolean
+                --     value ("=true"/"=false") and crashes when the value is omitted.
+                -- Passing the old flag list therefore terminates the server with
+                -- exit-code 1.  Strip the obsolete / breaking flags – we already set
+                -- the corresponding features through the `settings` table below.
+                --
+                cmd = { "clangd", "--background-index", "--clang-tidy" },
                 settings = {
                     clangd = {
                         semanticHighlighting = true,
