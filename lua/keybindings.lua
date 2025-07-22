@@ -1,4 +1,4 @@
--- {Keybindings}
+-- keybindings.lua
 
 -- Helpers
 
@@ -85,6 +85,7 @@ normal('<C-Down>', 'ddp', "Move the current line down.")
 visual('<C-Down>', 'xp`[V`]', "Move selection down.")
 visual('<C-Up>', 'xkP`[V`]', "Move selection up.")
 
+-- TODO: Reset the replace keybinding which is C-e to the default behaviour so that you don't need to redefine scroll down.
 normal('<C-i>', '<C-e>', "Scroll window down one line.")
 
 -- Yank and put
@@ -101,22 +102,29 @@ visual('<leader>P', '"+P', "Put from system clipboard before the visual selectio
 
 visual('p', 'pgvy', "Put then re-yank the original selection.")
 
--- Window/tab/buffer management
+-- Window/Tab/Buffer management
+
+-- Buffer Management
 
 normal('<leader>b', ':w<CR>:bd<CR>', "Save and close the current buffer.")
 
--- Tab management
+-- Tab Management
 
-normal('<leader>tn', ':tabnew<CR>', "Open a new tab")
+normal('<leader>to', ':tabnew<CR>',    "Open a new tab")
+normal('<leader>tb', ':tab split<CR>', "Open current buffer in new tab")
+
 normal('<leader>tc', ':tabclose<CR>', "Close the current tab")
-normal('<leader>to', ':tabonly<CR>', "Close all tabs except the current one")
-normal('<leader>tl', ':tabnext<CR>', "Go to next tab")
-normal('<leader>th', ':tabprevious<CR>', "Go to previous tab")
+normal('<leader>tq', ':tabonly<CR>', "Close all tabs except the current one")
+
+normal('<leader>tn', ':tabnext<CR>', "Go to next tab")
+normal('<leader>tp', ':tabprevious<CR>', "Go to previous tab")
+
 normal('<C-Right>', ':tabnext<CR>', "Go to next tab")
 normal('<C-Left>', ':tabprevious<CR>', "Go to previous tab")
+
 normal('<A-Right>', ':tabmove +1<CR>', "Move tab to the right")
 normal('<A-Left>', ':tabmove -1<CR>', "Move tab to the left")
-normal('<leader>ts', ':tab split<CR>', "Open current buffer in new tab")
+
 -- normal('<leader>ta', ':tabdo ', "Execute command in all tabs (requires completing the command)")
 
 -- This moves the line the cursor is on up one line.
