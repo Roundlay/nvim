@@ -10,9 +10,6 @@ return {
         transparent = false,
         italic_comments = false,
         underline_links = false,
-        color_overrides = {
-        -- vscLineNumber = '#000000',
-        },
     },
     config = function(_, opts)
         local vscode_ok, vscode = pcall(require, "vscode")
