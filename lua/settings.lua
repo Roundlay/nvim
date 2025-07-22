@@ -161,7 +161,7 @@ vim.lsp.handlers["workspace/didChangeWatchedFiles"] = { dynamic_registration = t
 --     end
 -- end
 
--- vim.o.clipboard = 'unnamed,unnamedplus' -- Commented out to keep clipboards separate
+vim.o.clipboard = "" -- "Do not tie `""` to either the `"+` or the `"*` registers."
 vim.o.shortmess = vim.o.shortmess .. "I" -- Don't show the intro message when starting Neovim.
 
 -- Make background transparent:
