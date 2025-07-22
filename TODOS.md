@@ -1,5 +1,6 @@
 # TODOS.md
 
+- [ ] TODO: Can we update dd so that it doesn't overwrite the yank register if we dd a blank line? E.g. often we dd a line, and then want to remove the line above it, but we want to keep the first dd in a register.
 - [ ] TODO: Improve startup performance (current goal: <50ms)
     - [ ] TODO: Come up with a robust benchmarking framework.
 - [ ] TODO: 2025-06-25 13:44:49 Add highlight overrides for C (clangd?) in after/queries/c/ (?).
