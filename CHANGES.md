@@ -2,6 +2,13 @@
 
 Change log for completed improvements, fixes, and tweaks.
 
+## 2025-01-29: [GIT] Fixed git push failure after rewriting commit history (files: N/A - git operations)
+- Issue: `git push --force-with-lease` and `git push --set-upstream` failing with "stale info" error
+- Root cause: Remote had different commit hashes after local history rewrite, --force-with-lease was rejecting due to mismatch
+- Solution: Used `git push --force origin main` to override remote history with local rewritten commits
+- Impact: Successfully rewrote commit history to change author information, GitHub contributor page will update within days
+- Note: Force push replaces entire remote history - use with caution
+
 ## 2025-01-11: [SCRIPTS] Added tag wrapper functionality for wrapping selections with configurable tags (files: scripts.lua, keybindings.lua)
 - Feature: New WrapWithTags() function to wrap text selections with custom start/end tags on separate lines
 - Implementation: Supports normal mode (current line), visual mode (selected lines), and visual block mode
