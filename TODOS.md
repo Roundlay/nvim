@@ -1,5 +1,42 @@
 # TODOS.md
 
+- - -
+
+- [ ] In-line comment symbols (//) don't respect the line-break rules in the "Wrappin" script. We need to ensure that we detect in-line comment symbols (e.g. //, --, #, and so on) when they're wrapped in quotation marks, brackets, backticks (single and code-fenced), etc. Notice that the lines on the comment line don't respect the line length rules anymore. We still want to preserve the old comment parsing behaviour for standalone comments.
+
+Examples:
+
+```
+Hopefully an analysis of this [LSX1] data-structure will help us understand how to map it to the dependency tree we manually derived. The manually derived resource dependency tree is below in the section marked "DEPENDENCY TREE". I've included comments (` // ...`) above lines that I was able to manually cross-reference with the DEPENDENCY TREE data.
+```
+
+Becomes...
+
+```
+Hopefully an analysis of this [LSX1] data-structure will help us understand how
+to map it to the dependency tree we manually derived. The manually derived
+resource dependency tree is below in the section marked "DEPENDENCY TREE". I've
+included comments (`
+// ...`) above lines that I was able to manually cross-reference with the DEPENDENCY TREE data.
+```
+
+But it should be:
+
+```
+Hopefully an analysis of this [LSX1] data-structure will help us understand how
+to map it to the dependency tree we manually derived. The manually derived
+resource dependency tree is below in the section marked "DEPENDENCY TREE". I've
+included comments (`// ...`) above lines that I was able to manually
+cross-reference with the DEPENDENCY TREE data.
+```
+
+
+- - -
+
+- [ ] FIX: When opening C files from Telescope I see this error message: "Error detected while processing InsertLeave Autocommands for "*.c": method textDocument/hover is not supported by any of the servers registered for the current buffer"
+
+- - -
+
 - [ ] TODO: Can we update dd so that it doesn't overwrite the yank register if we dd a blank line? E.g. often we dd a line, and then want to remove the line above it, but we want to keep the first dd in a register.
 - [ ] TODO: Improve startup performance (current goal: <50ms)
     - [ ] TODO: Come up with a robust benchmarking framework.

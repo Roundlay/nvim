@@ -172,6 +172,9 @@ vim.cmd [[
     highlight EndOfBuffer guibg=NONE ctermbg=NONE
 ]]
 
+-- Enforce Unix line endings
+vim.o.fileformat = 'unix' -- Set default file format to Unix (LF) line endings.
+
 -- ARCHIVE
 
 -- Open files in tabs

@@ -1,9 +1,15 @@
 {
+  "env": {
+    "ANTHROPIC_CUSTOM_HEADERS": "anthropic-beta: interleaved-thinking-2025-05-14",
+    "MAX_THINKING_TOKENS": "30000"
+  },
   "permissions": {
     "allow": [
-      "Bash(env)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(odin build:*)",
+      "Bash(./extractor:*)",
+      "Bash(ls:*)",
+      "Bash(echo $SHELL)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

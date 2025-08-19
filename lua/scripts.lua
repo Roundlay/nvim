@@ -86,6 +86,13 @@ function M:show_c_return_types()
 
     -- Get first client for position encoding
     local client = clients[1]
+    
+    -- Check if client supports hover method
+    if not client:supports_method(vim.lsp.protocol.Methods.textDocument_hover) then
+        -- Client doesn't support hover yet, clear changedtick to retry later
+        c_return_changedtick[bufnr] = nil
+        return
+    end
 
     -- Cache parser for performance
     local parser = c_return_parsers[bufnr]
@@ -720,10 +727,22 @@ _G.Wrappin = function()
     local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line+1, false)
     if #lines == 0 then return end
     -- Analyze first line for comment pattern
-    local initial_indent = lines[1]:match("^(%s*)")
+    local initial_indent = lines[1]:match("^(%s*)") or ""
     local comment_prefix = lines[1]:match("^%s*([%-/]+%s*)") or ""
+    local first_is_comment = comment_prefix ~= "" and lines[1]:match("^%s*" .. vim.pesc(comment_prefix)) ~= nil
     -- Detect if we're in wrapped state (B) or single-line state (A)
-    local is_wrapped = #lines > 1 and lines[2]:match("^%s*" .. vim.pesc(comment_prefix))
+    -- Only consider as wrapped if selection has multiple lines AND every line
+    -- starts with a comment prefix (avoids joining arbitrary multi-line code).
+    local is_wrapped = false
+    if #lines > 1 and first_is_comment then
+        is_wrapped = true
+        for i = 2, #lines do
+            if not lines[i]:match("^%s*" .. vim.pesc(comment_prefix)) then
+                is_wrapped = false
+                break
+            end
+        end
+    end
     if is_wrapped then
         -- UNWRAP: Join lines, removing duplicate comment prefixes
         local content = {}
