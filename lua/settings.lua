@@ -172,12 +172,14 @@ vim.cmd [[
     highlight EndOfBuffer guibg=NONE ctermbg=NONE
 ]]
 
--- Enforce Unix line endings
-vim.o.fileformat = 'unix' -- Set default file format to Unix (LF) line endings.
+
+vim.o.fileformat = "unix"
+-- vim.cmd [[autocmd BufWritePre * setlocal fileformat=unix]]
 
 -- ARCHIVE
 
 -- Open files in tabs
+-- [ ] Doesn't work.
 -- vim.api.nvim_create_autocmd("BufNewFile,BufRead", {
 --     pattern = "*",
 --     callback = function()

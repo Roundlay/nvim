@@ -1,0 +1,24 @@
+# Default: normalize as text; store and check out with LF
+* text=auto eol=lf
+
+# Windows-only scripts: require CRLF in working tree
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Treat obvious binaries as binary (no EOL changes)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.exe binary
+*.dll binary
+*.so  binary
+*.dylib binary
+*.o   binary
+*.obj binary
+*.pdb binary
