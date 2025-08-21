@@ -449,25 +449,10 @@ end
 
 M:custom_diagnostics_formatter()
 
--- ========================================================================== --
+-------------------------------------------------------------------------------
 -- Custom Numberline
--- ========================================================================== --
 
--- [X] TODO Numberline turns on when swapping windows even when set to off in
--- settings! Example: Open Neovim with 'nvim', move to a file with Oil in the
--- Oil file browser, use keybinding to open it in a vertical split to the right
--- (still no numberline), use C-wl to move to the new split to the right, the
--- numberline appears, but not ours (?), because there's no prefix numbers (!),
--- hit o to start inputting something on the line below, and now OUR numberline
--- loads, the prefix charactres pop into existence. Now, our numberline remains
--- on for all subsequent buffers we open without delay. This occurs even when
--- the pretty_line_numbers() function is not called, i.e. the entire function is
--- commented out right now. So maybe that means it's something to do with
--- autocommands?
-
--- [ ] TODO Diagnostics script still breaks in Python files, where many
--- diagnostics can reamain around on certain lines, never being cleared up, even
--- after the offending code has been removed.
+-- [!] TODO Benchmark this.
 
 -- [ ] TODO Find a way to reduce calls to the Vim/Neovim API. E.g. we call
 -- vim.api.nvim_win_get_option() and vim.api.nvim_buf_get_option() a lot. We
@@ -484,6 +469,7 @@ M:custom_diagnostics_formatter()
     -- active line in the numberline, padding, etc.
 
 -- [ ] TODO Rename this!
+
 function M:pretty_line_numbers()
     -- [!] Document functionality. E.g. why we need to get the winid every
     -- iteration (to ensure all windows update independently, etc.).
@@ -575,8 +561,12 @@ function M:pretty_line_numbers()
         update_window(window)
     end
 
+    -- [!] TODO Is it bad that we're setting up a new augroup every time we
+    -- call this function? I.e. we should only set up the autocommands once, not
+    -- every time we call this function. So maybe we should move all these to
+    -- the autocommands file?
     -- [!] TODO Find a way to simplify this. I.e. we don't need to create a new
-    -- augroup every time we call this function?
+    -- augroup every time we call this function? Do we?
     -- [!] TODO Document these autocommands.
 
     local aug = vim.api.nvim_create_augroup('PrettyLineNumbers', { clear = true })
@@ -633,7 +623,8 @@ function M:pretty_line_numbers()
     })
 
     -- [!] TODO Surely there's a better way to do this that doesn't involve
-    -- string manipulation?
+    -- string manipulation? String builder? Abusing the Vim API directly?
+
     _G.FormatLineNr = function(width, use_rel)
         if vim.v.virtnum ~= 0 then return '' end
         local rel = vim.v.relnum
@@ -948,11 +939,17 @@ end
 -- boundaries.
 
 -- [!] TODO This still has issues with targetting words within other words. E.g.
--- when we select something like my_word and replace it with something else,
--- other variables that contain my_word will will have their instance of my_word
--- replaced as well. This is because the pattern is not actually word-boundary
--- aware? We need to ensure that the pattern only matches whole words, not
--- substrings within other words.
+-- when we select something like "my_word" and replace it with something else,
+-- other variables that contain "my_word", like "my_words" or "my_word_var" will
+-- have their instance of my_word replaced as well. This is because the pattern
+-- is not actually word-boundary aware? We need to ensure that, at the very
+-- least, we allow the user to make one replacement strategy the default, and
+-- find some quick way to toggle between these modes. The best case here would
+-- be that, after running the command, when we see the input prompt at the
+-- bottom of the screen we let the user toggle modes with a keypress, e.g.
+-- with the <Tab> key, or something like that. Not sure if this is feasible
+-- in Neovim.
+
 -- [ ] TODO I see room here for serious performance improvements.
 
 _G.Visrep = function()
