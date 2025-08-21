@@ -1,0 +1,2 @@
+[ "{" "}"] @curlybraces
+(#eq? @curlybraces)
