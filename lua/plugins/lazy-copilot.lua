@@ -33,8 +33,7 @@ return {
           "C:\\Users\\Christopher\\scoop\\apps\\odin\\current\\examples",
         },
         filetypes = {
-            markdown = false,
-            text = false,
+            -- ...
         },
         server_opts_overrides = {},
         suggestion = {
