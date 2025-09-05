@@ -1,5 +1,21 @@
---- autocmds.lua ---
+-- autocmds.lua
+--------------------------------------------------------------------------------
+
 -- Custom autocommands for Neovim to automate behaviors based on events.
+-- Auto-commands grouped here instead of per-file to avoid target ambiguity.
+-- E.g. Should the auto-command that hides Copilot when Blink menus are open
+-- be in the Blink or Copilot plugin file? Placing it here avoids that question.
+
+-- VIM
+
+-- Remove temporary shada files on VimEnter.
+vim.api.nvim_create_autocmd('VimEnter', {
+    callback = function()
+        for _, f in ipairs(vim.fn.glob(SHADA_DIRECTORY..'/main-*.shada.tmp.*', 0, 1)) do
+            os.remove(f)
+        end
+    end
+})
 
 -- Highlight yanked text on yank.
 vim.api.nvim_create_autocmd('TextYankPost', {
@@ -10,7 +26,8 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     end,
 })
 
--- Disable auto-comments by removing 'c', 'r', and 'o' from formatoptions for all filetypes.
+-- Disable auto-comments by removing 'c', 'r', and 'o' from `formatoptions` for
+-- all filetypes.
 vim.api.nvim_create_autocmd('FileType', {
     pattern = '*',
     callback = function()
@@ -18,7 +35,8 @@ vim.api.nvim_create_autocmd('FileType', {
     end,
 })
 
--- Enter insert mode and move cursor to end of line when opening or switching to a terminal.
+-- Enter insert mode and move cursor to end of line when opening or switching to
+-- a terminal.
 vim.api.nvim_create_autocmd({'TermOpen', 'WinEnter'}, {
     pattern = '*',
     callback = function()
@@ -39,6 +57,10 @@ vim.api.nvim_create_autocmd('WinLeave', {
     end,
 })
 
+-- PLUGINS
+
+-- COPILOT + BLINK.CMP INTEGRATION
+
 -- Hide Copilot suggestion when BlinkCmp menu is open.
 vim.api.nvim_create_autocmd("User", {
   pattern = "BlinkCmpMenuOpen",
@@ -55,15 +77,25 @@ vim.api.nvim_create_autocmd("User", {
   end,
 })
 
--- Remove temporary shada files on VimEnter.
-vim.api.nvim_create_autocmd('VimEnter', {
-    callback = function()
-        for _, f in ipairs(vim.fn.glob(SHADA_DIRECTORY..'/main-*.shada.tmp.*', 0, 1)) do
-            os.remove(f)
+-- FOCUS
+
+-- Disable focus autoresize for filetypes 'oil' and 'lazy'.
+local ignore_filetypes = { 'oil', 'lazy' }
+vim.api.nvim_create_autocmd('FileType', {
+    group = augroup,
+    callback = function(_)
+        if vim.tbl_contains(ignore_filetypes, vim.bo.filetype) then
+            vim.b.focus_disable = true
+        else
+            vim.b.focus_disable = false
         end
-    end
+    end,
+    desc = 'Disable focus autoresize for oil and lazy filetypes.',
 })
 
+-- WSL INTEGRATION
+
+-- TODO!
 -- WSL Clipboard sync - DISABLED to keep registers separate
 -- Commented out to allow separate Neovim and system clipboard usage
 -- Regular y/p use Neovim registers, <leader>y/<leader>p use system clipboard
@@ -82,19 +114,3 @@ vim.api.nvim_create_autocmd('VimEnter', {
 --         desc = 'Sync default register to system clipboard on focus lost in WSL'
 --     })
 -- end
-
--- FOCUS
-
--- Disable focus autoresize for filetypes 'oil' and 'lazy'.
-local ignore_filetypes = { 'oil', 'lazy' }
-vim.api.nvim_create_autocmd('FileType', {
-    group = augroup,
-    callback = function(_)
-        if vim.tbl_contains(ignore_filetypes, vim.bo.filetype) then
-            vim.b.focus_disable = true
-        else
-            vim.b.focus_disable = false
-        end
-    end,
-    desc = 'Disable focus autoresize for oil and lazy filetypes.',
-})

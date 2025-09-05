@@ -28,7 +28,7 @@ return {
     event = "InsertEnter",
     opts = {
         copilot_node_command = 'node',
-        copilot_model = "gpt-4o-copilot",
+        -- copilot_model = "gpt-4o-copilot", // Model selection is currently not available. Default is 'gpt-4o-copilot'.
         workspace_folders = {
           "C:\\Users\\Christopher\\scoop\\apps\\odin\\current\\examples",
         },
@@ -63,16 +63,5 @@ return {
             return
         end
         copilot.setup(opts)
-
-        -- Set up keybindings to accept Copilot suggestions
-        local accept_suggestion = function()
-            require("copilot.suggestion").accept()
-        end
-        
-        -- Standard <C-CR> - requires proper terminal configuration
-        vim.keymap.set('i', '<C-CR>', accept_suggestion, {desc = "Accept Copilot suggestion"})
-        
-        -- Keep C-\ as backup
-        vim.keymap.set('i', '<C-\\>', accept_suggestion, {desc = "Accept Copilot suggestion (backup)"})
     end
 }

@@ -1,8 +1,10 @@
 -- orgmode.lua
+-- three backticks for code block:
+-- ```lang
 
 return {
     'nvim-orgmode/orgmode',
-    enabled = false,
+    enabled = true,
     lazy = true,
     event = "VeryLazy",
     ft = { "org" },
