@@ -171,22 +171,3 @@ vim.cmd [[
     highlight SignColumn guibg=NONE ctermbg=NONE
     highlight EndOfBuffer guibg=NONE ctermbg=NONE
 ]]
-
-
-vim.o.fileformat = "unix"
--- vim.cmd [[autocmd BufWritePre * setlocal fileformat=unix]]
-
--- ARCHIVE
-
--- Open files in tabs
--- [ ] Doesn't work.
--- vim.api.nvim_create_autocmd("BufNewFile,BufRead", {
---     pattern = "*",
---     callback = function()
---         if #vim.api.nvim_list_wins() >= 1 then
---             vim.cmd("tabnew")
---         end
---     end,
--- })
-
--- vim.cmd [[ let g:dracula_underline = 0:]] -- Disable underlines in Dracula theme.

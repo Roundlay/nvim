@@ -14,10 +14,10 @@ return {
     opts = {
         keymap = {
             preset = 'default',
-            ['<C-\\>'] = { 'select_and_accept', 'fallback' },
-            ['<C-CR>'] = { 'select_and_accept', 'fallback' },
-            ['<C-p>'] = { 'select_prev', 'fallback' },
-            ['<C-n>'] = { 'select_next', 'fallback' },
+            ['<C-\\>'] = {'select_and_accept', 'fallback'},
+            ['<C-CR>'] = {'select_and_accept', 'fallback'},
+            ['<C-p>'] = {'select_prev', 'fallback'},
+            ['<C-n>'] = {'select_next', 'fallback'},
         },
         completion = {
             list = {

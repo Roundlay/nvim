@@ -704,11 +704,58 @@ M:pretty_line_numbers()
 -- prefixes and inline comments. It also respects the initial indentation of the
 -- first line in the selection.
 
--- [ ] TODO We should add support for rewrapping multiple lines, where one or more
--- of the lines are already wrapped. E.g. if we have a selection of 4 lines,
--- where lines 1, 2, and 4 are already within the wrap boundary, but 3 has a
--- length longer than our wrap column, we should be able to reflow everything
--- below the offending line.
+--[[
+[!] TODO BUG 
+Consider the following chunk of text:
+
+## TL;DR (do this in order)
+
+1. **Treat LSLib as the ground truth and oracle.** Convert LSF→LSX during indexing; do *not* block on your v7 binary parser. LSLib 1.18.7+ supports LSF v7 and fixed the BG3 UUID endianness change, which bit a lot of people. ([GitHub][1])
+
+2. **Fix your PAK v18 reader** (offset packing, flags, and file‑table decompression) so you can reliably stream files from `Shared*.pak`, `Gustav*.pak`, `Materials.pak`, `Textures*.pak`, and `VirtualTextures*.pak`. Use the structures in LSLib’s `PackageFormat.cs` / `PackageReader.cs` as the spec. ([GitHub][2])
+
+3. **Build a GUID→(file, xpath) index from LSX** (VisualBank, MaterialBank, TextureBank). Use Multitool’s “Index/Search” as a reference for what “complete” looks like. ([Baldur's Gate 3 Wiki][3], [wiki.bg3.community][4])
+
+4. **Recursive resolver (the heart of your extractor):**
+   Visual → Materials (incl. nested template/material refs) → Textures **and** VirtualTextures (via `GTexFileName`) → files (`.gr2`, `.dds`, `.gts/.gtp`). The community docs and examples call out these exact banks and fields. ([Baldur's Gate 3 Wiki][5], [wiki.bg3.community][6])
+
+5. **Virtual textures:** map `GTexFileName` (32‑hex) → its tileset/page (`.gts`/`.gtp`) and export the layers. LSLib added *virtual texture* generation/export and has a doc + numerous bugfixes specific to `GTP/GTS`—lean on it. Also see the bg3.wiki guide on *finding* virtual textures (it shows where `GTexFileName` lives). ([GitHub][1], [Baldur's Gate 3 Wiki][7])
+
+6. **Only after the extractor ships**: copy LSLib’s LSF v7 node/attribute/value layout (don’t guess). You already rediscovered several pitfalls that are solved there.
+```
+
+When we run the Wrappin function on this selection, i.e. by going into visual
+section mode and selecting it all, it results in the following:
+
+```
+## TL;DR (do this in order)
+```
+
+Effectively removing/deleting everything... This may be related to the fact that the first line starts with `##` which might be confusing a header for a comment prefix. We need to add more robust handling for headers and other non-comment prefixes. We need more robust handling of comments in general!
+--]]
+
+
+--[[
+[ ] TODO FEATURE
+We should add support for rewrapping multiple lines, where one or more
+of the lines are already wrapped. E.g. if we have a selection of 4 lines,
+where lines 1, 2, and 4 are already within the wrap boundary, but 3 has a
+length longer than our wrap column, we should be able to reflow everything
+below the offending line.
+--]]
+
+
+--[[
+[ ] TODO IDEA
+We should probably have some kind of way to allow the user to store the original
+layout of the text they want to wrap in some kind of buffer, perhaps on disk, so
+that we can perfect revert to the original layout if needed. We'd need to be
+careful about how we implement this so that we don't just end up reimplementing
+"undo". I.e. if the user alters the text after using Wrappin', and then the user
+wants to revert to the original layout, how do we deal with this? I guess all we
+really care about are things like, "were the lines spaced out in a certain way,"
+or "where lines indented and where?" That kind of thing
+--]]
 
 _G.Wrappin = function()
     local start_line = vim.fn.getpos("'<")[2] - 1
@@ -933,16 +980,31 @@ end
 
 -- -------------------------------------------------------------------------- --
 
--- VISREP: Next Steps (see LUA.md and NEOVIM.md)
+-- VISREP
+-- Replace visually selected text globally with a new string. Respects word boundaries, or not.
 
--- [?] What are the biggest pain points of the default %s search and replace that you're trying to remedy here?
+--[[
+
+[!] Consider the following C struct. Simulated cursor represented by |.
+
+struct |test_struct {
+    int arr[1];
+    int target;
+};
+
+struct test_struct test_struct = {{2, 7, 11, 15}, 9};
+
+We need to handle tricky cases like this where the user selects the name of the struct, "test_struct", and wants to replace it with something else. The problem is, we have a type definition and a declarator with the same name, which is legal in C. If the user selects the struct name, from the cursor position above, when they use VisRep to replace the struct name, we want to offer the user the option to replace the string in a smart way. That is, we currently offer boundary and anywhere modes, which is great. Perhaps we need to either 1) make boundary include this LSP style context awareness (not sure if we can come up with an algorithm that's language agnostic and doesn't require an LSP, or 2), add a third mode called "context aware" or something, which uses LSP to determine the context of the selection and only offers matches in the same context. E.g. if the user selects "test_struct" in the type definition, we only offer matches that are also type definitions. If they select "test_struct" in the declarator, we only offer matches that are also declarators. This would require LSP support, but would be a powerful feature for users who have LSP set up. Because this would require LSP support we'd want to make this optional, I guess. The ideal solution though is one where contextual mode doesn't require an LSP. Perhaps in this contextual mode, the user gets a second cursor where they can select "context". I.e. the user starts with "test_struct" selected, then they press a key to enter "context selection mode", which places a second cursor in the file. The user can then select "struct" with the second cursor, and then when they press enter, we only offer matches for "test_struct" that are also preceded by "struct". This would be a powerful feature that doesn't require LSP support, but would require some UI/UX design to make it work well, and this may not work for all languages... Probably better to just say, "If you have an LSP running in this buffer, for this language, we'll use it to turn on this contextual mode for you," and just do that automatically or something. OR, we could offer some limited regular expression style thing, ideally using Vim's own regex style to be honest, as we might with the substitution command or something like that, where the user can just selected `test_struct` as in the struct, and then add something to the end or something like they might in the text substitution command? Actually, no, we don't want to start adding complexity like that. Any solution should be "tabbable". I.e. a contextual mode that let's you... something.
+
+--]]
+
+-- [!] When I change instances of 'pos' below to 'ps' and then run VisRep on 'ps' to change them back to 'pos', we can only change the first instance of 'ps' to something else, or ALL instnces of 'ps' to something else, including those in e.g. "ops", etc.? Boundary mode doesn't seem to work when there's an underscore before the selection? E.g. 'ps' vs '_ps'.
 
 -- [ ] You know it would be cool if the VISREP command area just worked like Neovim. I.e. modal editing in there.
 -- [ ] TODO Ensure that the first item in the [N/N] list is the one we started with, not the literal first.
 -- [ ] TODO Config: Add standard plugin configuration options.
 -- [ ] TODO Config: default mode. Add `vim.g.visrep_default_mode = 'boundary'|'anywhere'`.
--- [ ] TODO Config: preview scope. Add `vim.g.visrep_preview = 'viewport'|'global'|'auto'` and
---         `vim.g.visrep_preview_margin = 10` (extra lines above/below viewport).
+-- [ ] TODO Config: preview scope. Add `vim.g.visrep_preview = 'viewport'|'global'|'auto'` and `vim.g.visrep_preview_margin = 10` (extra lines above/below viewport).
 -- [ ] TODO Theming: expose highlight groups (e.g. VisrepText) as user-configurable.
 -- [ ] TODO Debounce: Coalesce rapid keystrokes with ~10–20ms debounce for rerender.
 -- [ ] TODO Async index: Implement async build for very large files (>100k lines)?
@@ -951,17 +1013,10 @@ end
 -- [ ] TODO Incremental viewport updates: Diff previous/next visible ranges; update only changed lines.
 -- [ ] TODO Case behavior: Option to toggle case sensitivity (e.g. smartcase) per invocation.
 
--- Replace visually selected text globally with a new string. Respects word
--- boundaries.
-
--- IMPLEMENTED: Word-boundary protection for common cases. When the visual
--- selection is a single line and looks like a keyword (letters/digits/_), the
--- replacement pattern is wrapped with word boundaries (\< and \>) to avoid
--- touching substrings inside larger identifiers like "my_words". For non-word
--- or multi-line selections we fall back to literal matching.
-
 -- [?] How should we handle situations where the user wants to replace something with *nothing*?
--- [!] Failure Case: When I change instances of 'pos' below to 'ps' and then run VisRep on 'ps' to change them back to 'pos', we can only change the first instance of 'ps' to something else, or ALL instnces of 'ps' to something else, including those in e.g. "ops", etc.? Boundary mode doesn't seem to work when there's an underscore before the selection? E.g. 'ps' vs '_ps'.
+-- [?] What are the biggest pain points of the default %s search and replace that you're trying to remedy here?
+
+
 
 _G.Visrep = function()
     local cursor_pos = vim.fn.getpos('.')

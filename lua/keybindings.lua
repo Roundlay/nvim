@@ -94,7 +94,6 @@ normal('<leader>y', '"+y', "Yank to system clipboard.")
 normal('<leader>yy', '"+yy', "Yank current line to the system clipboard.")
 normal('<leader>Y', '"+Y', "Yank to end of line to the system clipboard.")
 visual('<leader>y', '"+y', "Yank the selection to the system clipboard.")
-
 normal('<leader>p', '"+p', "Put from system clipboard after the cursor.")
 normal('<leader>P', '"+P', "Put from system clipboard before the cursor.")
 visual('<leader>p', '"+p', "Put from system clipboard in visual mode.")
@@ -112,16 +111,12 @@ normal('<leader>b', ':w<CR>:bd<CR>', "Save and close the current buffer.")
 
 normal('<leader>to', ':tabnew<CR>',    "Open a new tab")
 normal('<leader>tb', ':tab split<CR>', "Open current buffer in new tab")
-
 normal('<leader>tc', ':tabclose<CR>', "Close the current tab")
 normal('<leader>tq', ':tabonly<CR>', "Close all tabs except the current one")
-
 normal('<leader>tn', ':tabnext<CR>', "Go to next tab")
 normal('<leader>tp', ':tabprevious<CR>', "Go to previous tab")
-
 normal('<C-Right>', ':tabnext<CR>', "Go to next tab")
 normal('<C-Left>', ':tabprevious<CR>', "Go to previous tab")
-
 normal('<A-Right>', ':tabmove +1<CR>', "Move tab to the right")
 normal('<A-Left>', ':tabmove -1<CR>', "Move tab to the left")
 
@@ -142,6 +137,8 @@ terminal('<C-w>h', '<C-\\><C-n><C-w>h', "Move to the left window from terminal i
 terminal('<C-w>l', '<C-\\><C-n><C-w>l', "Move to the right window from terminal insert mode")
 terminal('<C-w>k', '<C-\\><C-n><C-w>k', "Move to the window above from terminal insert mode")
 terminal('<C-w>j', '<C-\\><C-n><C-w>j', "Move to the window below from terminal insert mode")
+
+-- PLUGINS
 
 -- Comment
 
@@ -172,6 +169,7 @@ normal("<leader>dtt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d %H:%M:%S')}, 'c'
 normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.fn.expand("%:p") .. " sourced.")<CR>', "Source the current file.")
 
 normal('<leader>tr', ':lua _G.trim()<CR>', "Trim whitespace from the current line.")
+
 -- ARCHIVE
 
 -- Wrappin' Tests
@@ -181,6 +179,23 @@ visual('<F3>', ':lua _G.WrappinTest()<CR>')
 normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
 normal('<F6>', ':lua _G.Slect()<CR>')
 visual('<F6>', ':lua _G.Slect()<CR>')
+
+-- Copilot
+
+-- Keybinding to enable/disable Copilot
+vim.keymap.set('n', '<leader>tc', require("copilot.suggestion").toggle_auto_trigger, {desc = "Toggle Copilot suggestion visibility"})
+
+-- Keep C-\ as backup
+vim.keymap.set('i', '<C-CR>', require("copilot.suggestion").accept, {desc = "Accept Copilot suggestion (backup)"})
+
+-- Blink
+
+-- TODO: Blink seems to have a unique way of handling keybindings that doesn't work with the standard vim.keymap.set function?
+-- TODO: See /lua/plugins/lazy-blink-cmp.lua for more details.
+-- vim.keymap.set('n', '<C-\\>', require('blink.cmp').select_and_accept, {desc = "Select and accept the current Blink suggestion"})
+-- vim.keymap.set('n', '<C-CR>', require('blink.cmp').select_and_accept, {desc = "Select and accept the current Blink suggestion (backup)"})
+-- vim.keymap.set('n', '<C-p>', require('blink.cmp').select_prev, {desc = "Select the previous Blink suggestion"})
+-- vim.keymap.set('n', '<C-n>', require('blink.cmp').select_next, {desc = "Select the next Blink suggestion"})
 
 -- Yanky
 

@@ -149,6 +149,7 @@ return {
 
             ols = {
                 cmd = { "C:\\Users\\Christopher\\AppData\\Local\\nvim-data\\mason\\packages\\ols\\ols-x86_64-pc-windows-msvc.exe" },
+                -- cmd = { "C:/Users/Christopher/AppData/Local/ols/ols.exe" },
                 init_options = {
                     checker_args = "-strict-style",
                     collections = {
