@@ -10,12 +10,16 @@ return {
     },
 
     config = function()
-        local lspconfig = require("lspconfig")
         local util      = require("lspconfig.util")
 
         local blink_ok, blink = pcall(require, 'blink.cmp')
         if not blink_ok then
             vim.notify("Failed to load blink.cmp", vim.log.levels.ERROR)
+            return
+        end
+
+        if not (vim.lsp and vim.lsp.config and vim.lsp.enable) then
+            vim.notify("vim.lsp.config API is unavailable (requires Neovim 0.11+)", vim.log.levels.ERROR)
             return
         end
 
@@ -25,7 +29,8 @@ return {
         -- Enhance with blink.cmp's completion capabilities
         capabilities = vim.tbl_deep_extend('force', capabilities, blink.get_lsp_capabilities() or {})
 
-        util.default_config = vim.tbl_deep_extend( "force", util.default_config, { flags = { debounce_text_changes = 1 } })
+        local swift_lsp_group = vim.api.nvim_create_augroup("swift_lsp", { clear = true })
+        local swift_root = util.root_pattern("Package.swift", ".git")
 
         ---------------------------------------------------------------------
         -- Helper that opens the definition location in the current window or,
@@ -75,8 +80,11 @@ return {
         end
 
         local base_config = {
-            on_attach    = on_attach,
+            on_attach = on_attach,
             capabilities = capabilities,
+            flags = {
+                debounce_text_changes = 1,
+            },
         }
 
         local servers = {
@@ -86,6 +94,16 @@ return {
             cssls = {},
             html = {},
             jsonls = {},
+
+            sourcekit = {
+                capabilities = {
+                    workspace = {
+                        didChangeWatchedFiles = {
+                            dynamicRegistration = true,
+                        },
+                    },
+                },
+            },
 
             clangd = {
                 --
@@ -148,8 +166,8 @@ return {
             },
 
             ols = {
-                cmd = { "C:\\Users\\Christopher\\AppData\\Local\\nvim-data\\mason\\packages\\ols\\ols-x86_64-pc-windows-msvc.exe" },
-                -- cmd = { "C:/Users/Christopher/AppData/Local/ols/ols.exe" },
+                -- cmd = { "C:\\Users\\Christopher\\AppData\\Local\\nvim-data\\mason\\packages\\ols\\ols-x86_64-pc-windows-msvc.exe" },
+                cmd = { "C:/Users/Christopher/AppData/Local/ols/ols.exe" },
                 init_options = {
                     checker_args = "-strict-style",
                     collections = {
@@ -179,9 +197,54 @@ return {
             },
         }
 
+        local configured_servers = {}
+
         -- Setup each server by merging base + overrides
         for name, override in pairs(servers) do
-            lspconfig[name].setup(vim.tbl_deep_extend("force", base_config, override))
+            local merged = vim.tbl_deep_extend("force", {}, base_config, override)
+            merged.capabilities = vim.tbl_deep_extend("force", {}, capabilities, override.capabilities or {})
+            vim.lsp.config(name, merged)
+            configured_servers[#configured_servers + 1] = name
         end
+
+        if #configured_servers > 0 then
+            vim.lsp.enable(configured_servers)
+        end
+
+        -- Fallback: ensure Swift always has a SourceKit client even if the
+        -- auto-command based enablement fails to detect a root directory.
+        vim.api.nvim_create_autocmd("FileType", {
+            pattern = { "swift" },
+            group = swift_lsp_group,
+            callback = function(args)
+                local buf = args.buf
+                if next(vim.lsp.get_clients({ bufnr = buf, name = "sourcekit" })) ~= nil then
+                    return
+                end
+
+                local filename = vim.api.nvim_buf_get_name(buf)
+                if filename == "" then
+                    return
+                end
+
+                local root_dir = swift_root(filename)
+                if not root_dir then
+                    return
+                end
+
+                local resolved = vim.lsp.config['sourcekit']
+                if not resolved then
+                    return
+                end
+
+                local client_id = vim.lsp.start(vim.tbl_deep_extend("force", {}, resolved, {
+                    root_dir = root_dir,
+                }))
+
+                if type(client_id) == "number" then
+                    vim.lsp.buf_attach_client(buf, client_id)
+                end
+            end,
+        })
     end,
 }
