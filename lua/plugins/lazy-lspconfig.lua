@@ -23,52 +23,62 @@ return {
             return
         end
 
-        -- Start with default LSP capabilities
+        -- Start with default LSP capabilities and opt out of dynamic file watching by default
         local capabilities = vim.lsp.protocol.make_client_capabilities()
+        capabilities.workspace = capabilities.workspace or {}
+        capabilities.workspace.didChangeWatchedFiles = { dynamicRegistration = false }
 
         -- Enhance with blink.cmp's completion capabilities
         capabilities = vim.tbl_deep_extend('force', capabilities, blink.get_lsp_capabilities() or {})
 
-        local swift_lsp_group = vim.api.nvim_create_augroup("swift_lsp", { clear = true })
+        -- Swift LSP setup
         local swift_root = util.root_pattern("Package.swift", ".git")
+        local os_info = vim.uv.os_uname()
+        local is_windows = os_info and os_info.sysname:match("Windows") ~= nil
+        local function norm(path)
+            return vim.fs.normalize(path)
+        end
 
         ---------------------------------------------------------------------
-        -- Helper that opens the definition location in the current window or,
-        -- if it is already visible in another window, jumps to that one.  It
-        -- largely mirrors the default `vim.lsp.buf.definition()` behaviour
-        -- but adds a small optimisation to re-use an existing window instead
-        -- of creating a brand-new split every time.
+        -- Adapter: old synchronous root resolvers -> new async root_dir API.
         ---------------------------------------------------------------------
-        local function goto_definition()
-            local bufnr   = vim.api.nvim_get_current_buf()
-            local clients = vim.lsp.get_clients { bufnr = bufnr }
-            local enc     = (clients[1] or {}).offset_encoding or "utf-16"
-
-            local params = vim.lsp.util.make_position_params(0, enc)
-
-            vim.lsp.buf_request(bufnr, "textDocument/definition", params, function(err, result)
-                if err then
-                    vim.api.nvim_err_writeln("LSP definition error: " .. err.message)
+        local function adapt_root_dir(resolver)
+            return function(bufnr, on_dir)
+                local fname = vim.api.nvim_buf_get_name(bufnr)
+                if not fname or fname == '' then
                     return
                 end
 
+                local root = resolver(fname)
+                if root and root ~= '' then
+                    on_dir(root)
+                end
+            end
+        end
+
+        ---------------------------------------------------------------------
+        -- Thin wrapper around the default definition handler that keeps
+        -- notifications consistent while deferring window selection to
+        -- Neovim's built-in jump logic.
+        ---------------------------------------------------------------------
+        local function goto_definition()
+            local bufnr = vim.api.nvim_get_current_buf()
+            local clients = vim.lsp.get_clients({ bufnr = bufnr })
+            local enc = (clients[1] or {}).offset_encoding
+
+            local params = vim.lsp.util.make_position_params(0, enc)
+            vim.lsp.buf_request(bufnr, "textDocument/definition", params, function(err, result)
+                if err then
+                    vim.notify(("LSP definition error: %s"):format(err.message), vim.log.levels.ERROR)
+                    return
+                end
                 if not result or vim.tbl_isempty(result) then
                     vim.notify("No definition found", vim.log.levels.INFO)
                     return
                 end
 
-                local def  = result[1] or result
-                local uri  = def.uri or def.targetUri
-                local path = vim.uri_to_fname(uri)
-
-                local win_id = vim.fn.bufwinid(path)
-                if win_id ~= -1 then
-                    vim.fn.win_gotoid(win_id)
-                else
-                    vim.cmd("vsplit " .. vim.fn.fnameescape(path))
-                end
-
-                vim.lsp.util.show_document(def, enc, { true, true })
+                local loc = vim.tbl_islist(result) and result[1] or result
+                vim.lsp.util.jump_to_location(loc, enc)
             end)
         end
 
@@ -83,7 +93,7 @@ return {
             on_attach = on_attach,
             capabilities = capabilities,
             flags = {
-                debounce_text_changes = 1,
+                debounce_text_changes = 150,
             },
         }
 
@@ -96,6 +106,10 @@ return {
             jsonls = {},
 
             sourcekit = {
+                root_dir = adapt_root_dir(function(fname)
+                    return swift_root(fname) or util.path.dirname(fname)
+                end),
+                single_file_support = true,
                 capabilities = {
                     workspace = {
                         didChangeWatchedFiles = {
@@ -166,31 +180,29 @@ return {
             },
 
             ols = {
-                -- cmd = { "C:\\Users\\Christopher\\AppData\\Local\\nvim-data\\mason\\packages\\ols\\ols-x86_64-pc-windows-msvc.exe" },
-                cmd = { "C:/Users/Christopher/AppData/Local/ols/ols.exe" },
+                cmd = is_windows and { norm("C:/Users/Christopher/AppData/Local/ols/ols.exe") } or { "ols" },
                 init_options = {
                     checker_args = "-strict-style",
-                    collections = {
-                        { name = "shared", path = "C:\\Users\\Christopher\\scoop\\apps\\odin\\current\\shared" },
-                        { name = "vendor", path = "C:\\Users\\Christopher\\scoop\\apps\\odin\\current\\vendor" },
-                        { name = "core",   path = "C:\\Users\\Christopher\\scoop\\apps\\odin\\current\\core"   },
-                    },
+                    collections = is_windows and {
+                        { name = "shared", path = norm("C:/Users/Christopher/scoop/apps/odin/current/shared") },
+                        { name = "vendor", path = norm("C:/Users/Christopher/scoop/apps/odin/current/vendor") },
+                        { name = "core",   path = norm("C:/Users/Christopher/scoop/apps/odin/current/core")   },
+                    } or nil,
                 },
             },
 
             pyright = {
-                root_dir = function(fname)
-                    return util.root_pattern("pyproject.toml", "setup.py", ".git")(fname)
-                    or util.path.dirname(fname)
-                end,
+                root_dir = adapt_root_dir(function(fname)
+                    return util.root_pattern("pyproject.toml", "setup.py", "requirements.txt", ".git")(fname)
+                        or util.path.dirname(fname)
+                end),
                 settings = {
                     python = {
                         analysis = {
-                            autoSearchPaths       = true,
-                            diagnosticMode        = "openFilesOnly",
-                            extraPaths            = { "C:\\Users\\Christopher\\AppData\\Local\\Programs\\python\\python310\\lib\\site-packages" },
+                            autoSearchPaths        = true,
+                            diagnosticMode         = "openFilesOnly",
                             useLibraryCodeForTypes = true,
-                            skipLibCheck          = true,
+                            skipLibCheck           = true,
                         },
                     },
                 },
@@ -202,7 +214,9 @@ return {
         -- Setup each server by merging base + overrides
         for name, override in pairs(servers) do
             local merged = vim.tbl_deep_extend("force", {}, base_config, override)
-            merged.capabilities = vim.tbl_deep_extend("force", {}, capabilities, override.capabilities or {})
+            if override.capabilities then
+                merged.capabilities = vim.tbl_deep_extend('force', {}, base_config.capabilities, override.capabilities)
+            end
             vim.lsp.config(name, merged)
             configured_servers[#configured_servers + 1] = name
         end
@@ -210,41 +224,5 @@ return {
         if #configured_servers > 0 then
             vim.lsp.enable(configured_servers)
         end
-
-        -- Fallback: ensure Swift always has a SourceKit client even if the
-        -- auto-command based enablement fails to detect a root directory.
-        vim.api.nvim_create_autocmd("FileType", {
-            pattern = { "swift" },
-            group = swift_lsp_group,
-            callback = function(args)
-                local buf = args.buf
-                if next(vim.lsp.get_clients({ bufnr = buf, name = "sourcekit" })) ~= nil then
-                    return
-                end
-
-                local filename = vim.api.nvim_buf_get_name(buf)
-                if filename == "" then
-                    return
-                end
-
-                local root_dir = swift_root(filename)
-                if not root_dir then
-                    return
-                end
-
-                local resolved = vim.lsp.config['sourcekit']
-                if not resolved then
-                    return
-                end
-
-                local client_id = vim.lsp.start(vim.tbl_deep_extend("force", {}, resolved, {
-                    root_dir = root_dir,
-                }))
-
-                if type(client_id) == "number" then
-                    vim.lsp.buf_attach_client(buf, client_id)
-                end
-            end,
-        })
     end,
 }
