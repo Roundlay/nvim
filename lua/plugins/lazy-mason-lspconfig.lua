@@ -13,9 +13,6 @@
 return {
     "williamboman/mason-lspconfig.nvim",
     lazy = true,
-    event = {
-        "BufReadPre",
-    },
     dependencies = {
         -- Depedencies to be loaded before nvim-lspconfig.
         "williamboman/mason.nvim",

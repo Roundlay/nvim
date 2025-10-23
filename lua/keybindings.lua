@@ -109,18 +109,16 @@ normal('<leader>b', ':w<CR>:bd<CR>', "Save and close the current buffer.")
 
 -- Tab Management
 
-normal('<leader>to', ':tabnew<CR>',    "Open a new tab")
+normal('<leader>tn', ':tabnew<CR>',    "Open a new tab")
 normal('<leader>tb', ':tab split<CR>', "Open current buffer in new tab")
-normal('<leader>tc', ':tabclose<CR>', "Close the current tab")
-normal('<leader>tq', ':tabonly<CR>', "Close all tabs except the current one")
-normal('<leader>tn', ':tabnext<CR>', "Go to next tab")
-normal('<leader>tp', ':tabprevious<CR>', "Go to previous tab")
+normal('<leader>tq', ':tabclose<CR>', "Close the current tab")
+normal('<leader>tx', ':tabonly<CR>', "Close all tabs except the current one")
+normal('<leader>tl', ':tabnext<CR>', "Go to next tab")
+normal('<leader>th', ':tabprevious<CR>', "Go to previous tab")
 normal('<C-Right>', ':tabnext<CR>', "Go to next tab")
 normal('<C-Left>', ':tabprevious<CR>', "Go to previous tab")
 normal('<A-Right>', ':tabmove +1<CR>', "Move tab to the right")
 normal('<A-Left>', ':tabmove -1<CR>', "Move tab to the left")
-
--- normal('<leader>ta', ':tabdo ', "Execute command in all tabs (requires completing the command)")
 
 -- This moves the line the cursor is on up one line.
 normal('<A-k>', ':m .-2<CR>==', "Move the current cursor-line up one line.")
@@ -140,16 +138,10 @@ terminal('<C-w>j', '<C-\\><C-n><C-w>j', "Move to the window below from terminal 
 
 -- PLUGINS
 
--- Comment
-
--- normal("gcc", "gcc", "Toggle line comment.")
--- normal("gc", "gc", "Toggle block comment.")
-
 -- Oil
 
 normal('<leader>o', ':Oil<CR>', "Open the Oil file explorer.")
--- TODO: Was this something to do with Oil interacting with the terminal?
-normal('<leader>e', '</<C-X><C-O>', "Unknown mapping related to Oil and terminal.")
+normal('<leader>e', '</<C-X><C-O>', "Unknown mapping related to Oil and terminal.") -- TODO: Was this something to do with Oil interacting with the terminal?
 
 -- Visual Replace
 
@@ -168,25 +160,56 @@ normal("<leader>dt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d ')}, 'c', true, t
 normal("<leader>dtt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d %H:%M:%S')}, 'c', true, true)<CR>", "Insert current date and time at cursor.")
 normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.fn.expand("%:p") .. " sourced.")<CR>', "Source the current file.")
 
-normal('<leader>tr', ':lua _G.trim()<CR>', "Trim whitespace from the current line.")
+local function call_script(fn_name)
+    return function(...)
+        local ok = pcall(require, "scripts")
+        if not ok then
+            return
+        end
+        local fn = _G[fn_name]
+        if type(fn) == "function" then
+            return fn(...)
+        end
+    end
+end
+
+vim.keymap.set('n', '<leader>tr', call_script("trim"), { desc = "Trim whitespace from the current line.", silent = true })
 
 -- ARCHIVE
 
 -- Wrappin' Tests
 
-visual('<F2>', ':lua _G.Wrappin()<CR>')
-visual('<F3>', ':lua _G.WrappinTest()<CR>')
-normal('<F5>', ':lua _G.ReloadScripts()<CR>') -- Reload scripts in scripts.lua.
-normal('<F6>', ':lua _G.Slect()<CR>')
-visual('<F6>', ':lua _G.Slect()<CR>')
+vim.keymap.set('v', '<F2>', call_script("Wrappin"), { desc = "Wrap selection with tags on separate lines.", silent = true })
+vim.keymap.set('v', '<F3>', call_script("WrappinTest"), { desc = "Test Wrappin transformation.", silent = true })
+vim.keymap.set('n', '<F5>', call_script("ReloadScripts"), { desc = "Reload scripts in scripts.lua.", silent = true })
+vim.keymap.set('n', '<F6>', call_script("Slect"), { desc = "Run the experimental Slect workflow.", silent = true })
+vim.keymap.set('v', '<F6>', call_script("Slect"), { desc = "Run the experimental Slect workflow on selection.", silent = true })
 
 -- Copilot
 
+local function with_copilot(method)
+    return function(...)
+        local lazy_ok, lazy = pcall(require, "lazy")
+        if lazy_ok then
+            lazy.load({ plugins = { "copilot.lua" }, wait = true })
+        end
+        local ok, suggestion = pcall(require, "copilot.suggestion")
+        if not ok then
+            return
+        end
+        local fn = suggestion[method]
+        if type(fn) ~= "function" then
+            return
+        end
+        return fn(...)
+    end
+end
+
 -- Keybinding to enable/disable Copilot
-vim.keymap.set('n', '<leader>tc', require("copilot.suggestion").toggle_auto_trigger, {desc = "Toggle Copilot suggestion visibility"})
+vim.keymap.set('n', '<leader>co', with_copilot("toggle_auto_trigger"), { desc = "Toggle Copilot suggestion visibility" })
 
 -- Keep C-\ as backup
-vim.keymap.set('i', '<C-CR>', require("copilot.suggestion").accept, {desc = "Accept Copilot suggestion (backup)"})
+vim.keymap.set('i', '<C-CR>', with_copilot("accept"), { desc = "Accept Copilot suggestion (backup)" })
 
 -- Blink
 
@@ -196,21 +219,3 @@ vim.keymap.set('i', '<C-CR>', require("copilot.suggestion").accept, {desc = "Acc
 -- vim.keymap.set('n', '<C-CR>', require('blink.cmp').select_and_accept, {desc = "Select and accept the current Blink suggestion (backup)"})
 -- vim.keymap.set('n', '<C-p>', require('blink.cmp').select_prev, {desc = "Select the previous Blink suggestion"})
 -- vim.keymap.set('n', '<C-n>', require('blink.cmp').select_next, {desc = "Select the next Blink suggestion"})
-
--- Yanky
-
--- normal("y", "<Plug>(YankyYank)")
--- normal("p", "<Plug>(YankyPutAfter)")
--- normal("P", "<Plug>(YankyPutBefore)")
--- normal("gp", "<Plug>(YankyGPutAfter)")
--- normal("gP", "<Plug>(YankyGPutBefore)")
--- normal("<C-p>", "<Plug>(YankyPreviousEntry)")
--- normal("<C-n>", "<Plug>(YankyNextEntry)")
-
--- Text to Colorscheme
-
--- vim.api.nvim_set_keymap('n', '<f9>', ':T2CAddContrast -0.1<cr>', {noremap = true, silent = true})
--- vim.api.nvim_set_keymap('n', '<f10>', ':T2CAddContrast 0.1<cr>', {noremap = true, silent = true})
--- vim.api.nvim_set_keymap('n', '<f11>', ':T2CAddSaturation -0.1<cr>', {noremap = true, silent = true})
--- vim.api.nvim_set_keymap('n', '<f12>', ':T2CAddSaturation 0.1<cr>', {noremap = true, silent = true})
--- vim.api.nvim_set_keymap('n', '<f8>', ':T2CShuffleAccents<cr>', {noremap = true, silent = true})

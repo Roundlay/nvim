@@ -3,6 +3,30 @@
 return {
     "neovim/nvim-lspconfig",
     enabled = true,
+    lazy = true,
+    ft = {
+        "c",
+        "cpp",
+        "objc",
+        "objcpp",
+        "cc",
+        "cxx",
+        "h",
+        "hpp",
+        "lua",
+        "python",
+        "swift",
+        "odin",
+        "json",
+        "yaml",
+        "yml",
+        "markdown",
+        "md",
+        "vim",
+        "css",
+        "html",
+    },
+    cmd = { "LspInfo", "LspLog", "LspRestart", "LspStop" },
 
     dependencies = {
         "williamboman/mason.nvim",
@@ -12,10 +36,10 @@ return {
     config = function()
         local util      = require("lspconfig.util")
 
+        local blink_caps = {}
         local blink_ok, blink = pcall(require, 'blink.cmp')
-        if not blink_ok then
-            vim.notify("Failed to load blink.cmp", vim.log.levels.ERROR)
-            return
+        if blink_ok and type(blink.get_lsp_capabilities) == "function" then
+            blink_caps = blink.get_lsp_capabilities() or {}
         end
 
         if not (vim.lsp and vim.lsp.config and vim.lsp.enable) then
@@ -29,7 +53,7 @@ return {
         capabilities.workspace.didChangeWatchedFiles = { dynamicRegistration = false }
 
         -- Enhance with blink.cmp's completion capabilities
-        capabilities = vim.tbl_deep_extend('force', capabilities, blink.get_lsp_capabilities() or {})
+        capabilities = vim.tbl_deep_extend('force', capabilities, blink_caps)
 
         -- Swift LSP setup
         local swift_root = util.root_pattern("Package.swift", ".git")

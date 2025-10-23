@@ -34,6 +34,17 @@ local c_return_ns = vim.api.nvim_create_namespace('c_return_types')
 -- Track extmark ids we own per buffer so we can update/delete incrementally.
 local c_return_marks = {} ---@type table<integer, table<integer, table>> -- bufnr → { row → mark_info }
 
+local function apply_c_return_highlight()
+    vim.api.nvim_set_hl(0, "CReturnType", { fg = "#808080" })
+end
+
+apply_c_return_highlight()
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("CReturnTypeHighlight", { clear = true }),
+    callback = apply_c_return_highlight,
+})
+
 local function extract_hover_text(res)
     if not res then return nil end
     local contents = res.contents
@@ -429,7 +440,7 @@ function M:show_c_return_types()
     dispatch_next(state)
 end
 
---[[
+-- --[[
 
 -- Setup autocmd group
 local group = vim.api.nvim_create_augroup("CReturnTypeHelper", { clear = true })
@@ -482,7 +493,7 @@ vim.api.nvim_create_autocmd("BufDelete", {
         c_return_marks[args.buf] = nil
     end,
 })
---]]
+-- --]]
 
 -- [ ] Extremely slow on big files; need way to disable with command; need to work on perf.
 M:show_c_return_types()
@@ -641,232 +652,9 @@ M:custom_diagnostics_formatter()
     -- [ ] Add support for toggleable options like colours, highlighting the
     -- active line in the numberline, padding, etc.
 
--- [ ] TODO Rename this!
-
 function M:pretty_line_numbers()
-    -- [!] Document functionality. E.g. why we need to get the winid every
-    -- iteration (to ensure all windows update independently, etc.).
-    if vim.g._pln_loaded then return end
-    vim.g._pln_loaded = true
-
-    local buf_digit_counts = {}
-
-    local excluded_filetypes = {
-        help = true,
-        lazy = true,
-        TelescopePrompt = true,
-    }
-
-    local excluded_buftypes = {
-        terminal = true,
-        prompt = true,
-        nofile = true,
-    }
-
-    local function update_window(winid)
-        winid = winid or vim.api.nvim_get_current_win()
-        if not vim.api.nvim_win_is_valid(winid) then return end
-
-        local num_on  = vim.api.nvim_win_get_option(winid, 'number')
-        local rnum_on = vim.api.nvim_win_get_option(winid, 'relativenumber')
-
-        if not num_on and not rnum_on then
-            -- User disabled both -> clear our statuscolumn & return early.
-            if vim.api.nvim_win_get_option(winid, 'statuscolumn') ~= '' then
-                pcall(vim.api.nvim_win_set_option, winid, 'statuscolumn', '')
-            end
-            return
-        end
-
-        local buf = vim.api.nvim_win_get_buf(winid)
-        if not vim.api.nvim_buf_is_valid(buf) then return end
-
-        local ft = vim.api.nvim_get_option_value("filetype", { buf = buf })
-        local bt = vim.api.nvim_get_option_value("buftype",  { buf = buf })
-
-        if excluded_filetypes[ft] or excluded_buftypes[bt] then
-            return
-        end
-
-        local cursor_line_status = vim.api.nvim_get_option_value("cursorline", { scope = "global", win = winid })
-
-        if not cursor_line_status then
-            -- Remember the user’s original cursorlineopt just once per window
-            if vim.w._pln_user_cursorlineopt == nil then
-                vim.w._pln_user_cursorlineopt =
-                vim.api.nvim_get_option_value('cursorlineopt', { win = winid })
-            end
-
-            -- Keep the highlight invisible but allow CursorLineNr to refresh
-            -- [!] TODO Document this! I.e. we're actually highlighting the
-            -- active line number in the numberline with the cursorline feature,
-            -- but hiding the actual line highlight if the user hasn't enabled
-            -- cursorline highlighting.
-            vim.api.nvim_set_option_value('cursorlineopt', 'number', { win = winid })
-            vim.api.nvim_set_option_value('cursorline', true,        { win = winid })
-
-            vim.w._pln_cursorline_forced = true
-        end
-
-        -- Literally: How many decimal line_count does my total line-count have?
-        local line_count = #tostring(vim.api.nvim_buf_line_count(buf))
-        -- [!] TODO The n-cell gutter width should be a customisable setting
-        -- available in the configuration. '+1' lines the edge of the code up
-        -- with the right side of our numberline. +1 adds a single column gap
-        -- between the code and the numberline.
-        local required_width = math.max(2, line_count + 2) -- +2 = one-cell gutter between code and numberline.
-
-        if vim.api.nvim_win_get_option(winid, 'numberwidth') ~= required_width then
-            pcall(vim.api.nvim_win_set_option, winid, 'numberwidth', required_width)
-        end
-
-        local use_relative = vim.api.nvim_win_get_option(winid, 'relativenumber') and 1 or 0
-        local formatted_status_column = string.format('%%!v:lua.FormatLineNr(%d,%d)', line_count, use_relative)
-
-        if vim.api.nvim_win_get_option(winid, 'statuscolumn') ~= formatted_status_column then
-            pcall(vim.api.nvim_win_set_option, winid, 'statuscolumn', formatted_status_column)
-        end
-
-        buf_digit_counts[buf] = line_count
-    end
-
-    for _, window in ipairs(vim.api.nvim_list_wins()) do
-        update_window(window)
-    end
-
-    -- [!] TODO Is it bad that we're setting up a new augroup every time we
-    -- call this function? I.e. we should only set up the autocommands once, not
-    -- every time we call this function. So maybe we should move all these to
-    -- the autocommands file?
-    -- [!] TODO Find a way to simplify this. I.e. we don't need to create a new
-    -- augroup every time we call this function? Do we?
-    -- [!] TODO Document these autocommands.
-
-    local aug = vim.api.nvim_create_augroup('PrettyLineNumbers', { clear = true })
-
-    vim.api.nvim_create_autocmd({'BufWinEnter', 'WinEnter', 'WinNew', 'WinResized'}, {
-        group = aug,
-        callback = function(ev) update_window(ev.win) end
-    })
-
-    vim.api.nvim_create_autocmd("OptionSet", {
-        group   = aug,
-        pattern = {"relativenumber", "number"},
-        callback = function() update_window() end,
-    })
-
-    vim.api.nvim_create_autocmd({'TextChanged','TextChangedI','BufWritePost'}, {
-        group = aug,
-        callback = function(ev)
-            local buf = ev.buf
-            if not vim.api.nvim_buf_is_valid(buf) then return end
-
-            local line_count = vim.api.nvim_buf_line_count(buf)
-            local new_digits = #tostring(line_count)
-            local old_digits = buf_digit_counts[buf] or 0
-
-            if new_digits ~= old_digits then
-                buf_digit_counts[buf] = new_digits
-                for _, window_id in ipairs(vim.fn.win_findbuf(buf)) do
-                    update_window(window_id)
-                end
-            end
-        end,
-    })
-
-    vim.api.nvim_create_autocmd("OptionSet", {
-        pattern = "cursorline",
-        group   = aug,
-        callback = function(ev)
-            local w = ev.win
-            local now_on = vim.api.nvim_get_option_value('cursorline', { scope = "global", win = w })
-
-            if now_on then
-                -- User turned cursorline ON → restore their original setting.
-                local restore = vim.w._pln_user_cursorlineopt or 'line,number'
-                vim.api.nvim_set_option_value('cursorlineopt', restore, { scope = "global", win = w })
-                vim.w._pln_cursorline_forced = false
-            else
-                -- User turned cursorline OFF → keep numbers updating silently.
-                vim.api.nvim_set_option_value('cursorlineopt', 'number', { scope = "global", win = w })
-                vim.w._pln_cursorline_forced = true
-            end
-            update_window(w)
-        end,
-    })
-
-    -- [!] TODO Surely there's a better way to do this that doesn't involve
-    -- string manipulation? String builder? Abusing the Vim API directly?
-
-    _G.FormatLineNr = function(width, use_rel)
-        if vim.v.virtnum ~= 0 then return '' end
-        local rel = vim.v.relnum
-        local num = (use_rel == 1 and rel ~= 0) and math.abs(rel) or vim.v.lnum
-        local hl  = (rel == 0) and 'CursorLineNr' or 'LineNr'
-        local padded = ('%0' .. width .. 'd'):format(num)
-        local zeros, rest = padded:match('^(0*)(.*)$')
-
-        return ('%%#LineNrPrefix#%s%%#%s#%s %%*'):format(zeros, hl, rest)
-    end
+    require("pretty_line_numbers").setup()
 end
-
-M:pretty_line_numbers()
-
--- -------------------------------------------------------------------------- --
-
--- WOAH THERE, COWBOY
-
--- function M.cowboy()
--- 	---@type table?
--- 	local id
--- 	local ok = true
--- 	for _, key in ipairs({ "h", "j", "k", "l", "+", "-" }) do
--- 		local count = 0
--- 		local timer = assert(vim.loop.new_timer())
--- 		local map = key
--- 		vim.keymap.set("n", key, function()
--- 			if vim.v.count > 0 then
--- 				count = 0
--- 			end
--- 			if count >= 10 then
--- 				ok, id = pcall(vim.notify, "Hold it Cowboy!", vim.log.levels.WARN, {
--- 					icon = ">:(",
--- 					replace = id,
--- 					keep = function()
--- 						return count >= 10
--- 					end,
--- 				})
--- 				if not ok then
--- 					id = nil
--- 					return map
--- 				end
--- 			else
--- 				count = count + 1
--- 				timer:start(2000, 0, function()
--- 					count = 0
--- 				end)
--- 				return map
--- 			end
--- 		end, { expr = true, silent = true })
--- 	end
--- end
-
--- -------------------------------------------------------------------------- --
-
--- RELOAD SCRIPTS
-
--- _G.ReloadScripts = function()
---     local initial_state = package.loaded['scripts']
---     if package.loaded['scripts'] then
---         package.loaded['scripts'] = nil
---         if package.loaded['scripts'] ~= initial_state then
---             require('scripts')
---             if package.loaded['scripts'] == initial_state then
---                 vim.notify(os.date("[%H:%M:%S] ").."Scripts module reloaded successfully.", vim.log.levels.INFO)
---             end
---         end
---     end
--- end
 
 -- -------------------------------------------------------------------------- --
 
@@ -1156,23 +944,6 @@ end
 -- VISREP
 -- Replace visually selected text globally with a new string. Respects word boundaries, or not.
 
---[[
-
-[!] Consider the following C struct. Simulated cursor represented by |.
-
-struct |test_struct {
-    int arr[1];
-    int target;
-};
-
-struct test_struct test_struct = {{2, 7, 11, 15}, 9};
-
-We need to handle tricky cases like this where the user selects the name of the struct, "test_struct", and wants to replace it with something else. The problem is, we have a type definition and a declarator with the same name, which is legal in C. If the user selects the struct name, from the cursor position above, when they use VisRep to replace the struct name, we want to offer the user the option to replace the string in a smart way. That is, we currently offer boundary and anywhere modes, which is great. Perhaps we need to either 1) make boundary include this LSP style context awareness (not sure if we can come up with an algorithm that's language agnostic and doesn't require an LSP, or 2), add a third mode called "context aware" or something, which uses LSP to determine the context of the selection and only offers matches in the same context. E.g. if the user selects "test_struct" in the type definition, we only offer matches that are also type definitions. If they select "test_struct" in the declarator, we only offer matches that are also declarators. This would require LSP support, but would be a powerful feature for users who have LSP set up. Because this would require LSP support we'd want to make this optional, I guess. The ideal solution though is one where contextual mode doesn't require an LSP. Perhaps in this contextual mode, the user gets a second cursor where they can select "context". I.e. the user starts with "test_struct" selected, then they press a key to enter "context selection mode", which places a second cursor in the file. The user can then select "struct" with the second cursor, and then when they press enter, we only offer matches for "test_struct" that are also preceded by "struct". This would be a powerful feature that doesn't require LSP support, but would require some UI/UX design to make it work well, and this may not work for all languages... Probably better to just say, "If you have an LSP running in this buffer, for this language, we'll use it to turn on this contextual mode for you," and just do that automatically or something. OR, we could offer some limited regular expression style thing, ideally using Vim's own regex style to be honest, as we might with the substitution command or something like that, where the user can just selected `test_struct` as in the struct, and then add something to the end or something like they might in the text substitution command? Actually, no, we don't want to start adding complexity like that. Any solution should be "tabbable". I.e. a contextual mode that let's you... something.
-
---]]
-
--- [!] When I change instances of 'pos' below to 'ps' and then run VisRep on 'ps' to change them back to 'pos', we can only change the first instance of 'ps' to something else, or ALL instnces of 'ps' to something else, including those in e.g. "ops", etc.? Boundary mode doesn't seem to work when there's an underscore before the selection? E.g. 'ps' vs '_ps'.
-
 -- [ ] You know it would be cool if the VISREP command area just worked like Neovim. I.e. modal editing in there.
 -- [ ] TODO Ensure that the first item in the [N/N] list is the one we started with, not the literal first.
 -- [ ] TODO Config: Add standard plugin configuration options.
@@ -1185,7 +956,6 @@ We need to handle tricky cases like this where the user selects the name of the 
 -- [ ] TODO Multi-line live preview: Extend overlay builder to selections with newlines.
 -- [ ] TODO Incremental viewport updates: Diff previous/next visible ranges; update only changed lines.
 -- [ ] TODO Case behavior: Option to toggle case sensitivity (e.g. smartcase) per invocation.
-
 -- [?] How should we handle situations where the user wants to replace something with *nothing*?
 -- [?] What are the biggest pain points of the default %s search and replace that you're trying to remedy here?
 
@@ -1561,9 +1331,10 @@ _G.Visrep = function()
     vim.fn.setpos('.', cursor_pos)
 end
 
--- -----------------------------------------------------------------------------
-
+--------------------------------------------------------------------------------
 -- Slect 0.1.0
+--------------------------------------------------------------------------------
+
 -- Draw virtual text over selected text or at the cursor position.
 
 -- local ns_id = vim.api.nvim_create_namespace("SlectNamespace")
@@ -1608,9 +1379,10 @@ end
 --   end
 -- end
 
--- -----------------------------------------------------------------------------
-
+--------------------------------------------------------------------------------
 -- SLECT 0.2.0
+--------------------------------------------------------------------------------
+
 -- The idea here was to play around with idea for a Neovim paintbrush. I.e. Move
 -- a virtual cursor around the screen and add text to the buffer.
 
@@ -1679,166 +1451,8 @@ end
 -- end
 
 --------------------------------------------------------------------------------
-
--- Function to auto-close HTML tags
--- Doesn't work.
--- _G.auto_close_tags = function()
---     local bufnr = vim.api.nvim_get_current_buf()
---     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
---
---     for i, line in ipairs(lines) do
---         -- This simple pattern matches tags that might require self-closing
---         -- Note: Lua patterns do not support lookbehind; thus, the solution is basic
---         local modifiedLine = line:gsub("(<(%w+)[^>/]*)>", function(tagStart)
---             local voidElements = "area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr"
---             if tagStart:match(voidElements) then
---                 return tagStart .. " />"
---             else
---                 return tagStart .. ">"
---             end
---         end)
---
---         if modifiedLine ~= line then
---             vim.api.nvim_buf_set_lines(bufnr, i-1, i, false, {modifiedLine})
---         end
---     end
--- end
-
--- DO NOT EDIT:
-
--- I think this was something to do with the accelerate_jk plugin.
-
--- function M.generate_series(type, n, factor)
---     local series = {}
---     if type == "quadratic" then
---         for i = 1, n do
---             table.insert(series, i * i * factor)
---         end
---     elseif type == "cubic" then
---         for i = 1, n do
---             table.insert(series, i * i * i * factor)
---         end
---     end
---     return series
--- end
---
--- local acceleration_table = M.generate_series("quadratic", 4, 5)
--- local deceleration_table = {}
---
--- local deceleration_intervals = {200, 300}
--- for _, interval in ipairs(deceleration_intervals) do
---     local deceleration_steps = M.generate_series("quadratic", 2, 3)
---     table.insert(deceleration_table, {interval, deceleration_steps})
--- end
---
--- print("Acceleration Table: ")
--- for _, value in ipairs(acceleration_table) do
---     print(value)
--- end
---
--- print("\nDeceleration Table: ")
--- for _, pair in ipairs(deceleration_table) do
---     print(pair[1], table.concat(pair[2], ", "))
--- end
-
--- Picture in Picture plugin?
--- [ ] Could this be pegged to a certain part of the file even while scrolling?
--- [ ] Could this be used to do the one line scrolling thing?
--- M.Border = vim.api.nvim_open_win(0, true, {relative='win', width=vim.api.nvim_win_get_width(0), height=3, bufpos=vim.api.nvim_win_get_cursor(), border = "none" })
--- vim.api.nvim_open_win(0, true, {relative='win', width=vim.api.nvim_win_get_width(0), height=3, bufpos=vim.api.nvim_win_get_cursor(), border = "none" })
-
--- ========================================================================== --
--- Source Plugins
--- ========================================================================== --
-
--- local installed_plugins = {
---     -- ["lukas-reineke/indent-blankline.nvim"] = "lukas-reineke/indent-blankline.nvim",
---     -- ["lukas-reineke/indent-blankline.nvim"] = "indent-blankline",
--- }
---
--- local function case_insensitive_compare(str1, str2)
---     return str1:lower() == str2:lower()
--- end
---
--- function M.PopulateInstalledPlugins()
---     local plug_dirs = vim.fn.globpath("C:/Users/Christopher/.config/nvim/plugs", "*", true, true)
---     for _, dir in ipairs(plug_dirs) do
---         local plugin_name = vim.fn.fnamemodify(dir, ":t")
---         installed_plugins[plugin_name] = dir
---     end
--- end
---
--- function M.PrintInstalledPlugins()
---     for plugin_name, plugin_path in pairs(installed_plugins) do
---         print(plugin_name .. " => " .. plugin_path)
---     end
--- end
---
--- function M.SourcePlugin(plugin_name)
---     plugin_name = plugin_name:gsub("^%s*(.-)%s*$", "%1") -- Trim leading/trailing spaces
---     for installed_plugin_name, plugin_path in pairs(installed_plugins) do
---         if case_insensitive_compare(installed_plugin_name, plugin_name) then
---             local sourced = pcall(dofile, plugin_path)
---             if sourced then
---                 print("Sourced " .. plugin_name)
---             else
---                 print("Failed to source " .. plugin_name)
---             end
---             return
---         end
---     end
---     print(plugin_name .. " not found.")
--- end
---
--- function M.PromptAndSourcePlugin()
---     local plugin_name = vim.fn.input("input", "Enter plugin name: ")
---     SourcePlugin(plugin_name)
--- end
---
--- function M.SetPluginSourcingKeybinding()
---     vim.api.nvim_set_keymap("n", "<leader>z", ":SourcePlugin<CR>", {noremap = true, silent = false})
--- end
---
--- vim.cmd("command! SourcePlugin lua PromptAndSourcePlugin()")
-
--- Call this in init.lua or plugins.lua.
--- PopulateInstalledPlugins()
-
--- ========================================================================== --
--- Keybinding Helpers
--- ========================================================================== --
-
--- function M.Map(mode, new, old, opts)
---     -- map("n", ";f", ":Telescope find_files<CR>", {expr = true})
---     local default_opts = {}
---     if opts then
---         options = vim.tbl_extend("force", default_opts, opts) -- Merges the `default_opts` and `opts` tables
---     end
---     vim.api.nvim_set_keymap(mode, new, old, options)
--- end
-
--- function M.Insert(new, old)
---     vim.api.nvim_set_keymap('i', new, old, {noremap=true, silent=true})
--- end
-
--- function M.Normal(new, old)
---     vim.api.nvim_set_keymap('n', new, old, {noremap=true, silent=true})
--- end
-
--- function M.Visual(new, old)
---     vim.api.nvim_set_keymap('v', new, old, {noremap=true, silent=true})
--- end
-
--- function M.Terminal(new, old)
---     vim.api.nvim_set_keymap('t', new, old, {buffer = 0})
--- end
-
--- ========================================================================== --
--- Language Helpers
--- ========================================================================== --
-
--- Odin
--- -------------------------------------------------------------------------- --
+-- Odin Compiler Helpers
+--------------------------------------------------------------------------------
 
 -- Run `orf $file` from within Neovim and display the output in a split window.
 
@@ -1978,13 +1592,15 @@ end
 --     end
 -- end
 
--- ========================================================================== --
--- Misc.
--- ========================================================================== --
+--------------------------------------------------------------------------------
+-- MISC.
+--------------------------------------------------------------------------------
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- Golden Ration Helper for Window Sizing
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 -- Get the Golden Ratio of the current window by passing in width or height
--- -------------------------------------------------------------------------- --
-
 -- function M.PrintWidth()
 --     local width = math.floor(vim.api.nvim_win_get_width(0) / ((1 + math.sqrt(5)) / 2 * 100))
 --     local height = math.floor(vim.api.nvim_win_get_height(0) / ((1 + math.sqrt(5)) / 2 * 100))
@@ -2014,10 +1630,11 @@ end
 --   return value
 -- end
 
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- Reload Lua Packages
--- ------------------------------------------------------------------------- --
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
--- TODO
+-- TODO: Does this do anything?
 -- function _G.ReloadConfig()
 --     for name, _ in pairs(package.loaded) do
 --         -- If the name of the module starts with 'lua' then remove the module
@@ -2030,19 +1647,121 @@ end
 --     dofile(vim.env.MYVIMRC)
 -- end
 
--- ========================================================================== --
+--------------------------------------------------------------------------------
 -- Plugins
--- ========================================================================== --
+--------------------------------------------------------------------------------
 
--- -------------------------------------------------------------------------- --
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- Source Plugins
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+-- TODO: Does this work?
+
+-- local installed_plugins = {
+--     -- ["lukas-reineke/indent-blankline.nvim"] = "lukas-reineke/indent-blankline.nvim",
+--     -- ["lukas-reineke/indent-blankline.nvim"] = "indent-blankline",
+-- }
+--
+-- local function case_insensitive_compare(str1, str2)
+--     return str1:lower() == str2:lower()
+-- end
+--
+-- function M.PopulateInstalledPlugins()
+--     local plug_dirs = vim.fn.globpath("C:/Users/Christopher/.config/nvim/plugs", "*", true, true)
+--     for _, dir in ipairs(plug_dirs) do
+--         local plugin_name = vim.fn.fnamemodify(dir, ":t")
+--         installed_plugins[plugin_name] = dir
+--     end
+-- end
+--
+-- function M.PrintInstalledPlugins()
+--     for plugin_name, plugin_path in pairs(installed_plugins) do
+--         print(plugin_name .. " => " .. plugin_path)
+--     end
+-- end
+--
+-- function M.SourcePlugin(plugin_name)
+--     plugin_name = plugin_name:gsub("^%s*(.-)%s*$", "%1") -- Trim leading/trailing spaces
+--     for installed_plugin_name, plugin_path in pairs(installed_plugins) do
+--         if case_insensitive_compare(installed_plugin_name, plugin_name) then
+--             local sourced = pcall(dofile, plugin_path)
+--             if sourced then
+--                 print("Sourced " .. plugin_name)
+--             else
+--                 print("Failed to source " .. plugin_name)
+--             end
+--             return
+--         end
+--     end
+--     print(plugin_name .. " not found.")
+-- end
+--
+-- function M.PromptAndSourcePlugin()
+--     local plugin_name = vim.fn.input("input", "Enter plugin name: ")
+--     SourcePlugin(plugin_name)
+-- end
+--
+-- function M.SetPluginSourcingKeybinding()
+--     vim.api.nvim_set_keymap("n", "<leader>z", ":SourcePlugin<CR>", {noremap = true, silent = false})
+-- end
+--
+-- vim.cmd("command! SourcePlugin lua PromptAndSourcePlugin()")
+
+-- Call this in init.lua or plugins.lua.
+-- PopulateInstalledPlugins()
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- AccelerateJK Acceleration/Deceleration Heuristics
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+-- I think this was something to do with the accelerate_jk plugin.
+
+-- function M.generate_series(type, n, factor)
+--     local series = {}
+--     if type == "quadratic" then
+--         for i = 1, n do
+--             table.insert(series, i * i * factor)
+--         end
+--     elseif type == "cubic" then
+--         for i = 1, n do
+--             table.insert(series, i * i * i * factor)
+--         end
+--     end
+--     return series
+-- end
+--
+-- local acceleration_table = M.generate_series("quadratic", 4, 5)
+-- local deceleration_table = {}
+--
+-- local deceleration_intervals = {200, 300}
+-- for _, interval in ipairs(deceleration_intervals) do
+--     local deceleration_steps = M.generate_series("quadratic", 2, 3)
+--     table.insert(deceleration_table, {interval, deceleration_steps})
+-- end
+--
+-- print("Acceleration Table: ")
+-- for _, value in ipairs(acceleration_table) do
+--     print(value)
+-- end
+--
+-- print("\nDeceleration Table: ")
+-- for _, pair in ipairs(deceleration_table) do
+--     print(pair[1], table.concat(pair[2], ", "))
+-- end
+
+-- Is this here for a reason?
+-- Picture in Picture plugin?
+-- [ ] Could this be pegged to a certain part of the file even while scrolling?
+-- [ ] Could this be used to do the one line scrolling thing?
+-- M.Border = vim.api.nvim_open_win(0, true, {relative='win', width=vim.api.nvim_win_get_width(0), height=3, bufpos=vim.api.nvim_win_get_cursor(), border = "none" })
+-- vim.api.nvim_open_win(0, true, {relative='win', width=vim.api.nvim_win_get_width(0), height=3, bufpos=vim.api.nvim_win_get_cursor(), border = "none" })
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- Lualine
--- -------------------------------------------------------------------------- --
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 -- Trigger re-render of status line every second.
--- -------------------------------------------------------------------------- --
-
--- NOTE Was this related to including a clock in the statusline?
-
+-- NOTE: Was this related to including a clock in the statusline
 -- function M.rerender_lualine()
 --     if _G.Statusline_timer == nil then
 --         _G.Statusline_timer = vim.loop.new_timer()
@@ -2056,8 +1775,6 @@ end
 -- end
 
 -- Get inactive buffer numbers
--- -------------------------------------------------------------------------- --
-
 -- TODO: Find a way to keep track of non-file buffers (autocomplete) and
 -- make sure they don't show up in your custom buffer thing.
 -- function M.get_inactive_buffer_numbers()
@@ -2083,8 +1800,6 @@ end
 -- end
 
 -- Get active buffer number
--- -------------------------------------------------------------------------- --
-
 -- function M.get_active_buffer_number()
 --     active_buffer = ""
 --     for i, buffer in ipairs(vim.api.nvim_list_bufs()) do
@@ -2103,8 +1818,6 @@ end
 -- end
 
 -- Key testing function to diagnose terminal key sequences
--- -------------------------------------------------------------------------- --
-
 -- function _G.TestKey()
 --     print("Press a key combination (or 'q' to quit):")
 --     local key = vim.fn.getchar()

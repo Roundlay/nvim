@@ -64,7 +64,8 @@ vim.g.redrawtime = 1
 vim.o.number = true
 vim.o.cursorline = false
 vim.o.signcolumn = 'no'
-vim.o.fillchars = 'eob: ,vert:│'
+-- vim.o.fillchars = 'eob: ,vert:│'
+vim.o.fillchars = 'eob: ,vert:,'
 
 -- Text Formatting
 vim.o.linebreak = true
@@ -101,9 +102,17 @@ vim.o.foldlevel = 99
 vim.o.splitright = true
 
 -- LSP and Diagnostics
--- vim.diagnostic.config({ underline = false })          -- Disable underlining for diagnostics.
-vim.lsp.handlers["workspace/didChangeWatchedFiles"] = { dynamic_registration = true } -- Enable dynamic file watching.
+vim.api.nvim_create_autocmd("LspAttach", {
+    once = true,
+    callback = function()
+        if vim.lsp and vim.lsp.handlers then
+            vim.lsp.handlers["workspace/didChangeWatchedFiles"] = { dynamic_registration = true }
+        end
+    end,
+})
 
+-- TODO: Test this clipboard caching again later.
+-- Description: Optimize clipboard operations in WSL by caching clipboard content
 -- WSL Clipboard Configuration
 -- if vim.fn.has('wsl') == 1 then
 --     local clipboard_cache = { content = '', timestamp = 0 }

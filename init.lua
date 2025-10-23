@@ -21,6 +21,10 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+if vim.loader and vim.loader.enable then
+    vim.loader.enable()
+end
+
 -- WSL detection
 local function is_wsl()
     local proc_version = '/proc/version'
@@ -36,6 +40,20 @@ vim.g.is_wsl = is_wsl()
 require("lazy-init")
 require("settings")
 require("autocmds")
-require("scripts")
-require("highlights")
-require("keybindings")
+
+vim.api.nvim_create_autocmd("User", {
+    pattern = "VeryLazy",
+    once = true,
+    callback = function()
+        pcall(require, "scripts")
+        pcall(require, "keybindings")
+        pcall(require, "highlights")
+    end,
+})
+
+vim.api.nvim_create_autocmd("UIEnter", {
+    once = true,
+    callback = function()
+        pcall(require, "pretty_line_numbers")
+    end,
+})
