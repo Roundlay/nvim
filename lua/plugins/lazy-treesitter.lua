@@ -7,6 +7,10 @@ return {
     opts = {
         sync_install = false,
         auto_install = true,
+        highlight = {
+            enable = true,
+            additional_vim_regex_highlighting = false,
+        },
     },
     config = function(_, opts)
         local nvim_treesitter_ok, nvim_treesitter = pcall(require, "nvim-treesitter.configs")
