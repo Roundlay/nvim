@@ -33,9 +33,56 @@ vim.opt.rtp:prepend(lazypath)
 -- vim.g.mapleader = ' '
 -- vim.g.maplocalleader = ' '
 
+require("perf.init")
+local perf_lazy = require("perf.lazy")
+
+local function collect_plugin_specs()
+    local specs = {}
+    local config_dir = vim.fn.stdpath("config") .. "/lua/plugins"
+    local handle = vim.loop.fs_scandir(config_dir)
+    if not handle then
+        return specs
+    end
+    local modules = {}
+    while true do
+        local name, file_type = vim.loop.fs_scandir_next(handle)
+        if not name then
+            break
+        end
+        if file_type == "file" and name:sub(-4) == ".lua" then
+            modules[#modules + 1] = name:sub(1, -5)
+        end
+    end
+    table.sort(modules)
+    for i = 1, #modules do
+        local module_name = "plugins." .. modules[i]
+        local ok, spec = pcall(require, module_name)
+        if ok and type(spec) == "table" then
+            if type(spec[1]) == "string" then
+                perf_lazy.instrument(spec, module_name)
+                specs[#specs + 1] = spec
+            else
+                for _, entry in ipairs(spec) do
+                    if type(entry) == "table" then
+                        perf_lazy.instrument(entry, module_name)
+                        specs[#specs + 1] = entry
+                    end
+                end
+            end
+        elseif not ok then
+            vim.schedule(function()
+                vim.notify("Failed to load plugin spec " .. module_name .. ": " .. tostring(spec), vim.log.levels.ERROR)
+            end)
+        end
+    end
+    return specs
+end
+
+local plugin_specs = collect_plugin_specs()
+
 -- Lazy Setup
 
-require("lazy").setup("plugins", {
+require("lazy").setup(plugin_specs, {
     -- The directory where Lazy installs plugins.
     root = vim.fn.stdpath("data") .. "/lazy",
     -- The statefile contains information used by Lazy's checker feature.
