@@ -145,12 +145,12 @@ normal('<leader>e', '</<C-X><C-O>', "Unknown mapping related to Oil and terminal
 
 -- Visual Replace
 
-visual('<leader>r', '<Esc>:lua Visrep()<CR>', "Search for all instances then replace the visually selected text with a new string.")
+visual('<leader>r', '<Esc>:lua require("scripts.visrep").run()<CR>', "Search for all instances then replace the visually selected text with a new string.")
 
 -- Tag Wrapper
 
-normal('<leader>w', ':lua WrapWithTags()<CR>', "Wrap current line with tags on separate lines.")
-visual('<leader>w', '<Esc>:lua WrapWithTags()<CR>', "Wrap selection with tags on separate lines.")
+normal('<leader>w', ':lua require("scripts.wrap_with_tags").run()<CR>', "Wrap current line with tags on separate lines.")
+visual('<leader>w', '<Esc>:lua require("scripts.wrap_with_tags").run()<CR>', "Wrap selection with tags on separate lines.")
 
 -- Misc
 
@@ -179,7 +179,16 @@ vim.keymap.set('n', '<leader>tr', call_script("trim"), { desc = "Trim whitespace
 
 -- Wrappin' Tests
 
-vim.keymap.set('v', '<F2>', call_script("Wrappin"), { desc = "Wrap selection with tags on separate lines.", silent = true })
+vim.keymap.set('v', '<F2>', function()
+    local ok, mod = pcall(require, "scripts.wrappin")
+    if not ok then
+        return
+    end
+    local runner = mod.run or mod.Wrappin
+    if type(runner) == "function" then
+        runner()
+    end
+end, { desc = "Wrap selection with tags on separate lines.", silent = true })
 vim.keymap.set('v', '<F3>', call_script("WrappinTest"), { desc = "Test Wrappin transformation.", silent = true })
 vim.keymap.set('n', '<F5>', call_script("ReloadScripts"), { desc = "Reload scripts in scripts.lua.", silent = true })
 vim.keymap.set('n', '<F6>', call_script("Slect"), { desc = "Run the experimental Slect workflow.", silent = true })
