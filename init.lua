@@ -54,6 +54,6 @@ vim.api.nvim_create_autocmd("User", {
 vim.api.nvim_create_autocmd("UIEnter", {
     once = true,
     callback = function()
-        pcall(require, "pretty_line_numbers")
+        pcall(require, "scripts.pretty_line_numbers")
     end,
 })
