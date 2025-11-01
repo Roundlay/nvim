@@ -7,7 +7,7 @@ end
 
 if vim.g.neovide then
     -- See: https://neovide.dev/configuration.html
-    vim.o.guifont = "Pragmasevka:h14"
+    vim.o.guifont = "SF Mono:h14"
     vim.o.linespace = 1
     vim.g.neovide_cursor_animation_length = 0.02
     vim.g.neovide_cursor_trail_size = 0.05
