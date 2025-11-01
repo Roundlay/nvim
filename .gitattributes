@@ -7,18 +7,18 @@
 *.ps1 text eol=crlf
 
 # Treat obvious binaries as binary (no EOL changes)
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-*.ico binary
-*.pdf binary
-*.zip binary
-*.7z binary
-*.exe binary
-*.dll binary
-*.so  binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.7z    binary
+*.exe   binary
+*.dll   binary
+*.so    binary
 *.dylib binary
-*.o   binary
-*.obj binary
-*.pdb binary
+*.o     binary
+*.obj   binary
+*.pdb   binary
