@@ -122,14 +122,27 @@ return {
         }
 
         local servers = {
-            vimls = {},
-            yamlls = {},
-            marksman = {},
-            cssls = {},
-            html = {},
-            jsonls = {},
+            vimls = {
+                filetypes = { "vim" },
+            },
+            yamlls = {
+                filetypes = { "yaml", "yml" },
+            },
+            marksman = {
+                filetypes = { "markdown", "md" },
+            },
+            cssls = {
+                filetypes = { "css" },
+            },
+            html = {
+                filetypes = { "html" },
+            },
+            jsonls = {
+                filetypes = { "json" },
+            },
 
             sourcekit = {
+                filetypes = { "swift" },
                 root_dir = adapt_root_dir(function(fname)
                     return swift_root(fname) or util.path.dirname(fname)
                 end),
@@ -144,6 +157,7 @@ return {
             },
 
             clangd = {
+                filetypes = { "c", "cpp", "objc", "objcpp", "cc", "cxx", "h", "hpp" },
                 --
                 -- NOTE: Upstream clangd >= 20.1 changed several CLI flags:
                 --   * `--inlay-hints` is now a no-op (inlay hints are configured via
@@ -173,6 +187,7 @@ return {
             },
 
             lua_ls = {
+                filetypes = { "lua" },
                 on_init = function(client)
                     local wf = client.workspace_folders
                     local first = wf and wf[1] and wf[1].name or nil
@@ -204,6 +219,7 @@ return {
             },
 
             ols = {
+                filetypes = { "odin" },
                 cmd = is_windows and { norm("C:/Users/Christopher/AppData/Local/ols/ols.exe") } or { "ols" },
                 init_options = {
                     checker_args = "-strict-style",
@@ -216,6 +232,7 @@ return {
             },
 
             pyright = {
+                filetypes = { "python" },
                 root_dir = adapt_root_dir(function(fname)
                     return util.root_pattern("pyproject.toml", "setup.py", "requirements.txt", ".git")(fname)
                         or util.path.dirname(fname)
