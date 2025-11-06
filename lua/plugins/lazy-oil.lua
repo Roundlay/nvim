@@ -6,6 +6,11 @@ return {
     lazy = true,
     cmd = "Oil",
     opts = {
+        adapters = {
+            ["oil://"] = "files",
+            ["oil-ssh://"] = false,
+            ["oil-trash://"] = false,
+        },
         buf_options = {
             buflisted = false,
             bufhidden = "hide",
@@ -18,13 +23,15 @@ return {
             border = "none",
         },
         preview = {
+            update_on_move = false,
             border = "none",
             win_options = {
                 winblend = 1,
             },
         },
         view_options = {
-            show_hidden = true,
+            show_hidden = false,
+            natural_order = "fast",
         },
         float = {
             padding = 2,
