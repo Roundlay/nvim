@@ -12,6 +12,9 @@ local function compress_path(file_path)
     end
 
     local drive = file_path:match("^(%a:[/\\])") or ""
+    if drive ~= "" then
+        drive = drive:gsub("^%a", string.upper)
+    end
     local path_without_drive = file_path:sub(#drive + 1)
     local directories, filename = path_without_drive:match("^(.+[/\\])([^/\\]+)$")
 
@@ -36,7 +39,6 @@ local function truncated_file_status()
         else
             file_path = compress_path(file_path)
 
-            -- Compress filepath logic
             local state = ""
             if vim.bo.modified then
                 state = "MODIFIED"
@@ -46,7 +48,14 @@ local function truncated_file_status()
                 state = "UNNAMED"
             end
 
-            return state == "" and file_path or state .. " " .. file_path
+            if state ~= "" then
+                if file_path ~= "" then
+                    return state .. " " .. file_path
+                end
+                return state
+            end
+
+            return file_path
         end
     end
 end
