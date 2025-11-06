@@ -2,6 +2,7 @@
 
 - [ ] Analyse perf. log output!
 - [X] 2025-11-06 Fix lualine truncated filepath compression (Unix separators, Windows drive casing, UNNAMED formatting).
+- [X] 2025-11-06 Migrate swift.nvim SourceKit wiring to `vim.lsp.config` to remove nvim-lspconfig deprecation warnings.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
@@ -27,3 +28,4 @@
 ## Notes
 
 - [~] SourceKit-LSP (Swift) is provided by the Apple toolchain and is not packaged by mason-lspconfig; configure it manually without adding it to `ensure_installed`.
+- [~] SourceKit LSP now registered via `vim.lsp.config('sourcekit', …)` with swift.nvim providing path detection and buffer lifecycle hooks.
