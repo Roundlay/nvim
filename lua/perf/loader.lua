@@ -20,7 +20,15 @@ local function wrap_searcher(searcher, event_type)
             local results = { pcall(loader, ...) }
             local ok = table.remove(results, 1)
             local duration = perf_api.now() - t0
-            perf_api.log(event_type, module_name, t0, duration, ok and 0 or 1)
+            local caller = debug.getinfo(3, "Sl") or debug.getinfo(2, "Sl")
+            local extra_meta = ""
+            if caller then
+                local src = caller.short_src or caller.source or "unknown"
+                local line = caller.currentline or caller.linedefined or 0
+                src = tostring(src):gsub("[,|=]", "_")
+                extra_meta = string.format("caller=%s:%d", src, line)
+            end
+            perf_api.log(event_type, module_name, t0, duration, ok and 0 or 1, extra_meta)
             if not ok then
                 error(results[1])
             end

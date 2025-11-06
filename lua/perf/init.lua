@@ -2,6 +2,7 @@ local collector = require("perf.collector")
 local runtime = require("perf.runtime")
 local loader = require("perf.loader")
 local sampler = require("perf.sample")
+local metrics = require("perf.metrics")
 
 local uv = vim.loop
 
@@ -11,6 +12,7 @@ local config = {
     capacity = 4096,
     path = vim.fn.stdpath("state") .. "/perf-trace.log",
 }
+config.summary_path = config.path .. ".summary.json"
 
 local enabled = false
 local configured = false
@@ -49,7 +51,7 @@ local function ensure_augroup()
     vim.api.nvim_create_autocmd({ "VimLeavePre", "ExitPre" }, {
         group = augroup_id,
         callback = function()
-            collector.flush()
+            M.flush()
         end,
     })
 end
@@ -69,7 +71,7 @@ local function define_commands()
         M.disable()
     end, {})
     vim.api.nvim_create_user_command("PerfTraceFlush", function()
-        local ok, err = collector.flush()
+        local ok, err = M.flush()
         if not ok then
             notify_err("PerfTraceFlush failed: " .. (err or "unknown error"))
         end
@@ -90,7 +92,7 @@ end
 
 function M.configure(opts)
     if not opts then
-        return
+        opts = {}
     end
     if type(opts.capacity) == "number" and opts.capacity > 0 then
         config.capacity = math.floor(opts.capacity)
@@ -98,6 +100,15 @@ function M.configure(opts)
     if type(opts.path) == "string" and opts.path ~= "" then
         config.path = opts.path
     end
+    if type(opts.summary_path) == "string" and opts.summary_path ~= "" then
+        config.summary_path = opts.summary_path
+    end
+    if not config.summary_path or config.summary_path == "" then
+        config.summary_path = config.path .. ".summary.json"
+    end
+    metrics.configure({
+        summary_path = config.summary_path,
+    })
 end
 
 function M.enable()
@@ -107,6 +118,7 @@ function M.enable()
     if not ensure_setup() then
         return false
     end
+    metrics.reset()
     ensure_augroup()
     enabled = true
     sampler.start()
@@ -123,7 +135,15 @@ function M.disable()
 end
 
 function M.flush()
-    return collector.flush()
+    local ok, err = collector.flush()
+    if not ok then
+        return false, err
+    end
+    local ok_metrics, metrics_err = metrics.write_summary()
+    if not ok_metrics then
+        return false, metrics_err
+    end
+    return true
 end
 
 function M.is_enabled()
@@ -134,7 +154,12 @@ function M.log(event_type, source, start_ns, duration_ns, flags, extra)
     if not enabled then
         return true
     end
-    return collector.push(event_type, source, start_ns, duration_ns, flags, extra)
+    local ok, err = collector.push(event_type, source, start_ns, duration_ns, flags, extra)
+    if not ok then
+        return false, err
+    end
+    metrics.push(event_type, source, duration_ns or 0, flags or 0, extra or "")
+    return true
 end
 
 function M.now()
@@ -146,7 +171,12 @@ function M.measure_span(event_type, source, start_ns, stop_ns, flags, extra)
         return true
     end
     local duration = (stop_ns or M.now()) - start_ns
-    return collector.push(event_type, source, start_ns, duration, flags, extra)
+    local ok, err = collector.push(event_type, source, start_ns, duration, flags, extra)
+    if not ok then
+        return false, err
+    end
+    metrics.push(event_type, source, duration, flags or 0, extra or "")
+    return true
 end
 
 function M.time_block(event_type, source, fn, flags, extra)
@@ -156,7 +186,9 @@ function M.time_block(event_type, source, fn, flags, extra)
     local t0 = M.now()
     local ok, result = pcall(fn)
     local t1 = M.now()
-    collector.push(event_type, source, t0, t1 - t0, ok and (flags or 0) or 1, extra)
+    local duration = t1 - t0
+    collector.push(event_type, source, t0, duration, ok and (flags or 0) or 1, extra)
+    metrics.push(event_type, source, duration, ok and (flags or 0) or 1, extra or "")
     if not ok then
         error(result)
     end
@@ -168,6 +200,9 @@ define_commands()
 runtime.attach(M)
 loader.attach(M)
 sampler.attach(M)
+metrics.configure({
+    summary_path = config.summary_path or (config.path .. ".summary.json"),
+})
 
 local env = vim.env.NVIM_PERF_TRACE
 if env == "1" or env == "true" then
