@@ -2,6 +2,28 @@ local function truncated_mode(str)
     return str:sub(1, 1)
 end
 
+local function compress_directory(dir, separator)
+    return dir:sub(1, 1) .. separator
+end
+
+local function compress_path(file_path)
+    if file_path == "" then
+        return ""
+    end
+
+    local drive = file_path:match("^(%a:[/\\])") or ""
+    local path_without_drive = file_path:sub(#drive + 1)
+    local directories, filename = path_without_drive:match("^(.+[/\\])([^/\\]+)$")
+
+    if not filename then
+        return drive .. path_without_drive
+    end
+
+    local compressed_directories = directories:gsub("([^/\\]+)([/\\])", compress_directory)
+
+    return drive .. compressed_directories .. filename
+end
+
 local function truncated_file_status()
     return function()
         local file_path = vim.api.nvim_buf_get_name(0)
@@ -12,19 +34,9 @@ local function truncated_file_status()
         elseif filetype == "term" then
             return "Terminal"
         else
+            file_path = compress_path(file_path)
+
             -- Compress filepath logic
-            local drive = file_path:match("^(%a:\\)") or ""
-            local path_without_drive = file_path:sub(#drive + 1, -1)
-            local directories, filename = path_without_drive:match("^(.+\\)([^\\]+)$")
-
-            directories = directories or ""
-
-            local compressed_directories = directories:gsub("([^\\]+\\)", function(dir)
-                return dir:sub(1, 1) .. "\\"
-            end)
-
-            file_path = drive .. compressed_directories .. filename
-
             local state = ""
             if vim.bo.modified then
                 state = "MODIFIED"

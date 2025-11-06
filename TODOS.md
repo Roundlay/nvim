@@ -1,6 +1,7 @@
 # TODOs
 
 - [ ] Analyse perf. log output!
+- [X] 2025-11-06 Fix lualine truncated filepath compression to operate on Unix separators.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
