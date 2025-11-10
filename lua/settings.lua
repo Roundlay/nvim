@@ -39,6 +39,76 @@ vim.opt.undodir = undo_dir
 vim.opt.undolevels = 1000000 -- Maximum number of undo levels to keep.
 vim.opt.undoreload = 1000000 -- Number of lines to save for undo history.
 
+local tmux_version_cache
+local tmux_sixel_support_cache
+
+local function systemlist_quiet(cmd)
+    local ok, output = pcall(vim.fn.systemlist, cmd)
+    if not ok then
+        return nil
+    end
+    local status = vim.v.shell_error
+    return {
+        output = output,
+        status = status,
+    }
+end
+
+local function tmux_version_info()
+    if tmux_version_cache ~= nil then
+        return tmux_version_cache
+    end
+
+    local result = systemlist_quiet('tmux -V 2>/dev/null')
+    if not result or result.status ~= 0 or not result.output or #result.output == 0 then
+        tmux_version_cache = false
+        return tmux_version_cache
+    end
+
+    local normalized = table.concat(result.output, ' '):gsub('%s+', ' ')
+    local lower = normalized:lower()
+    local major, minor = lower:match('(%d+)%.(%d+)')
+
+    tmux_version_cache = {
+        major = major and tonumber(major) or nil,
+        minor = minor and tonumber(minor) or nil,
+        raw = lower,
+        edge = lower:find('master', 1, true) ~= nil or lower:find('next%-', 1, true) ~= nil,
+    }
+
+    return tmux_version_cache
+end
+
+local function tmux_version_has_sixel_fix()
+    local info = tmux_version_info()
+    if not info or info == false then
+        return false
+    end
+    if info.edge then
+        return true
+    end
+    if not info.major or not info.minor then
+        return false
+    end
+    return info.major > 3 or (info.major == 3 and info.minor >= 6)
+end
+
+local function tmux_supports_sixel_passthrough()
+    if tmux_sixel_support_cache ~= nil then
+        return tmux_sixel_support_cache
+    end
+
+    local result = systemlist_quiet('tmux display-message -p "#{client_termfeatures}" 2>/dev/null')
+    if not result or result.status ~= 0 or not result.output or #result.output == 0 then
+        tmux_sixel_support_cache = false
+        return tmux_sixel_support_cache
+    end
+
+    local features = table.concat(result.output, ' '):lower()
+    tmux_sixel_support_cache = features:find('sixel', 1, true) ~= nil
+    return tmux_sixel_support_cache
+end
+
 local function tmux_needs_sixel_workaround()
     if vim.env.NVIM_TMUX_SIXEL_WORKAROUND == '0' then
         return false
@@ -46,29 +116,17 @@ local function tmux_needs_sixel_workaround()
     if not vim.env.TMUX then
         return false
     end
-    if not (vim.g.is_wsl or vim.env.WT_SESSION or vim.env.WT_PROFILE_ID) then
-        return false
-    end
     if vim.env.NVIM_TMUX_SIXEL_WORKAROUND == '1' then
         return true
     end
-
-    local ok, output = pcall(vim.fn.systemlist, 'tmux -V 2>/dev/null')
-    if not ok or not output or #output == 0 then
-        return true -- Assume old tmux when we cannot read the version.
+    if not tmux_supports_sixel_passthrough() then
+        return false
     end
 
-    local major, minor = output[1]:match('(%d+)%.(%d+)')
-    major = tonumber(major)
-    minor = tonumber(minor)
-    if not major or not minor then
-        return true
-    end
-
-    -- tmux < 3.6 mis-parses Neovim's DECRQSS cursor query and leaks a
-    -- truncated SIXEL sequence (see tmux#4488). Treat everything below 3.6 as
-    -- broken until that fix ships in a release.
-    if major > 3 or (major == 3 and minor >= 6) then
+    -- tmux#4488 fixes the DECRQSS/SIXEL mix-up by requiring zero intermediates
+    -- before dispatching the SIXEL parser. Until that ships in a release
+    -- (tmux 3.6+), keep suppressing Neovim's cursor queries inside tmux.
+    if tmux_version_has_sixel_fix() then
         return false
     end
     return true
