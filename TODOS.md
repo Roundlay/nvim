@@ -1,6 +1,7 @@
 # TODOs
 
 - [ ] Analyse perf. log output!
+- [>] Remove the tmux SIXEL workaround once tmux 3.6+ is released and confirmed stable on WSL.
 - [X] 2025-11-06 Fix lualine truncated filepath compression (Unix separators, Windows drive casing, UNNAMED formatting).
 - [X] 2025-11-06 Migrate swift.nvim SourceKit wiring to `vim.lsp.config` to remove nvim-lspconfig deprecation warnings.
 
@@ -29,3 +30,4 @@
 
 - [~] SourceKit-LSP (Swift) is provided by the Apple toolchain and is not packaged by mason-lspconfig; configure it manually without adding it to `ensure_installed`.
 - [~] SourceKit LSP now registered via `vim.lsp.config('sourcekit', …)` with swift.nvim providing path detection and buffer lifecycle hooks.
+- [~] 2025-11-10: Guard `guicursor` inside tmux+WSL to dodge the SIXEL banner; override with `NVIM_TMUX_SIXEL_WORKAROUND` when needed.

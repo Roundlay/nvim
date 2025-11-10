@@ -39,6 +39,46 @@ vim.opt.undodir = undo_dir
 vim.opt.undolevels = 1000000 -- Maximum number of undo levels to keep.
 vim.opt.undoreload = 1000000 -- Number of lines to save for undo history.
 
+local function tmux_needs_sixel_workaround()
+    if vim.env.NVIM_TMUX_SIXEL_WORKAROUND == '0' then
+        return false
+    end
+    if not vim.env.TMUX then
+        return false
+    end
+    if not (vim.g.is_wsl or vim.env.WT_SESSION or vim.env.WT_PROFILE_ID) then
+        return false
+    end
+    if vim.env.NVIM_TMUX_SIXEL_WORKAROUND == '1' then
+        return true
+    end
+
+    local ok, output = pcall(vim.fn.systemlist, 'tmux -V 2>/dev/null')
+    if not ok or not output or #output == 0 then
+        return true -- Assume old tmux when we cannot read the version.
+    end
+
+    local major, minor = output[1]:match('(%d+)%.(%d+)')
+    major = tonumber(major)
+    minor = tonumber(minor)
+    if not major or not minor then
+        return true
+    end
+
+    -- tmux < 3.6 mis-parses Neovim's DECRQSS cursor query and leaks a
+    -- truncated SIXEL sequence (see tmux#4488). Treat everything below 3.6 as
+    -- broken until that fix ships in a release.
+    if major > 3 or (major == 3 and minor >= 6) then
+        return false
+    end
+    return true
+end
+
+if tmux_needs_sixel_workaround() then
+    vim.opt.guicursor = ''
+    vim.g.tmux_sixel_workaround = true
+end
+
 -- Standard Plugins
 -- Tell Vim's 'standard plugins' to finish early. In other words, mark these as
 -- loaded to prevent them from eating into startup time when `rtp plugins` are
