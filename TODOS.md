@@ -1,6 +1,7 @@
 # TODOs
 
 - [ ] Analyse perf. log output!
+- [!] 2025-11-10 tmux SIXEL guard still misbehaves; repro and align detection logic with tmux#4488 fix.
 - [>] Remove the tmux SIXEL workaround once tmux 3.6+ (with tmux#4488) is released and confirmed stable across WSL/Linux terminals.
 - [X] 2025-11-06 Fix lualine truncated filepath compression (Unix separators, Windows drive casing, UNNAMED formatting).
 - [X] 2025-11-06 Migrate swift.nvim SourceKit wiring to `vim.lsp.config` to remove nvim-lspconfig deprecation warnings.
