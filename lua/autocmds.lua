@@ -115,6 +115,63 @@ vim.api.nvim_create_autocmd('FileType', {
 --     })
 -- end
 
+-- WORKSPACE LINE ENDINGS
+
+-- Force LF endings inside the rdpad workspace so Neovim never writes CRLF (^M) when editing from either Windows or WSL.
+local workspace_unix_ff = vim.api.nvim_create_augroup('workspace_unix_fileformat', { clear = true })
+
+local function normalize_path(path)
+    return path:gsub('\\', '/'):lower()
+end
+
+local workspace_root_variants = {
+    '/mnt/c/Users/Christopher/rdpad/',
+    'c:/users/christopher/rdpad/',
+}
+
+local workspace_root_paths = {}
+local workspace_root_lengths = {}
+
+for i = 1, #workspace_root_variants do
+    local normalized = normalize_path(workspace_root_variants[i])
+    workspace_root_paths[i] = normalized
+    workspace_root_lengths[i] = #normalized
+end
+
+local workspace_root_count = #workspace_root_paths
+
+local function is_workspace_path(normalized_path)
+    for i = 1, workspace_root_count do
+        if normalized_path:sub(1, workspace_root_lengths[i]) == workspace_root_paths[i] then
+            return true
+        end
+    end
+
+    return false
+end
+
+vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile' }, {
+    group = workspace_unix_ff,
+    callback = function(event)
+        local name = vim.api.nvim_buf_get_name(event.buf)
+        if name == '' then
+            return
+        end
+
+        local normalized = normalize_path(name)
+        if not is_workspace_path(normalized) then
+            return
+        end
+
+        local buf_opts = vim.bo[event.buf]
+
+        -- 'fileformat' is buffer-local; coercing it is sufficient to force LF writes.
+        if buf_opts.fileformat ~= 'unix' then
+            buf_opts.fileformat = 'unix'
+        end
+    end,
+    desc = 'Clamp rdpad workspace files to LF endings when editing from Windows or WSL.',
+})
 
 -- local swift_lsp = vim.api.nvim_create_augroup("swift_lsp", { clear = true })
 -- vim.api.nvim_create_autocmd("FileType", {
