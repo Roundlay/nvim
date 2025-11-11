@@ -5,6 +5,7 @@
 - [>] Remove the tmux SIXEL workaround once tmux 3.6+ (with tmux#4488) is released and confirmed stable across WSL/Linux terminals.
 - [X] 2025-11-06 Fix lualine truncated filepath compression (Unix separators, Windows drive casing, UNNAMED formatting).
 - [X] 2025-11-06 Migrate swift.nvim SourceKit wiring to `vim.lsp.config` to remove nvim-lspconfig deprecation warnings.
+- [X] 2025-11-11 Clamp rdpad workspace LF enforcement to the buffer-local `fileformat` option to stop BufReadPost errors when opening Swift packages on Windows.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
