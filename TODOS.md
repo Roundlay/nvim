@@ -27,6 +27,89 @@
   Error executing Lua callback: ...l/nvim-data/lazy/lazy.nvim/lua/lazy/core/handler/cmd.lua:48: Vim:Error executing Lua callback: ...r/AppData/Local/nvim-data/lazy/oil.nvim/lua/oil/init.lua:383: Vim:E37: No write since last change (add ! to override)                                                                                     stack traceback:                                                                                                       [C]: in function 'edit'                                                                                        ...r/AppData/Local/nvim-data/lazy/oil.nvim/lua/oil/init.lua:383: in function <...r/AppData/Local/nvim-data/lazy/oil.nvim/lua/oil/init.lua:374>                                                                                ...r/AppData/Local/nvim-data/lazy/oil.nvim/lua/oil/init.lua:1180: in function <...r/AppData/Local/nvim-data/lazy/oil.nvim/lua/oil/init.lua:1126>                                                                              [C]: in function 'cmd'                                                                                         ...l/nvim-data/lazy/lazy.nvim/lua/lazy/core/handler/cmd.lua:48: in function <...l/nvim-data/lazy/lazy.nvim/lua/lazy/core/handler/cmd.lua:16>                                                                          stack traceback:                                                                                                       [C]: in function 'cmd'                                                                                         ...l/nvim-data/lazy/lazy.nvim/lua/lazy/core/handler/cmd.lua:48: in function <...l/nvim-data/lazy/lazy.nvim/lua/lazy/core/handler/cmd.lua:16>                                                                          Press ENTER or type command to continue
   ```
 
+## Code TODO Backlog (2025-11-11)
+
+### ./init.lua
+- [ ] ./init.lua:29 Document the WSL detection helper that exports `vim.g.is_wsl` and note consumers that rely on it.
+
+### ./lua/settings.lua
+- [ ] ./lua/settings.lua:26 Sort and organise the option/flag declarations so startup state is deterministic.
+- [ ] ./lua/settings.lua:28 Verify that disabling built-in plugins via `vim.g.loaded_*` is reliable across Lazy loads.
+- [ ] ./lua/settings.lua:44 Evaluate using `XDG_CONFIG_HOME` / `XDG_DATA_HOME` on both Windows paths and WSL.
+- [ ] ./lua/settings.lua:46 Consolidate `SHADA_DIRECTORY` ownership so autocmd consumers read from a single source of truth.
+- [ ] ./lua/settings.lua:98 Re-test the WSL clipboard caching strategy before re-enabling it.
+
+### ./lua/autocmds.lua
+- [ ] ./lua/autocmds.lua:98 Decide on the WSL clipboard sync workflow (focus gained/lost) or remove the dormant autocmd block.
+
+### ./lua/keybindings.lua
+- [ ] ./lua/keybindings.lua:88 Restore the default `<C-e>` replace behavior so scroll bindings need no overrides.
+- [ ] ./lua/keybindings.lua:129 Detect when the current buffer is a terminal and prepend `<Esc>` so movement keys work reliably.
+- [ ] ./lua/keybindings.lua:144 Confirm why `<leader>e` maps to `'</<C-X><C-O>'` and whether it should remain tied to Oil/terminal hacks.
+- [ ] ./lua/keybindings.lua:225 Work out Blink's custom keybinding requirements instead of relying on `vim.keymap.set` defaults.
+    - [ ] ./lua/keybindings.lua:226 Cross-reference `./lua/plugins/lazy-blink-cmp.lua` so the Blink mappings align with the plugin config.
+
+### ./lua/scripts.lua
+- [ ] ./lua/scripts.lua:8 Remove the global `_G.M` exposure or justify it with measured startup costs.
+- [ ] ./lua/scripts.lua:16 Audit the eager module calls (e.g. `scripts.c_return_types`, `scripts.custom_diagnostics`) and document why they run on load.
+- [ ] ./lua/scripts.lua:68 Make the custom numberline flow operate inside help buffers / other read-only windows.
+- [ ] ./lua/scripts.lua:69 Package `pretty_line_numbers` as a plugin-friendly setup function for Lazy and other managers.
+    - [ ] ./lua/scripts.lua:71 Review Lazy documentation / peer plugins for best practices before exporting the setup entry point.
+    - [ ] ./lua/scripts.lua:72 Add toggleable options (colours, active-line highlight, padding, etc.) to the numberline setup.
+- [ ] ./lua/scripts.lua:452 Determine whether the commented `_G.ReloadConfig` helper still provides value.
+    - [ ] ./lua/scripts.lua:457 Ensure any reload flow properly purges modules under `lua/` instead of leaving stale bytecode.
+- [ ] ./lua/scripts.lua:473 Verify that the legacy plugin sourcing helpers actually work or remove them.
+- [ ] ./lua/scripts.lua:593 Track non-file buffers (completion popups, scratch, etc.) so custom buffer listings stay accurate.
+
+### ./lua/scripts/visrep.lua
+- [ ] ./lua/scripts/visrep.lua:12 Ensure the `[N/N]` navigator starts at the original match rather than the literal first.
+- [ ] ./lua/scripts/visrep.lua:13 Provide standard plugin configuration hooks for Visrep.
+- [ ] ./lua/scripts/visrep.lua:14 Add `vim.g.visrep_default_mode = 'boundary'|'anywhere'` to control the initial boundary mode.
+- [ ] ./lua/scripts/visrep.lua:15 Expose preview scope knobs such as `vim.g.visrep_preview` and `vim.g.visrep_preview_margin`.
+- [ ] ./lua/scripts/visrep.lua:16 Make Visrep highlight groups (e.g. `VisrepText`) configurable for theming.
+- [ ] ./lua/scripts/visrep.lua:17 Debounce rerenders (~10–20ms) so rapid typing doesn’t thrash the overlay.
+- [ ] ./lua/scripts/visrep.lua:18 Implement an async match index for very large files (>100k lines).
+- [ ] ./lua/scripts/visrep.lua:19 Respect Unicode / `iskeyword` boundaries instead of ASCII-only parsing.
+- [ ] ./lua/scripts/visrep.lua:20 Extend live preview to multi-line selections.
+- [ ] ./lua/scripts/visrep.lua:21 Diff previous/next visible ranges so viewport updates are incremental.
+- [ ] ./lua/scripts/visrep.lua:22 Offer case-sensitivity toggles (smartcase / explicit modes) per run.
+
+### ./lua/scripts/c_return_types.lua
+- [ ] ./lua/scripts/c_return_types.lua:484 Provide a lightweight toggle/disable path so large files aren’t penalized.
+
+### ./lua/scripts/custom_diagnostics.lua
+- [ ] ./lua/scripts/custom_diagnostics.lua:7 Suppress diagnostics banners when a buffer is dirty to avoid stale warnings.
+- [ ] ./lua/scripts/custom_diagnostics.lua:8 Ensure diagnostics are fully cleared after errors disappear instead of sticking at EOF.
+- [ ] ./lua/scripts/custom_diagnostics.lua:10 Rename the `custom_diagnostics` namespace to follow conventions.
+
+### ./lua/scripts/wrappin.lua
+- [!] ./lua/scripts/wrappin.lua:11 Wrappin strips Markdown header prefixes; strengthen prefix handling so headings survive wrapping.
+- [ ] ./lua/scripts/wrappin.lua:16 Support partially wrapped selections by only reflowing overflowing lines.
+- [ ] ./lua/scripts/wrappin.lua:20 Store the original layout (scratchpad) so users can revert after edits.
+
+### ./lua/plugins/lazy-blink-cmp.lua
+- [ ] ./lua/plugins/lazy-blink-cmp.lua:3 Configure Blink sources (buffers, docs, etc.) instead of relying on defaults.
+
+### ./lua/plugins/lazy-treesitter-odin.lua
+- [ ] ./lua/plugins/lazy-treesitter-odin.lua:3 Add a Wrappin option that leaves filepaths / unbroken strings unwrapped.
+
+### ./lua/plugins/lazy-oil.lua
+- [ ] ./lua/plugins/lazy-oil.lua:46 Investigate why `get_oil_winbar()` never returns a directory and repair the winbar hook.
+
+### ./lua/plugins/lazy-mini-align.lua
+- [ ] ./lua/plugins/lazy-mini-align.lua:32 Provide custom alignment presets instead of using the default setup.
+
+### ./lua/plugins/lazy-nvim-surround.lua
+- [ ] ./lua/plugins/lazy-nvim-surround.lua:14 Add cycling keymaps (e.g. repeated `<C-e>`) for selecting surround pairs.
+
+### ./lua/plug.bak
+- [ ] ./lua/plug.bak:157 Fix the Trouble signs padding so diagnostics align.
+- [ ] ./lua/plug.bak:193 Add mini.align custom alignment rules in the legacy plug config too.
+- [ ] ./lua/plug.bak:471 Document how the `luasnip` expand function integrates with cmp.
+- [ ] ./lua/plug.bak:531 Document the `lua_ls` setup rationale (custom settings vs `lsp-zero`).
+- [ ] ./lua/plug.bak:598 Figure out why the old NvimTree workflow made buffers hard to track / statusline flash.
+- [ ] ./lua/plug.bak:604 Fix buffer padding glitches in the NvimTree graveyard config.
+
 ## Notes
 
 - [~] SourceKit-LSP (Swift) is provided by the Apple toolchain and is not packaged by mason-lspconfig; configure it manually without adding it to `ensure_installed`.
