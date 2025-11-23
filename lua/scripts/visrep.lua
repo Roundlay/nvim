@@ -24,30 +24,63 @@ local M = {}
 -- [?] What are the biggest pain points of the default %s search and replace that you're trying to remedy here?
 
 local function run()
-    local cursor_pos = vim.fn.getpos('.')
-    local start_pos = vim.fn.getpos("'<")
-    local end_pos = vim.fn.getpos("'>")
-    local selected_text = vim.fn.getline(start_pos[2], end_pos[2])
-    local pattern = ''
-    local new_string = ''
-    
-    -- Concatenate selected lines into a single string
-    for i, line in ipairs(selected_text) do
-        if i > 1 then
-            pattern = pattern .. '\n'
-        end
-        local start_col = (i == 1) and start_pos[3] or 1
-        local end_col = (i == #selected_text) and end_pos[3] or #line
-        pattern = pattern .. line:sub(start_col, end_col)
+    local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line (1-based), col (0-based bytes)}
+    local bufnr = vim.api.nvim_get_current_buf()
+
+    -- Visual selection bounds (byte-aware)
+    local start_mark = { vim.api.nvim_buf_get_mark(bufnr, '<') }
+    local end_mark   = { vim.api.nvim_buf_get_mark(bufnr, '>') }
+    if start_mark[1] == 0 or end_mark[1] == 0 then
+        return
     end
+
+    -- Convert to 0-based rows and normalise ordering.
+    local srow = start_mark[1] - 1
+    local scol = start_mark[2]
+    local erow = end_mark[1] - 1
+    local ecol = end_mark[2]
+    if srow > erow or (srow == erow and scol > ecol) then
+        srow, erow = erow, srow
+        scol, ecol = ecol, scol
+    end
+
+    local start_line = vim.api.nvim_buf_get_lines(bufnr, srow, srow + 1, false)[1] or ''
+    local end_line   = vim.api.nvim_buf_get_lines(bufnr, erow, erow + 1, false)[1] or ''
+
+    local function clamp_col(line, col)
+        local len = #line
+        if col < 0 then return 0 end
+        if col > len then return len end
+        return col
+    end
+    scol = clamp_col(start_line, scol)
+    ecol = clamp_col(end_line, ecol)
+
+    -- Convert end column (byte start of last char) to an exclusive byte index.
+    local function next_byte(line, col)
+        local char_idx = select(1, vim.str_utfindex(line, col))
+        local last_idx = select(1, vim.str_utfindex(line, #line))
+        if char_idx >= last_idx then
+            return #line
+        end
+        local nb = vim.str_byteindex(line, char_idx + 1)
+        if nb < 0 then nb = #line end
+        return nb
+    end
+    local end_excl = next_byte(end_line, ecol)
+
+    local selection_lines = vim.api.nvim_buf_get_text(bufnr, srow, scol, erow, end_excl, {})
+    local pattern = table.concat(selection_lines, '\n')
+    local new_string = ''
+    local sel = { srow = srow, scol = scol, erow = erow, ecol_excl = end_excl }
     
     -- Interactive input + preview (single-line selections only). For multi-line
     -- selections we fall back to a simple input prompt later.
     
     -- Decide whether to enforce word boundaries.
-    -- Only apply when the selection is a single line and looks like a keyword.
     local is_single_line = not pattern:find('\n', 1, true)
-    local is_wordlike = is_single_line and (pattern:match('^[%w_]+$') ~= nil)
+    -- Default to boundary mode only if it looks like a standard keyword.
+    local defaults_to_boundary = is_single_line and (pattern:match('^[%w_]+$') ~= nil)
     
     -- Build literal core as sequence of byte matches for robustness.
     local core = {}
@@ -57,11 +90,18 @@ local function run()
     local literal_core = table.concat(core)
     
     local pattern_any   = '\\V' .. literal_core
-    local pattern_word  = is_wordlike and ('\\V\\<' .. literal_core .. '\\>') or nil
+    
+    -- Construct boundary pattern manually to support symbols (e.g. "foo-bar").
+    -- Logic: (BOL or non-word) + literal + (EOL or non-word).
+    local pattern_word = nil
+    if is_single_line then
+        local b_char = '[^0-9A-Za-z_]'
+        pattern_word = '\\m\\%(' .. '^\\|' .. b_char .. '\\)\\@<=' .. literal_core .. '\\%(' .. '$\\|' .. b_char .. '\\)\\@='
+    end
     
     -- Interactive preview: highlight matches and overlay the replacement as
     -- you type. Toggle boundary/anywhere with <Tab>, apply on <Enter>, cancel on <Esc>.
-    local mode = (pattern_word and 'boundary') or 'anywhere'
+    local mode = (defaults_to_boundary and 'boundary') or 'anywhere'
     
     local function is_word_char_byte(b)
         if not b then return false end
@@ -139,10 +179,9 @@ local function run()
     -- lazy init highlight groups
     pcall(vim.api.nvim_set_hl, 0, 'VisrepText',  { link = 'IncSearch' })
     
-    local bufnr = vim.api.nvim_get_current_buf()
     local literal = pattern
     local cur_idx = nil
-    local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, literal, start_pos[2]-1, start_pos[3]-1, end_pos[3])
+    local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, literal, sel.srow, sel.scol, sel.ecol_excl)
     local active_by_line = nil
     local nav_targets = nil
     
@@ -224,7 +263,7 @@ local function run()
                 -- prefer selection index if present
                 local sel_index = nil
                 for i, t in ipairs(nav_targets) do
-                    if t.lnum == (start_pos[2]-1) and t.col0 == (start_pos[3]-1) and t.col1 == end_pos[3] then
+                    if t.lnum == sel.srow and t.col0 == sel.scol and t.col1 == sel.ecol_excl then
                         sel_index = i; break
                     end
                 end
@@ -255,7 +294,7 @@ local function run()
                     break
                 elseif key == 27 or trans_num_l == '<esc>' then -- Esc
                     clear_ns(bufnr)
-                    vim.fn.setpos('.', cursor_pos)
+                    vim.api.nvim_win_set_cursor(0, cursor_pos)
                     return
                 elseif key == 8 or key == 127 or trans_num_l == '<bs>' or trans_num_l == '<c-h>' then -- Backspace
                     input = input:sub(1, math.max(0, #input - 1))
@@ -288,7 +327,7 @@ local function run()
                     break
                 elseif tl == '<esc>' then
                     clear_ns(bufnr)
-                    vim.fn.setpos('.', cursor_pos)
+                    vim.api.nvim_win_set_cursor(0, cursor_pos)
                     return
                 elseif tl == '<bs>' or tl == '<c-h>' then
                     input = input:sub(1, math.max(0, #input - 1))
@@ -331,27 +370,26 @@ local function run()
     local active_pattern = (mode == 'boundary') and (pattern_word or pattern_any) or pattern_any
     
     -- Perform the substitution globally; add 'e' to suppress errors when not found.
-    local bufnr = vim.api.nvim_get_current_buf()
     local before_tick = vim.api.nvim_buf_get_changedtick(bufnr)
     pcall(vim.cmd, ':%s' .. sep .. active_pattern .. sep .. escaped_new_string .. sep .. 'ge')
     
     local after_tick = vim.api.nvim_buf_get_changedtick(bufnr)
     if after_tick == before_tick then
         -- No global matches: replace the originally selected region only.
-        local srow = start_pos[2] - 1
-        local erow = end_pos[2] - 1
+        local srow = sel.srow
+        local erow = sel.erow
     
         local lines = vim.api.nvim_buf_get_lines(bufnr, srow, erow + 1, false)
         if #lines == 0 then
-            vim.fn.setpos('.', cursor_pos)
+            vim.api.nvim_win_set_cursor(0, cursor_pos)
             return
         end
     
         local first_line = lines[1]
         local last_line  = lines[#lines]
     
-        local start_col1 = start_pos[3] -- 1-based inclusive
-        local end_col1   = end_pos[3]   -- 1-based inclusive (may be huge for linewise)
+        local start_col1 = sel.scol + 1          -- 1-based inclusive
+        local end_col1   = sel.ecol_excl         -- 1-based inclusive (end_excl0 == end_incl1)
     
         -- Clamp end column for safety
         if erow == srow then
@@ -390,7 +428,7 @@ local function run()
     end
     
     -- Restore the cursor position
-    vim.fn.setpos('.', cursor_pos)
+    vim.api.nvim_win_set_cursor(0, cursor_pos)
 end
 
 function M.run()
