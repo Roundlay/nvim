@@ -234,32 +234,43 @@ local function run()
         for lnum = v_s, v_e do
             local list = active_by_line[lnum]
             if list then
-            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum+1, false)[1] or ''
-            local segs = {}
-            local idx = 0 -- 0-based consumed end
-            for _, mm in ipairs(list) do
-                -- prefix text
-                local pre = line:sub(idx + 1, mm.col0)
-                if #pre > 0 then segs[#segs+1] = { pre, 'Normal' } end
-                -- replacement
-                if repl and repl ~= '' then
-                    segs[#segs+1] = { repl, 'VisrepText' }
+                local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum+1, false)[1] or ''
+                local segs = {}
+                local idx = 0 -- 0-based consumed end
+                for _, mm in ipairs(list) do
+                    -- prefix text
+                    local pre = line:sub(idx + 1, mm.col0)
+                    if #pre > 0 then segs[#segs+1] = { pre, 'Normal' } end
+                    -- replacement
+                    if repl and repl ~= '' then
+                        segs[#segs+1] = { repl, 'VisrepText' }
+                    end
+                    idx = mm.col1
                 end
-                idx = mm.col1
-            end
-            -- tail
-            local tail = line:sub(idx + 1)
-            if #tail > 0 then segs[#segs+1] = { tail, 'Normal' } end
-    
-            -- If no repl text (empty), segs may be only pre+tail which is fine
-            if #segs > 0 then
-                vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
-                    virt_text = segs,
-                    virt_text_win_col = 0,
-                    virt_text_pos = 'overlay',
-                    priority = 210,
-                })
-            end
+                -- tail
+                local tail = line:sub(idx + 1)
+                if #tail > 0 then segs[#segs+1] = { tail, 'Normal' } end
+
+                if #segs > 0 then
+                    -- Pad overlay so underlying text never shows through when the replacement shrinks.
+                    local function seg_texts_width(tbl)
+                        local buf = {}
+                        for i = 1, #tbl do buf[i] = tbl[i][1] end
+                        return vim.fn.strdisplaywidth(table.concat(buf))
+                    end
+                    local orig_w = vim.fn.strdisplaywidth(line)
+                    local new_w = seg_texts_width(segs)
+                    if new_w < orig_w then
+                        segs[#segs+1] = { string.rep(' ', orig_w - new_w), 'Normal' }
+                    end
+
+                    vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
+                        virt_text = segs,
+                        virt_text_win_col = 0,
+                        virt_text_pos = 'overlay',
+                        priority = 210,
+                    })
+                end
             end
         end
     
