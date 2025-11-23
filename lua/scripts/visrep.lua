@@ -28,8 +28,8 @@ local function run()
     local bufnr = vim.api.nvim_get_current_buf()
 
     -- Visual selection bounds (byte-aware)
-    local start_mark = { vim.api.nvim_buf_get_mark(bufnr, '<') }
-    local end_mark   = { vim.api.nvim_buf_get_mark(bufnr, '>') }
+    local start_mark = vim.api.nvim_buf_get_mark(bufnr, '<') -- {line, col}
+    local end_mark   = vim.api.nvim_buf_get_mark(bufnr, '>') -- {line, col}
     if start_mark[1] == 0 or end_mark[1] == 0 then
         return
     end
