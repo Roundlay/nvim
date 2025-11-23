@@ -228,49 +228,51 @@ local function run()
         active_by_line = (mode == 'boundary') and by_line_bnd or by_line_any
         nav_targets    = (mode == 'boundary') and nav_bnd     or nav_any
     
-        -- For visible range only, overlay the full preview line using virt_text segments
-        local v_s = vim.fn.line('w0') - 1
-        local v_e = vim.fn.line('w$') - 1
-        for lnum = v_s, v_e do
+        -- Overlay every line that contains a match (not just the current viewport).
+        local lines_with_matches = {}
+        for lnum, _ in pairs(active_by_line) do
+            lines_with_matches[#lines_with_matches + 1] = lnum
+        end
+        table.sort(lines_with_matches)
+
+        for _, lnum in ipairs(lines_with_matches) do
             local list = active_by_line[lnum]
-            if list then
-                local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum+1, false)[1] or ''
-                local segs = {}
-                local idx = 0 -- 0-based consumed end
-                for _, mm in ipairs(list) do
-                    -- prefix text
-                    local pre = line:sub(idx + 1, mm.col0)
-                    if #pre > 0 then segs[#segs+1] = { pre, 'Normal' } end
-                    -- replacement
-                    if repl and repl ~= '' then
-                        segs[#segs+1] = { repl, 'VisrepText' }
-                    end
-                    idx = mm.col1
+            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum+1, false)[1] or ''
+            local segs = {}
+            local idx = 0 -- 0-based consumed end
+            for _, mm in ipairs(list) do
+                -- prefix text
+                local pre = line:sub(idx + 1, mm.col0)
+                if #pre > 0 then segs[#segs+1] = { pre, 'Normal' } end
+                -- replacement
+                if repl and repl ~= '' then
+                    segs[#segs+1] = { repl, 'VisrepText' }
                 end
-                -- tail
-                local tail = line:sub(idx + 1)
-                if #tail > 0 then segs[#segs+1] = { tail, 'Normal' } end
+                idx = mm.col1
+            end
+            -- tail
+            local tail = line:sub(idx + 1)
+            if #tail > 0 then segs[#segs+1] = { tail, 'Normal' } end
 
-                if #segs > 0 then
-                    -- Pad overlay so underlying text never shows through when the replacement shrinks.
-                    local function seg_texts_width(tbl)
-                        local buf = {}
-                        for i = 1, #tbl do buf[i] = tbl[i][1] end
-                        return vim.fn.strdisplaywidth(table.concat(buf))
-                    end
-                    local orig_w = vim.fn.strdisplaywidth(line)
-                    local new_w = seg_texts_width(segs)
-                    if new_w < orig_w then
-                        segs[#segs+1] = { string.rep(' ', orig_w - new_w), 'Normal' }
-                    end
-
-                    vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
-                        virt_text = segs,
-                        virt_text_win_col = 0,
-                        virt_text_pos = 'overlay',
-                        priority = 210,
-                    })
+            if #segs > 0 then
+                -- Pad overlay so underlying text never shows through when the replacement shrinks.
+                local function seg_texts_width(tbl)
+                    local buf = {}
+                    for i = 1, #tbl do buf[i] = tbl[i][1] end
+                    return vim.fn.strdisplaywidth(table.concat(buf))
                 end
+                local orig_w = vim.fn.strdisplaywidth(line)
+                local new_w = seg_texts_width(segs)
+                if new_w < orig_w then
+                    segs[#segs+1] = { string.rep(' ', orig_w - new_w), 'Normal' }
+                end
+
+                vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
+                    virt_text = segs,
+                    virt_text_win_col = 0,
+                    virt_text_pos = 'overlay',
+                    priority = 210,
+                })
             end
         end
     
