@@ -82,12 +82,22 @@ local function run()
     -- Default to boundary mode only if it looks like a standard keyword.
     local defaults_to_boundary = is_single_line and (pattern:match('^[%w_]+$') ~= nil)
     
-    -- Build literal core as sequence of byte matches for robustness.
-    local core = {}
-    for i = 1, #pattern do
-        core[#core+1] = string.format('\\%%x%02X', pattern:byte(i))
+    -- Build literal core as sequence of codepoint escapes for Vim regex.
+    local function build_literal_core(text)
+        local core = {}
+        local chars = vim.fn.strchars(text)
+        for ci = 0, chars - 1 do
+            local ch = vim.fn.strcharpart(text, ci, 1)
+            local cp = vim.fn.char2nr(ch, 1) -- UTF-8 codepoint
+            if cp <= 0xFFFF then
+                core[#core + 1] = string.format('\\%%u%04X', cp)
+            else
+                core[#core + 1] = string.format('\\%%U%08X', cp)
+            end
+        end
+        return table.concat(core)
     end
-    local literal_core = table.concat(core)
+    local literal_core = build_literal_core(pattern)
     
     local pattern_any   = '\\V' .. literal_core
     
