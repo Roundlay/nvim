@@ -228,48 +228,19 @@ local function run()
         active_by_line = (mode == 'boundary') and by_line_bnd or by_line_any
         nav_targets    = (mode == 'boundary') and nav_bnd     or nav_any
     
-        -- Overlay every line that contains a match (not just the current viewport).
-        local lines_with_matches = {}
-        for lnum, _ in pairs(active_by_line) do
-            lines_with_matches[#lines_with_matches + 1] = lnum
-        end
-        table.sort(lines_with_matches)
-
-        for _, lnum in ipairs(lines_with_matches) do
-            local list = active_by_line[lnum]
+        -- Draw an overlay per match (not per line) so wrapped lines and far columns preview correctly.
+        for lnum, list in pairs(active_by_line) do
             local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum+1, false)[1] or ''
-            local segs = {}
-            local idx = 0 -- 0-based consumed end
             for _, mm in ipairs(list) do
-                -- prefix text
-                local pre = line:sub(idx + 1, mm.col0)
-                if #pre > 0 then segs[#segs+1] = { pre, 'Normal' } end
-                -- replacement
-                if repl and repl ~= '' then
-                    segs[#segs+1] = { repl, 'VisrepText' }
+                local match_txt = line:sub(mm.col0 + 1, mm.col1)
+                local mask_w = vim.fn.strdisplaywidth(match_txt)
+                local repl_txt = repl or ''
+                local repl_w = vim.fn.strdisplaywidth(repl_txt)
+                if repl_w < mask_w then
+                    repl_txt = repl_txt .. string.rep(' ', mask_w - repl_w)
                 end
-                idx = mm.col1
-            end
-            -- tail
-            local tail = line:sub(idx + 1)
-            if #tail > 0 then segs[#segs+1] = { tail, 'Normal' } end
-
-            if #segs > 0 then
-                -- Pad overlay so underlying text never shows through when the replacement shrinks.
-                local function seg_texts_width(tbl)
-                    local buf = {}
-                    for i = 1, #tbl do buf[i] = tbl[i][1] end
-                    return vim.fn.strdisplaywidth(table.concat(buf))
-                end
-                local orig_w = vim.fn.strdisplaywidth(line)
-                local new_w = seg_texts_width(segs)
-                if new_w < orig_w then
-                    segs[#segs+1] = { string.rep(' ', orig_w - new_w), 'Normal' }
-                end
-
-                vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
-                    virt_text = segs,
-                    virt_text_win_col = 0,
+                vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, mm.col0, {
+                    virt_text = { { repl_txt, 'VisrepText' } },
                     virt_text_pos = 'overlay',
                     priority = 210,
                 })
