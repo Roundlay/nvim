@@ -227,26 +227,57 @@ local function run()
         -- Select active line-index and nav list by mode
         active_by_line = (mode == 'boundary') and by_line_bnd or by_line_any
         nav_targets    = (mode == 'boundary') and nav_bnd     or nav_any
-    
-        -- Draw an overlay per match (not per line) so wrapped lines and far columns preview correctly.
-        for lnum, list in pairs(active_by_line) do
-            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum+1, false)[1] or ''
-            for _, mm in ipairs(list) do
-                local match_txt = line:sub(mm.col0 + 1, mm.col1)
-                local mask_w = vim.fn.strdisplaywidth(match_txt)
-                local repl_txt = repl or ''
-                local repl_w = vim.fn.strdisplaywidth(repl_txt)
-                if repl_w < mask_w then
-                    repl_txt = repl_txt .. string.rep(' ', mask_w - repl_w)
+
+        local repl_txt = repl or ''
+
+        local function draw_line(lnum, line, matches)
+            -- Build a preview string for the whole line so downstream text shifts to
+            -- reflect the replacement width instead of being overdrawn.
+            local chunks = {}
+            local prev_end = 0
+            for _, mm in ipairs(matches) do
+                if mm.col0 > prev_end then
+                    local before = line:sub(prev_end + 1, mm.col0)
+                    if before ~= '' then
+                        chunks[#chunks + 1] = { before, nil }
+                    end
                 end
-                vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, mm.col0, {
-                    virt_text = { { repl_txt, 'VisrepText' } },
-                    virt_text_pos = 'overlay',
-                    priority = 210,
-                })
+
+                if repl_txt ~= '' then
+                    chunks[#chunks + 1] = { repl_txt, 'VisrepText' }
+                end
+
+                prev_end = mm.col1
             end
+
+            local tail = line:sub(prev_end + 1)
+            if tail ~= '' then
+                chunks[#chunks + 1] = { tail, nil }
+            end
+
+            -- Pad to the original display width so any leftover characters are masked.
+            local preview_w = 0
+            for i = 1, #chunks do
+                preview_w = preview_w + vim.fn.strdisplaywidth(chunks[i][1])
+            end
+            local base_w = vim.fn.strdisplaywidth(line)
+            if preview_w < base_w then
+                chunks[#chunks + 1] = { string.rep(' ', base_w - preview_w), nil }
+            end
+
+            vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
+                virt_text = chunks,
+                virt_text_pos = 'overlay',
+                priority = 210,
+            })
         end
-    
+
+        -- Draw an overlay per line so the preview reflects spacing changes.
+        for lnum, list in pairs(active_by_line) do
+            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
+            draw_line(lnum, line, list)
+        end
+
         -- choose current index: keep previous if possible, else prefer selection, else 1
         if #nav_targets == 0 then
             cur_idx = nil
@@ -264,7 +295,7 @@ local function run()
                 cur_idx = sel_index or 1
             end
         end
-    
+
         update_prompt(repl)
     end
     
