@@ -64,6 +64,7 @@
 
 ### ./lua/scripts/visrep.lua
 - [X] 2025-11-23 Fix UTF-8 visual selections in Visrep so multibyte characters are replaced wholly (no `<86><92>` / `<b6>` artifacts).
+- [X] 2025-11-24 Live preview now rebuilds affected lines so text shifts while typing replacements instead of being overdrawn.
 - [ ] ./lua/scripts/visrep.lua:12 Ensure the `[N/N]` navigator starts at the original match rather than the literal first.
 - [ ] ./lua/scripts/visrep.lua:13 Provide standard plugin configuration hooks for Visrep.
 - [ ] ./lua/scripts/visrep.lua:14 Add `vim.g.visrep_default_mode = 'boundary'|'anywhere'` to control the initial boundary mode.
