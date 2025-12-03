@@ -81,29 +81,122 @@ return {
         end
 
         ---------------------------------------------------------------------
-        -- Thin wrapper around the default definition handler that keeps
-        -- notifications consistent while deferring window selection to
-        -- Neovim's built-in jump logic.
+        -- Go to definition in a reusable vertical split.
+        -- The first invocation opens a split anchored to the source window;
+        -- subsequent calls re-use it per tabpage and only replace the buffer /
+        -- location inside that window.
         ---------------------------------------------------------------------
-        local function goto_definition()
-            local bufnr = vim.api.nvim_get_current_buf()
-            local clients = vim.lsp.get_clients({ bufnr = bufnr })
-            local enc = (clients[1] or {}).offset_encoding
+        local definition_windows = {}
 
-            local params = vim.lsp.util.make_position_params(0, enc)
-            vim.lsp.buf_request(bufnr, "textDocument/definition", params, function(err, result)
-                if err then
-                    vim.notify(("LSP definition error: %s"):format(err.message), vim.log.levels.ERROR)
-                    return
-                end
-                if not result or vim.tbl_isempty(result) then
-                    vim.notify("No definition found", vim.log.levels.INFO)
-                    return
-                end
+        local function ensure_definition_window(source_win)
+            if not (source_win and vim.api.nvim_win_is_valid(source_win)) then
+                source_win = vim.api.nvim_get_current_win()
+            end
 
-                local loc = vim.tbl_islist(result) and result[1] or result
-                vim.lsp.util.jump_to_location(loc, enc)
+            local tabpage = vim.api.nvim_win_get_tabpage(source_win)
+            local win = definition_windows[tabpage]
+
+            if win and vim.api.nvim_win_is_valid(win) then
+                return win
+            end
+
+            vim.api.nvim_win_call(source_win, function()
+                vim.cmd("vsplit")
+                win = vim.api.nvim_get_current_win()
             end)
+
+            definition_windows[tabpage] = win
+            return win
+        end
+
+        local function first_location(result)
+            if not result or vim.tbl_isempty(result) then
+                return nil
+            end
+            if result.uri or result.targetUri then
+                return result
+            end
+            if islist(result) then
+                return result[1]
+            end
+            return nil
+        end
+
+        local function goto_definition()
+            local source_buf = vim.api.nvim_get_current_buf()
+            local source_win = vim.api.nvim_get_current_win()
+            local clients = vim.lsp.get_clients({ bufnr = source_buf })
+
+            if #clients == 0 then
+                vim.notify("No LSP clients attached for definitions", vim.log.levels.WARN)
+                return
+            end
+
+            local pending = #clients
+            local jumped = false
+            local last_err = nil
+            local supporting = 0
+
+            local function maybe_report()
+                if jumped or pending > 0 then
+                    return
+                end
+                if supporting == 0 then
+                    vim.notify("Attached LSP clients do not support textDocument/definition", vim.log.levels.WARN)
+                    return
+                end
+                if last_err then
+                    vim.notify(("LSP definition error: %s"):format(last_err.message or last_err), vim.log.levels.ERROR)
+                else
+                    vim.notify("No definition found", vim.log.levels.INFO)
+                end
+            end
+
+            local function handle_response(err, result, ctx)
+                if jumped then
+                    return
+                end
+
+                pending = pending - 1
+
+                if err then
+                    last_err = last_err or err
+                    return maybe_report()
+                end
+
+                local loc = first_location(result)
+                if loc then
+                    local client = vim.lsp.get_client_by_id(ctx.client_id)
+                    local enc = (client and client.offset_encoding) or "utf-16"
+                    local win = ensure_definition_window(source_win)
+                    if win and vim.api.nvim_win_is_valid(win) then
+                        vim.api.nvim_set_current_win(win)
+                        vim.lsp.util.jump_to_location(loc, enc)
+                        jumped = true
+                        return
+                    end
+                end
+
+                maybe_report()
+            end
+
+            for _, client in ipairs(clients) do
+                local supports_definition = not client.supports_method or client.supports_method("textDocument/definition")
+                if not supports_definition then
+                    pending = pending - 1
+                else
+                    supporting = supporting + 1
+                    local enc = client.offset_encoding or "utf-16"
+                    local params = vim.lsp.util.make_position_params(source_win, enc)
+                    local ok, req_err = client.request("textDocument/definition", params, handle_response, source_buf)
+                    if not ok then
+                        pending = pending - 1
+                        last_err = last_err or { message = req_err }
+                    end
+                end
+            end
+
+            maybe_report()
         end
 
         -- Buffer-local keymaps are attached via `on_attach` so that they are

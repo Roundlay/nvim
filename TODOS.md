@@ -6,6 +6,7 @@
 - [X] 2025-11-06 Fix lualine truncated filepath compression (Unix separators, Windows drive casing, UNNAMED formatting).
 - [X] 2025-11-06 Migrate swift.nvim SourceKit wiring to `vim.lsp.config` to remove nvim-lspconfig deprecation warnings.
 - [X] 2025-11-11 Clamp rdpad workspace LF enforcement to the buffer-local `fileformat` option to stop BufReadPost errors when opening Swift packages on Windows.
+- [X] 2025-12-03 Harden LSP go-to-definition split handler (per-client encoding, tab-local reuse, clearer errors).
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
