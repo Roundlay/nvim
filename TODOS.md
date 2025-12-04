@@ -119,3 +119,4 @@
 - [~] SourceKit-LSP (Swift) is provided by the Apple toolchain and is not packaged by mason-lspconfig; configure it manually without adding it to `ensure_installed`.
 - [~] SourceKit LSP now registered via `vim.lsp.config('sourcekit', …)` with swift.nvim providing path detection and buffer lifecycle hooks.
 - [~] 2025-11-10: Guard `guicursor` inside tmux whenever `client_termfeatures` reports SIXEL and the server predates tmux#4488 (override via `NVIM_TMUX_SIXEL_WORKAROUND`).
+- [~] 2025-12-04: tmux `extended-keys on` + `terminal-features:extkeys` to preserve Ctrl+Enter (and other CSI-u combos) for Neovim.
