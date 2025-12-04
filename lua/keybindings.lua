@@ -140,17 +140,21 @@ terminal('<C-w>j', '<C-\\><C-n><C-w>j', "Move to the window below from terminal 
 
 -- Oil
 
-normal('<leader>o', ':Oil<CR>', "Open the Oil file explorer.")
+vim.keymap.set("n", "<leader>o", function()
+  vim.cmd("topleft vsplit")
+  vim.cmd("vertical resize 40")
+  require("oil").open()
+end, { desc = "Open Oil in vertical split" })
+
 normal('<leader>e', '</<C-X><C-O>', "Unknown mapping related to Oil and terminal.") -- TODO: Was this something to do with Oil interacting with the terminal?
 
 -- Visual Replace
 
 visual('<leader>r', '<Esc>:lua require("scripts.visrep").run()<CR>', "Search for all instances then replace the visually selected text with a new string.")
 
--- Tag Wrapper
+-- VisWrap
 
-normal('<leader>w', ':lua require("scripts.wrap_with_tags").run()<CR>', "Wrap current line with tags on separate lines.")
-visual('<leader>w', '<Esc>:lua require("scripts.wrap_with_tags").run()<CR>', "Wrap selection with tags on separate lines.")
+visual('<leader>w', '<Esc>:lua package.loaded["scripts.viswrap"]=nil; require("scripts.viswrap").run()<CR>', "VisWrap")
 
 -- Misc
 
@@ -217,8 +221,9 @@ end
 -- Keybinding to enable/disable Copilot
 vim.keymap.set('n', '<leader>co', with_copilot("toggle_auto_trigger"), { desc = "Toggle Copilot suggestion visibility" })
 
--- Keep C-\ as backup
-vim.keymap.set('i', '<C-CR>', with_copilot("accept"), { desc = "Accept Copilot suggestion (backup)" })
+-- Keep C-\ as a tmux-friendly fallback; C-CR is primary when terminals support extkeys.
+vim.keymap.set('i', '<C-CR>', with_copilot("accept"), { desc = "Accept Copilot suggestion (primary)" })
+vim.keymap.set('i', '<C-\\>', with_copilot("accept"), { desc = "Accept Copilot suggestion (fallback)" })
 
 -- Blink
 
@@ -228,3 +233,5 @@ vim.keymap.set('i', '<C-CR>', with_copilot("accept"), { desc = "Accept Copilot s
 -- vim.keymap.set('n', '<C-CR>', require('blink.cmp').select_and_accept, {desc = "Select and accept the current Blink suggestion (backup)"})
 -- vim.keymap.set('n', '<C-p>', require('blink.cmp').select_prev, {desc = "Select the previous Blink suggestion"})
 -- vim.keymap.set('n', '<C-n>', require('blink.cmp').select_next, {desc = "Select the next Blink suggestion"})
+
+
