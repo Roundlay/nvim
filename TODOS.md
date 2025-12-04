@@ -120,3 +120,5 @@
 - [~] SourceKit LSP now registered via `vim.lsp.config('sourcekit', …)` with swift.nvim providing path detection and buffer lifecycle hooks.
 - [~] 2025-11-10: Guard `guicursor` inside tmux whenever `client_termfeatures` reports SIXEL and the server predates tmux#4488 (override via `NVIM_TMUX_SIXEL_WORKAROUND`).
 - [~] 2025-12-04: tmux `extended-keys on` + `terminal-features:extkeys` to preserve Ctrl+Enter (and other CSI-u combos) for Neovim.
+- [~] 2025-12-04: Copilot keeps `<C-CR>` primary accept and adds `<C-\\>` as tmux-safe fallback; Blink retains its `<C-CR>` completion binding.
+- [~] 2025-12-04: Added tmux `terminal-features *,extkeys` + server/global `extended-keys` to decode Ctrl+Enter sequences.
