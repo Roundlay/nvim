@@ -8,8 +8,39 @@ local function set_hl(group, opts)
 end
 
 -- LSP semantic overrides (avoid dimming inactive #if regions).
+local lsp_inactive_types = {
+    "namespace",
+    "type",
+    "class",
+    "enum",
+    "interface",
+    "struct",
+    "typeParameter",
+    "parameter",
+    "variable",
+    "property",
+    "enumMember",
+    "event",
+    "function",
+    "method",
+    "macro",
+    "keyword",
+    "modifier",
+    "comment",
+    "string",
+    "number",
+    "regexp",
+    "operator",
+    "decorator",
+}
+
 local function apply_lsp_semantic_overrides()
     set_hl("@lsp.mod.inactive", { link = "Normal" })
+    set_hl("LspInactiveRegion", { link = "Normal" })
+    for i = 1, #lsp_inactive_types do
+        local token_type = lsp_inactive_types[i]
+        set_hl("@lsp.typemod." .. token_type .. ".inactive", { link = "@lsp.type." .. token_type })
+    end
 end
 
 apply_lsp_semantic_overrides()

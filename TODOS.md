@@ -1,6 +1,6 @@
 # TODOs
 
-- [X] 2025-12-21 Override `@lsp.mod.inactive` to keep inactive C regions fully highlighted.
+- [X] 2025-12-21 Override inactive LSP semantic groups to keep inactive C regions fully highlighted.
 - [ ] Analyse perf. log output!
 - [!] 2025-11-10 tmux SIXEL guard still misbehaves; repro and align detection logic with tmux#4488 fix.
 - [>] Remove the tmux SIXEL workaround once tmux 3.6+ (with tmux#4488) is released and confirmed stable across WSL/Linux terminals.
