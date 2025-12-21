@@ -7,6 +7,19 @@ local function set_hl(group, opts)
     vim.api.nvim_set_hl(0, group, opts)
 end
 
+-- LSP semantic overrides (avoid dimming inactive #if regions).
+local function apply_lsp_semantic_overrides()
+    set_hl("@lsp.mod.inactive", { link = "Normal" })
+end
+
+apply_lsp_semantic_overrides()
+
+local lsp_semantic_group = vim.api.nvim_create_augroup("LspSemanticOverrides", { clear = true })
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = lsp_semantic_group,
+    callback = apply_lsp_semantic_overrides,
+})
+
 -- Visual Studio Dark inspired tab colors
 set_hl("TabLine", { fg = "#969696", bg = "#252526" }) -- Inactive tabs
 set_hl("TabLineFill", { bg = "#1E1E1E" }) -- Tab line background
@@ -21,9 +34,21 @@ set_hl("LineNrPrefix", { fg = "#404040", ctermfg = 238 })
 set_hl("CustomDiagText", { fg = "#f00823", bg = "#360714" })
 set_hl("CustomDiagLine", { bg = "#5a1f1f" })
 
+-- XML-style tags in markdown (e.g., <example>, </example>)
+set_hl("MarkdownXmlTag", { fg = "#d7ba7d", bold = true })
+
+-- Markdown nested list markers - cycling colors by depth
+-- These are applied dynamically by scripts/markdown_list_hl.lua
+set_hl("MarkdownList1", { fg = "#7fb4ca", bold = true }) -- blue (level 0, 6, ...)
+set_hl("MarkdownList2", { fg = "#98c379", bold = true }) -- green (level 1, 7, ...)
+set_hl("MarkdownList3", { fg = "#d7ba7d", bold = true }) -- yellow (level 2, 8, ...)
+set_hl("MarkdownList4", { fg = "#c678dd", bold = true }) -- purple (level 3, 9, ...)
+set_hl("MarkdownList5", { fg = "#e06c75", bold = true }) -- red (level 4, 10, ...)
+set_hl("MarkdownList6", { fg = "#d19a66", bold = true }) -- orange (level 5, 11, ...)
+
 -- Window divider highlights for narrow unfocused windows
-set_hl("VertSplit", { fg = "#68217A", bg = "NONE", bold = true })  -- Purple divider
-set_hl("WinSeparator", { fg = "#68217A", bg = "NONE", bold = true })  -- For newer Neovim versions
+set_hl("VertSplit", { fg = "#404040", bg = "NONE", bold = true })
+-- set_hl("WinSeparator", { fg = "#68217A", bg = "NONE", bold = true })
 
 -- Indentation and braces
 -- set_hl("IndentBlanklineChar", { fg = "#3d3d3d" })
@@ -59,6 +84,7 @@ local todo_highlights = {
     { name = "@markup.list.unchecked.markdown", opts = { fg = "#7fb4ca", bold = true, underline = false } },
 }
 
+-- TODO: This is all really overkill--simplify!
 -- There is no caching here—reapply the palette any time we're asked.
 local function apply_todo_highlights()
     for _, hl in ipairs(todo_highlights) do
