@@ -1,6 +1,7 @@
 # TODOs
 
 - [X] 2025-12-21 Override inactive LSP semantic groups to keep inactive C regions fully highlighted.
+- [X] 2025-12-21 Re-enable LSP stack (mason + lspconfig) and centralize server lists.
 - [ ] Analyse perf. log output!
 - [!] 2025-11-10 tmux SIXEL guard still misbehaves; repro and align detection logic with tmux#4488 fix.
 - [>] Remove the tmux SIXEL workaround once tmux 3.6+ (with tmux#4488) is released and confirmed stable across WSL/Linux terminals.
@@ -118,6 +119,7 @@
 ## Notes
 
 - [~] SourceKit-LSP (Swift) is provided by the Apple toolchain and is not packaged by mason-lspconfig; configure it manually without adding it to `ensure_installed`.
+- [~] LSP capabilities now probe both `blink.cmp` and `blink-cmp` module names for completion integration.
 - [~] SourceKit LSP now registered via `vim.lsp.config('sourcekit', …)` with swift.nvim providing path detection and buffer lifecycle hooks.
 - [~] 2025-11-10: Guard `guicursor` inside tmux whenever `client_termfeatures` reports SIXEL and the server predates tmux#4488 (override via `NVIM_TMUX_SIXEL_WORKAROUND`).
 - [~] 2025-12-04: tmux `extended-keys on` + `terminal-features:extkeys` to preserve Ctrl+Enter (and other CSI-u combos) for Neovim.
