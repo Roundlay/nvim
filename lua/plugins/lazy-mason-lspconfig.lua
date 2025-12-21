@@ -13,6 +13,7 @@
 return {
     "williamboman/mason-lspconfig.nvim",
     lazy = true,
+    enabled = true,
     dependencies = {
         -- Depedencies to be loaded before nvim-lspconfig.
         "williamboman/mason.nvim",
@@ -23,22 +24,12 @@ return {
             vim.notify(vim.inspect(mason_lspconfig), vim.log.levels.ERROR)
             return
         end
+        local lsp_servers = require("lsp.servers")
         opts = vim.tbl_deep_extend("force", {
             -- NOTE: Mason does not package `sourcekit` (Swift's SourceKit-LSP). It must be
             -- installed via Xcode/Swift toolchain separately and is configured directly in
             -- `lazy-lspconfig.lua`. Keep it out of `ensure_installed` to avoid startup errors.
-            ensure_installed = {
-                "lua_ls",
-                "clangd",
-                "pyright",
-                "ols",
-                "yamlls",
-                "jsonls",
-                "html",
-                "cssls",
-                "vimls",
-                "marksman",
-            },
+            ensure_installed = vim.deepcopy(lsp_servers.server_names),
             automatic_installation = false,
         }, opts or {})
         mason_lspconfig.setup(opts)

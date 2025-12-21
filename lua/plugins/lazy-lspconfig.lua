@@ -1,71 +1,58 @@
 -- nvim-lspconfig
 
+local lsp_servers = require("lsp.servers")
+
 return {
     "neovim/nvim-lspconfig",
     enabled = true,
     lazy = true,
-    ft = {
-        "c",
-        "cpp",
-        "objc",
-        "objcpp",
-        "cc",
-        "cxx",
-        "h",
-        "hpp",
-        "lua",
-        "python",
-        "swift",
-        "odin",
-        "json",
-        "yaml",
-        "yml",
-        "markdown",
-        "md",
-        "vim",
-        "css",
-        "html",
+    ft = lsp_servers.filetypes,
+    cmd = {
+        "LspInfo",
+        "LspLog",
+        "LspRestart",
+        "LspStop"
     },
-    cmd = { "LspInfo", "LspLog", "LspRestart", "LspStop" },
-
     dependencies = {
         "williamboman/mason.nvim",
-        "williamboman/mason-lspconfig.nvim",
+        "williamboman/mason-lspconfig.nvim"
     },
-
     config = function()
-        local util      = require("lspconfig.util")
+        local util = require("lspconfig.util")
 
-        local blink_caps = {}
-        local blink_ok, blink = pcall(require, 'blink.cmp')
-        if blink_ok and type(blink.get_lsp_capabilities) == "function" then
-            blink_caps = blink.get_lsp_capabilities() or {}
-        end
+        local islist = vim.islist or vim.tbl_islist
 
         if not (vim.lsp and vim.lsp.config and vim.lsp.enable) then
             vim.notify("vim.lsp.config API is unavailable (requires Neovim 0.11+)", vim.log.levels.ERROR)
             return
         end
 
-        -- Start with default LSP capabilities and opt out of dynamic file watching by default
-        local capabilities = vim.lsp.protocol.make_client_capabilities()
-        capabilities.workspace = capabilities.workspace or {}
-        capabilities.workspace.didChangeWatchedFiles = { dynamicRegistration = false }
+        local function get_blink_capabilities()
+            local ok, blink = pcall(require, "blink.cmp")
+            if not ok then
+                ok, blink = pcall(require, "blink-cmp")
+            end
+            if ok and type(blink.get_lsp_capabilities) == "function" then
+                return blink.get_lsp_capabilities() or {}
+            end
+            return {}
+        end
 
-        -- Enhance with blink.cmp's completion capabilities
-        capabilities = vim.tbl_deep_extend('force', capabilities, blink_caps)
+        local function build_capabilities()
+            local capabilities = vim.lsp.protocol.make_client_capabilities()
+            capabilities.workspace = capabilities.workspace or {}
+            -- Avoid dynamic file watching overhead unless a server explicitly opts in.
+            capabilities.workspace.didChangeWatchedFiles = { dynamicRegistration = false }
+            return vim.tbl_deep_extend("force", capabilities, get_blink_capabilities())
+        end
 
-        -- Swift LSP setup
-        local swift_root = util.root_pattern("Package.swift", ".git")
         local os_info = vim.uv.os_uname()
         local is_windows = os_info and os_info.sysname:match("Windows") ~= nil
         local function norm(path)
             return vim.fs.normalize(path)
         end
 
-        ---------------------------------------------------------------------
         -- Adapter: old synchronous root resolvers -> new async root_dir API.
-        ---------------------------------------------------------------------
         local function adapt_root_dir(resolver)
             return function(bufnr, on_dir)
                 local fname = vim.api.nvim_buf_get_name(bufnr)
@@ -80,12 +67,7 @@ return {
             end
         end
 
-        ---------------------------------------------------------------------
-        -- Go to definition in a reusable vertical split.
-        -- The first invocation opens a split anchored to the source window;
-        -- subsequent calls re-use it per tabpage and only replace the buffer /
-        -- location inside that window.
-        ---------------------------------------------------------------------
+        -- Go to definition in a reusable vertical split. The first invocation opens a split anchored to the source window; subsequent calls re-use it per tabpage and only replace the buffer location inside that window.
         local definition_windows = {}
 
         local function ensure_definition_window(source_win)
@@ -199,22 +181,20 @@ return {
             maybe_report()
         end
 
-        -- Buffer-local keymaps are attached via `on_attach` so that they are
-        -- available for *every* LSP-enabled buffer instead of only the buffer
-        -- that happened to be current during start-up.
+        -- Buffer-local keymaps are attached via `on_attach` so that they are available for every LSP-enabled buffer instead of only the buffer that happened to be current during start-up.
         local function on_attach(_, bufnr)
             vim.keymap.set("n", "gd", goto_definition, { buffer = bufnr, desc = "Go to definition" })
         end
 
         local base_config = {
             on_attach = on_attach,
-            capabilities = capabilities,
+            capabilities = build_capabilities(),
             flags = {
                 debounce_text_changes = 150,
             },
         }
 
-        local servers = {
+        local server_overrides = {
             vimls = {
                 filetypes = { "vim" },
             },
@@ -234,20 +214,20 @@ return {
                 filetypes = { "json" },
             },
 
-            sourcekit = {
-                filetypes = { "swift" },
-                root_dir = adapt_root_dir(function(fname)
-                    return swift_root(fname) or util.path.dirname(fname)
-                end),
-                single_file_support = true,
-                capabilities = {
-                    workspace = {
-                        didChangeWatchedFiles = {
-                            dynamicRegistration = true,
-                        },
-                    },
-                },
-            },
+            -- sourcekit = {
+            --     filetypes = { "swift" },
+            --     root_dir = adapt_root_dir(function(fname)
+            --         return swift_root(fname) or util.path.dirname(fname)
+            --     end),
+            --     single_file_support = true,
+            --     capabilities = {
+            --         workspace = {
+            --             didChangeWatchedFiles = {
+            --                 dynamicRegistration = true,
+            --             },
+            --         },
+            --     },
+            -- },
 
             clangd = {
                 filetypes = { "c", "cpp", "objc", "objcpp", "cc", "cxx", "h", "hpp" },
@@ -345,13 +325,20 @@ return {
 
         local configured_servers = {}
 
-        -- Setup each server by merging base + overrides
-        for name, override in pairs(servers) do
-            local merged = vim.tbl_deep_extend("force", {}, base_config, override)
+        local function merge_config(base, override)
+            local merged = vim.tbl_deep_extend("force", {}, base, override)
             if override.capabilities then
-                merged.capabilities = vim.tbl_deep_extend('force', {}, base_config.capabilities, override.capabilities)
+                merged.capabilities = vim.tbl_deep_extend("force", {}, base.capabilities, override.capabilities)
             end
-            vim.lsp.config(name, merged)
+            return merged
+        end
+
+        -- Setup each server by merging base + overrides
+        local server_names = lsp_servers.server_names
+        for i = 1, #server_names do
+            local name = server_names[i]
+            local override = server_overrides[name] or {}
+            vim.lsp.config(name, merge_config(base_config, override))
             configured_servers[#configured_servers + 1] = name
         end
 

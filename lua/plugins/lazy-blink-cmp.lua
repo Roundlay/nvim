@@ -103,7 +103,10 @@ return {
     },
     opts_extend = { 'sources.default' },
     config = function(_, opts)
-        local blink_ok, blink = pcall(require, 'blink-cmp')
+        local blink_ok, blink = pcall(require, "blink.cmp")
+        if not blink_ok then
+            blink_ok, blink = pcall(require, "blink-cmp")
+        end
         if not blink_ok then
             vim.notify(vim.inspect(blink), vim.log.levels.ERROR)
             return
