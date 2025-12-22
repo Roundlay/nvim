@@ -83,7 +83,7 @@ return {
             return content[1] and content[1]:lower():match("microsoft") ~= nil
         end
 
-        local function ensure_mason_in_path(primary_bin, fallback_bin)
+        local function ensure_mason_in_path(preferred_bin, secondary_bin)
             local path_sep = is_windows and ";" or ":"
             local path = vim.env.PATH or ""
 
@@ -93,10 +93,10 @@ return {
                 end
             end
 
-            prepend_path(primary_bin)
-            if fallback_bin and fallback_bin ~= primary_bin then
-                prepend_path(fallback_bin)
+            if secondary_bin and secondary_bin ~= preferred_bin then
+                prepend_path(secondary_bin)
             end
+            prepend_path(preferred_bin)
 
             vim.env.PATH = path
         end
@@ -109,23 +109,33 @@ return {
             return stat ~= nil
         end
 
-        local function resolve_lua_ls_cmd()
+        local function resolve_mason_bins()
             local data_root = norm(vim.fn.stdpath("data"))
-            local primary_bin = norm(data_root .. "/mason/bin")
-            local fallback_bin = norm(vim.fn.expand("~/.local/share/nvim/mason/bin"))
-            local primary = norm(primary_bin .. "/lua-language-server")
-            local fallback = norm(fallback_bin .. "/lua-language-server")
+            return {
+                primary = norm(data_root .. "/mason/bin"),
+                fallback = norm(vim.fn.expand("~/.local/share/nvim/mason/bin")),
+            }
+        end
 
-            local wsl = (vim.g.is_wsl == true) or is_wsl_runtime()
-            local has_libbfd_238 = vim.uv.fs_stat("/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
-                or vim.uv.fs_stat("/usr/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
+        local mason_bins = resolve_mason_bins()
+        local wsl = (vim.g.is_wsl == true) or is_wsl_runtime()
+        local has_libbfd_238 = vim.uv.fs_stat("/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
+            or vim.uv.fs_stat("/usr/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
+        local prefer_fallback = wsl and not has_libbfd_238 and path_exists(mason_bins.fallback)
 
-            if wsl and not has_libbfd_238 and path_exists(fallback) then
-                ensure_mason_in_path(fallback_bin, primary_bin)
+        if prefer_fallback then
+            ensure_mason_in_path(mason_bins.fallback, mason_bins.primary)
+        else
+            ensure_mason_in_path(mason_bins.primary, mason_bins.fallback)
+        end
+
+        local function resolve_lua_ls_cmd()
+            local primary = norm(mason_bins.primary .. "/lua-language-server")
+            local fallback = norm(mason_bins.fallback .. "/lua-language-server")
+
+            if prefer_fallback and path_exists(fallback) then
                 return { fallback }
             end
-
-            ensure_mason_in_path(primary_bin, fallback_bin)
 
             if path_exists(primary) then
                 return { primary }
