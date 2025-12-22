@@ -81,6 +81,36 @@ return {
 
         ensure_mason_in_path()
 
+        local function path_exists(path)
+            if not path or path == "" then
+                return false
+            end
+            local stat = vim.uv.fs_stat(path)
+            return stat and stat.type == "file"
+        end
+
+        local function resolve_lua_ls_cmd()
+            local primary = norm(vim.fn.stdpath("data") .. "/mason/bin/lua-language-server")
+            local fallback = norm(vim.fn.expand("~/.local/share/nvim/mason/bin/lua-language-server"))
+
+            if vim.g.is_wsl then
+                local has_libbfd = vim.uv.fs_stat("/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
+                    or vim.uv.fs_stat("/usr/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
+                if not has_libbfd and path_exists(fallback) then
+                    return { fallback }
+                end
+            end
+
+            if path_exists(primary) then
+                return { primary }
+            end
+            if path_exists(fallback) then
+                return { fallback }
+            end
+
+            return { "lua-language-server" }
+        end
+
         -- Adapter: old synchronous root resolvers -> new async root_dir API.
         local function adapt_root_dir(resolver)
             return function(bufnr, on_dir)
@@ -303,6 +333,7 @@ return {
 
             lua_ls = {
                 filetypes = { "lua" },
+                cmd = resolve_lua_ls_cmd(),
                 on_init = function(client)
                     local wf = client.workspace_folders
                     local first = wf and wf[1] and wf[1].name or nil
