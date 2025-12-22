@@ -14,6 +14,7 @@
 - [X] 2025-12-22 Inline mason-lspconfig server list after removing lsp.servers module.
 - [X] 2025-12-22 Add Mason bin path injection so lua_ls resolves in WSL.
 - [X] 2025-12-22 Add WSL lua_ls fallback path when libbfd-2.38 is missing.
+- [X] 2025-12-22 Prefer non-WSL Mason bin for lua_ls when libbfd-2.38 is absent.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

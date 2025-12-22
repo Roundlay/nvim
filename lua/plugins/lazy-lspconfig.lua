@@ -70,36 +70,62 @@ return {
             return vim.fs.normalize(path)
         end
 
-        local function ensure_mason_in_path()
-            local mason_bin = norm(vim.fn.stdpath("data") .. "/mason/bin")
-            local path_sep = is_windows and ";" or ":"
-            local path = vim.env.PATH or ""
-            if not path:find(mason_bin, 1, true) then
-                vim.env.PATH = mason_bin .. path_sep .. path
+        local function is_wsl_runtime()
+            local proc_version = "/proc/version"
+            local stat = vim.uv.fs_stat(proc_version)
+            if not stat then
+                return false
             end
+            local ok, content = pcall(vim.fn.readfile, proc_version, "", 1)
+            if not ok then
+                return false
+            end
+            return content[1] and content[1]:lower():match("microsoft") ~= nil
         end
 
-        ensure_mason_in_path()
+        local function ensure_mason_in_path(primary_bin, fallback_bin)
+            local path_sep = is_windows and ";" or ":"
+            local path = vim.env.PATH or ""
+
+            local function prepend_path(bin_path)
+                if bin_path and bin_path ~= "" and not path:find(bin_path, 1, true) then
+                    path = bin_path .. path_sep .. path
+                end
+            end
+
+            prepend_path(primary_bin)
+            if fallback_bin and fallback_bin ~= primary_bin then
+                prepend_path(fallback_bin)
+            end
+
+            vim.env.PATH = path
+        end
 
         local function path_exists(path)
             if not path or path == "" then
                 return false
             end
             local stat = vim.uv.fs_stat(path)
-            return stat and stat.type == "file"
+            return stat ~= nil
         end
 
         local function resolve_lua_ls_cmd()
-            local primary = norm(vim.fn.stdpath("data") .. "/mason/bin/lua-language-server")
-            local fallback = norm(vim.fn.expand("~/.local/share/nvim/mason/bin/lua-language-server"))
+            local data_root = norm(vim.fn.stdpath("data"))
+            local primary_bin = norm(data_root .. "/mason/bin")
+            local fallback_bin = norm(vim.fn.expand("~/.local/share/nvim/mason/bin"))
+            local primary = norm(primary_bin .. "/lua-language-server")
+            local fallback = norm(fallback_bin .. "/lua-language-server")
 
-            if vim.g.is_wsl then
-                local has_libbfd = vim.uv.fs_stat("/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
-                    or vim.uv.fs_stat("/usr/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
-                if not has_libbfd and path_exists(fallback) then
-                    return { fallback }
-                end
+            local wsl = (vim.g.is_wsl == true) or is_wsl_runtime()
+            local has_libbfd_238 = vim.uv.fs_stat("/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
+                or vim.uv.fs_stat("/usr/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
+
+            if wsl and not has_libbfd_238 and path_exists(fallback) then
+                ensure_mason_in_path(fallback_bin, primary_bin)
+                return { fallback }
             end
+
+            ensure_mason_in_path(primary_bin, fallback_bin)
 
             if path_exists(primary) then
                 return { primary }
