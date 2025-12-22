@@ -86,19 +86,28 @@ return {
         local function ensure_mason_in_path(preferred_bin, secondary_bin)
             local path_sep = is_windows and ";" or ":"
             local path = vim.env.PATH or ""
+            local filtered = {}
+            local parts = vim.split(path, path_sep, { plain = true, trimempty = true })
 
-            local function prepend_path(bin_path)
-                if bin_path and bin_path ~= "" and not path:find(bin_path, 1, true) then
-                    path = bin_path .. path_sep .. path
+            for i = 1, #parts do
+                local entry = parts[i]
+                if entry ~= preferred_bin and entry ~= secondary_bin then
+                    filtered[#filtered + 1] = entry
                 end
             end
 
-            if secondary_bin and secondary_bin ~= preferred_bin then
-                prepend_path(secondary_bin)
+            local reordered = {}
+            if preferred_bin and preferred_bin ~= "" then
+                reordered[#reordered + 1] = preferred_bin
             end
-            prepend_path(preferred_bin)
+            if secondary_bin and secondary_bin ~= "" and secondary_bin ~= preferred_bin then
+                reordered[#reordered + 1] = secondary_bin
+            end
+            for i = 1, #filtered do
+                reordered[#reordered + 1] = filtered[i]
+            end
 
-            vim.env.PATH = path
+            vim.env.PATH = table.concat(reordered, path_sep)
         end
 
         local function path_exists(path)
