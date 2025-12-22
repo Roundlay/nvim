@@ -12,6 +12,7 @@
 - [X] 2025-12-22 Fix lazy-lspconfig spec table syntax + restore server list loop variable.
 - [X] 2025-12-22 Restore Lazy plugin specs import after removing perf framework.
 - [X] 2025-12-22 Inline mason-lspconfig server list after removing lsp.servers module.
+- [X] 2025-12-22 Add Mason bin path injection so lua_ls resolves in WSL.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

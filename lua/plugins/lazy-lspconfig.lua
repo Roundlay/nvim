@@ -70,6 +70,17 @@ return {
             return vim.fs.normalize(path)
         end
 
+        local function ensure_mason_in_path()
+            local mason_bin = norm(vim.fn.stdpath("data") .. "/mason/bin")
+            local path_sep = is_windows and ";" or ":"
+            local path = vim.env.PATH or ""
+            if not path:find(mason_bin, 1, true) then
+                vim.env.PATH = mason_bin .. path_sep .. path
+            end
+        end
+
+        ensure_mason_in_path()
+
         -- Adapter: old synchronous root resolvers -> new async root_dir API.
         local function adapt_root_dir(resolver)
             return function(bufnr, on_dir)
