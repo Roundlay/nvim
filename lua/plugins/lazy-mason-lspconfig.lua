@@ -2,7 +2,7 @@
 
 -- Notes:
 
--- Incomming dependencies: neovim/nvim-lspconfig
+-- Incoming dependencies: neovim/nvim-lspconfig
 -- Outgoing dependencies: mason.nvim
 -- It's important that this be called after `mason.nvim` and before `lspconfig`.
 -- Lazy's dependencies are a little counterintuitive. The `dependencies` field
@@ -24,12 +24,23 @@ return {
             vim.notify(vim.inspect(mason_lspconfig), vim.log.levels.ERROR)
             return
         end
-        local lsp_servers = require("lsp.servers")
+        local server_names = {
+            "clangd",
+            "lua_ls",
+            "ols",
+            "pyright",
+            "vimls",
+            "yamlls",
+            "jsonls",
+            "html",
+            "cssls",
+            "marksman",
+        }
         opts = vim.tbl_deep_extend("force", {
             -- NOTE: Mason does not package `sourcekit` (Swift's SourceKit-LSP). It must be
             -- installed via Xcode/Swift toolchain separately and is configured directly in
             -- `lazy-lspconfig.lua`. Keep it out of `ensure_installed` to avoid startup errors.
-            ensure_installed = vim.deepcopy(lsp_servers.server_names),
+            ensure_installed = vim.deepcopy(server_names),
             automatic_installation = false,
         }, opts or {})
         mason_lspconfig.setup(opts)
