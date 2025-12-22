@@ -10,6 +10,7 @@
 - [X] 2025-11-11 Clamp rdpad workspace LF enforcement to the buffer-local `fileformat` option to stop BufReadPost errors when opening Swift packages on Windows.
 - [X] 2025-12-03 Harden LSP go-to-definition split handler (per-client encoding, tab-local reuse, clearer errors).
 - [X] 2025-12-22 Fix lazy-lspconfig spec table syntax + restore server list loop variable.
+- [X] 2025-12-22 Restore Lazy plugin specs import after removing perf framework.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
