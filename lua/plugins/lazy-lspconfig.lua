@@ -1,21 +1,39 @@
 -- nvim-lspconfig
 
-local lsp_servers = require("lsp.servers")
-
 return {
     "neovim/nvim-lspconfig",
     enabled = true,
     lazy = true,
-    ft = lsp_servers.filetypes,
+    ft = {
+        "c",
+        "cpp",
+        "objc",
+        "objcpp",
+        "cc",
+        "cxx",
+        "h",
+        "hpp",
+        "lua",
+        "python",
+        "odin",
+        "json",
+        "yaml",
+        "yml",
+        "markdown",
+        "md",
+        "vim",
+        "css",
+        "html",
+    },
     cmd = {
         "LspInfo",
         "LspLog",
         "LspRestart",
-        "LspStop"
+        "LspStop",
     },
     dependencies = {
         "williamboman/mason.nvim",
-        "williamboman/mason-lspconfig.nvim"
+        "williamboman/mason-lspconfig.nvim",
     },
     config = function()
         local util = require("lspconfig.util")
@@ -194,6 +212,19 @@ return {
             },
         }
 
+        local server_names = {
+            "clangd",
+            "lua_ls",
+            "ols",
+            "pyright",
+            "vimls",
+            "yamlls",
+            "jsonls",
+            "html",
+            "cssls",
+            "marksman",
+        }
+
         local server_overrides = {
             vimls = {
                 filetypes = { "vim" },
@@ -334,7 +365,6 @@ return {
         end
 
         -- Setup each server by merging base + overrides
-        local server_names = lsp_servers.server_names
         for i = 1, #server_names do
             local name = server_names[i]
             local override = server_overrides[name] or {}
