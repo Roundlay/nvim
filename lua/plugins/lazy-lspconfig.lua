@@ -5,25 +5,20 @@ return {
     enabled = true,
     lazy = true,
     ft = {
-        "c",
-        "cpp",
-        "objc",
-        "objcpp",
-        "cc",
-        "cxx",
-        "h",
-        "hpp",
+        -- C/C++/Objective-C (clangd)
+        "c", "cpp", "objc", "objcpp",
+        -- Lua (lua_ls)
         "lua",
+        -- Python (pyright)
         "python",
+        -- Odin (ols)
         "odin",
-        "json",
-        "yaml",
-        "yml",
-        "markdown",
-        "md",
+        -- Web (html, cssls, jsonls)
+        "html", "css", "json", "jsonc",
+        -- Vim (vimls)
         "vim",
-        "css",
-        "html",
+        -- Markdown (marksman)
+        "markdown",
     },
     cmd = {
         "LspInfo",
@@ -36,15 +31,12 @@ return {
         "williamboman/mason-lspconfig.nvim",
     },
     config = function()
-        local util = require("lspconfig.util")
-
-        local islist = vim.islist or vim.tbl_islist
-
         if not (vim.lsp and vim.lsp.config and vim.lsp.enable) then
             vim.notify("vim.lsp.config API is unavailable (requires Neovim 0.11+)", vim.log.levels.ERROR)
             return
         end
 
+        -- blink.cmp provides LSP capabilities for snippet/completion support.
         local function get_blink_capabilities()
             local ok, blink = pcall(require, "blink.cmp")
             if not ok then
@@ -70,6 +62,7 @@ return {
             return vim.fs.normalize(path)
         end
 
+        -- Detect WSL2 environment (no built-in API; /proc/version check is standard).
         local function is_wsl_runtime()
             local proc_version = "/proc/version"
             local stat = vim.uv.fs_stat(proc_version)
@@ -83,359 +76,132 @@ return {
             return content[1] and content[1]:lower():match("microsoft") ~= nil
         end
 
-        local function ensure_mason_in_path(preferred_bin, secondary_bin)
-            local path_sep = is_windows and ";" or ":"
-            local path = vim.env.PATH or ""
-            local filtered = {}
-            local parts = vim.split(path, path_sep, { plain = true, trimempty = true })
-
-            for i = 1, #parts do
-                local entry = parts[i]
-                if entry ~= preferred_bin and entry ~= secondary_bin then
-                    filtered[#filtered + 1] = entry
-                end
-            end
-
-            local reordered = {}
-            if preferred_bin and preferred_bin ~= "" then
-                reordered[#reordered + 1] = preferred_bin
-            end
-            if secondary_bin and secondary_bin ~= "" and secondary_bin ~= preferred_bin then
-                reordered[#reordered + 1] = secondary_bin
-            end
-            for i = 1, #filtered do
-                reordered[#reordered + 1] = filtered[i]
-            end
-
-            vim.env.PATH = table.concat(reordered, path_sep)
-        end
-
-        local function path_exists(path)
-            if not path or path == "" then
-                return false
-            end
-            local stat = vim.uv.fs_stat(path)
-            return stat ~= nil
-        end
-
-        local function resolve_mason_bins()
-            local data_root = norm(vim.fn.stdpath("data"))
-            return {
-                primary = norm(data_root .. "/mason/bin"),
-                fallback = norm(vim.fn.expand("~/.local/share/nvim/mason/bin")),
-            }
-        end
-
-        local mason_bins = resolve_mason_bins()
-        local wsl = (vim.g.is_wsl == true) or is_wsl_runtime()
-        local has_libbfd_238 = vim.uv.fs_stat("/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
-            or vim.uv.fs_stat("/usr/lib/x86_64-linux-gnu/libbfd-2.38-system.so")
-        local prefer_fallback = wsl and not has_libbfd_238 and path_exists(mason_bins.fallback)
-
-        if prefer_fallback then
-            ensure_mason_in_path(mason_bins.fallback, mason_bins.primary)
-        else
-            ensure_mason_in_path(mason_bins.primary, mason_bins.fallback)
-        end
-
-        local function resolve_lua_ls_cmd()
-            local primary = norm(mason_bins.primary .. "/lua-language-server")
-            local fallback = norm(mason_bins.fallback .. "/lua-language-server")
-
-            if prefer_fallback and path_exists(fallback) then
-                return { fallback }
-            end
-
-            if path_exists(primary) then
-                return { primary }
-            end
-            if path_exists(fallback) then
-                return { fallback }
-            end
-
-            return { "lua-language-server" }
-        end
-
-        -- Adapter: old synchronous root resolvers -> new async root_dir API.
-        local function adapt_root_dir(resolver)
-            return function(bufnr, on_dir)
-                local fname = vim.api.nvim_buf_get_name(bufnr)
-                if not fname or fname == '' then
-                    return
-                end
-
-                local root = resolver(fname)
-                if root and root ~= '' then
-                    on_dir(root)
-                end
-            end
-        end
-
-        -- Go to definition in a reusable vertical split. The first invocation opens a split anchored to the source window; subsequent calls re-use it per tabpage and only replace the buffer location inside that window.
-        local definition_windows = {}
-
-        local function ensure_definition_window(source_win)
-            if not (source_win and vim.api.nvim_win_is_valid(source_win)) then
-                source_win = vim.api.nvim_get_current_win()
-            end
-
-            local tabpage = vim.api.nvim_win_get_tabpage(source_win)
-            local win = definition_windows[tabpage]
-
-            if win and vim.api.nvim_win_is_valid(win) then
-                return win
-            end
-
-            vim.api.nvim_win_call(source_win, function()
-                vim.cmd("vsplit")
-                win = vim.api.nvim_get_current_win()
-            end)
-
-            definition_windows[tabpage] = win
-            return win
-        end
-
-        local function first_location(result)
-            if not result or vim.tbl_isempty(result) then
-                return nil
-            end
-            if result.uri or result.targetUri then
-                return result
-            end
-            if islist(result) then
-                return result[1]
-            end
-            return nil
-        end
-
-        local function goto_definition()
-            local source_buf = vim.api.nvim_get_current_buf()
-            local source_win = vim.api.nvim_get_current_win()
-            local clients = vim.lsp.get_clients({ bufnr = source_buf })
-
-            if #clients == 0 then
-                vim.notify("No LSP clients attached for definitions", vim.log.levels.WARN)
-                return
-            end
-
-            local pending = #clients
-            local jumped = false
-            local last_err = nil
-            local supporting = 0
-
-            local function maybe_report()
-                if jumped or pending > 0 then
-                    return
-                end
-                if supporting == 0 then
-                    vim.notify("Attached LSP clients do not support textDocument/definition", vim.log.levels.WARN)
-                    return
-                end
-                if last_err then
-                    vim.notify(("LSP definition error: %s"):format(last_err.message or last_err), vim.log.levels.ERROR)
-                else
-                    vim.notify("No definition found", vim.log.levels.INFO)
-                end
-            end
-
-            local function handle_response(err, result, ctx)
-                if jumped then
-                    return
-                end
-
-                pending = pending - 1
-
-                if err then
-                    last_err = last_err or err
-                    return maybe_report()
-                end
-
-                local loc = first_location(result)
-                if loc then
-                    local client = vim.lsp.get_client_by_id(ctx.client_id)
-                    local enc = (client and client.offset_encoding) or "utf-16"
-                    local win = ensure_definition_window(source_win)
-                    if win and vim.api.nvim_win_is_valid(win) then
-                        vim.api.nvim_set_current_win(win)
-                        vim.lsp.util.jump_to_location(loc, enc)
-                        jumped = true
-                        return
-                    end
-                end
-
-                maybe_report()
-            end
-
-            for _, client in ipairs(clients) do
-                local supports_definition = not client.supports_method or client.supports_method("textDocument/definition")
-                if not supports_definition then
-                    pending = pending - 1
-                else
-                    supporting = supporting + 1
-                    local enc = client.offset_encoding or "utf-16"
-                    local params = vim.lsp.util.make_position_params(source_win, enc)
-                    local ok, req_err = client.request("textDocument/definition", params, handle_response, source_buf)
-                    if not ok then
-                        pending = pending - 1
-                        last_err = last_err or { message = req_err }
-                    end
-                end
-            end
-
-            maybe_report()
-        end
-
-        -- Buffer-local keymaps are attached via `on_attach` so that they are available for every LSP-enabled buffer instead of only the buffer that happened to be current during start-up.
+        -- Buffer-local keymaps attached via on_attach for each LSP-enabled buffer.
         local function on_attach(_, bufnr)
-            vim.keymap.set("n", "gd", goto_definition, { buffer = bufnr, desc = "Go to definition" })
+            local opts = function(desc)
+                return { buffer = bufnr, desc = desc }
+            end
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts("Go to definition"))
+            vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts("Go to declaration"))
+            vim.keymap.set("n", "gr", vim.lsp.buf.references, opts("Go to references"))
+            vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts("Go to implementation"))
+            vim.keymap.set("n", "<leader>k", vim.lsp.buf.hover, opts("Hover documentation"))
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts("Rename symbol"))
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts("Code action"))
         end
 
         local base_config = {
             on_attach = on_attach,
             capabilities = build_capabilities(),
             flags = {
-                debounce_text_changes = 150,
+                debounce_text_changes = 1,
             },
         }
 
         local server_names = {
             "clangd",
+            "cssls",
+            "html",
+            "jsonls",
             "lua_ls",
+            "marksman",
             "ols",
             "pyright",
             "vimls",
             "yamlls",
-            "jsonls",
-            "html",
-            "cssls",
-            "marksman",
         }
 
+        local is_wsl = is_wsl_runtime()
+
+        -- Explicit cmd entries ensure PATH-based binaries are used, avoiding
+        -- stale builds in the nvim-wsl Mason directory. PATH includes the
+        -- up-to-date ~/.local/share/nvim/mason/bin/.
         local server_overrides = {
-            vimls = {
-                filetypes = { "vim" },
-            },
-            yamlls = {
-                filetypes = { "yaml", "yml" },
-            },
-            marksman = {
-                filetypes = { "markdown", "md" },
-            },
-            cssls = {
-                filetypes = { "css" },
-            },
-            html = {
-                filetypes = { "html" },
-            },
-            jsonls = {
-                filetypes = { "json" },
-            },
-
-            -- sourcekit = {
-            --     filetypes = { "swift" },
-            --     root_dir = adapt_root_dir(function(fname)
-            --         return swift_root(fname) or util.path.dirname(fname)
-            --     end),
-            --     single_file_support = true,
-            --     capabilities = {
-            --         workspace = {
-            --             didChangeWatchedFiles = {
-            --                 dynamicRegistration = true,
-            --             },
-            --         },
-            --     },
-            -- },
-
-            clangd = {
-                filetypes = { "c", "cpp", "objc", "objcpp", "cc", "cxx", "h", "hpp" },
-                --
-                -- NOTE: Upstream clangd >= 20.1 changed several CLI flags:
-                --   * `--inlay-hints` is now a no-op (inlay hints are configured via
-                --     `InlayHints.*` in the LSP settings instead)
-                --   * `--function-arg-placeholders` now requires an explicit boolean
-                --     value ("=true"/"=false") and crashes when the value is omitted.
-                -- Passing the old flag list therefore terminates the server with
-                -- exit-code 1.  Strip the obsolete / breaking flags – we already set
-                -- the corresponding features through the `settings` table below.
-                --
-                cmd = { "clangd", "--background-index", "--clang-tidy" },
+            -- lua_ls: Neovim runtime/plugin awareness
+            lua_ls = {
+                cmd = { "lua-language-server" },
                 settings = {
-                    clangd = {
-                        semanticHighlighting = true,
-                        inactiveRegions = {
-                            opacity = 0.0,
-                            useBackgroundHighlight = false,
+                    Lua = {
+                        runtime = { version = "LuaJIT" },
+                        workspace = {
+                            checkThirdParty = false,
+                            library = { vim.env.VIMRUNTIME },
                         },
-                        InlayHints = {
-                            Enabled = true,
-                            Designators = true,
-                            ParameterNames = true,
-                            DeducedTypes = true,
+                        diagnostics = {
+                            globals = { "vim" },
                         },
+                        telemetry = { enable = false },
                     },
                 },
             },
 
-            lua_ls = {
-                filetypes = { "lua" },
-                cmd = resolve_lua_ls_cmd(),
-                on_init = function(client)
-                    local wf = client.workspace_folders
-                    local first = wf and wf[1] and wf[1].name or nil
-                    if first and (vim.uv.fs_stat(first .. '/.luarc.json') or
-                        vim.uv.fs_stat(first .. '/.luarc.jsonc')) then
-                        return
-                    end
-
-                    client.config.settings.Lua = vim.tbl_deep_extend('force',
-                    client.config.settings.Lua or {}, {
-                        runtime = { version = 'LuaJIT' },
-                        workspace = {
-                            checkThirdParty = false,
-                            library = {
-                                vim.env.VIMRUNTIME,
-                                vim.fn.stdpath('config'),
-                            },
-                        },
-                        diagnostics = {
-                            globals = { 'vim' },
-                        },
-                        telemetry = { enable = false },
-                    })
-                    client.notify('workspace/didChangeConfiguration', { settings = client.config.settings })
-                end,
-                settings = {
-                    Lua = {},
-                },
-            },
-
+            -- ols: Cross-platform Odin language server
             ols = {
                 filetypes = { "odin" },
-                cmd = is_windows and { norm("C:/Users/Christopher/AppData/Local/ols/ols.exe") } or { "ols" },
+                cmd = is_windows
+                    and { norm("C:/Users/Christopher/AppData/Local/ols/ols.exe") }
+                    or { "ols" },
                 init_options = {
-                    checker_args = "-strict-style",
+                    checker_args = { "-strict-style" },
                     collections = is_windows and {
                         { name = "shared", path = norm("C:/Users/Christopher/scoop/apps/odin/current/shared") },
                         { name = "vendor", path = norm("C:/Users/Christopher/scoop/apps/odin/current/vendor") },
-                        { name = "core",   path = norm("C:/Users/Christopher/scoop/apps/odin/current/core")   },
+                        { name = "core",   path = norm("C:/Users/Christopher/scoop/apps/odin/current/core") },
+                    } or is_wsl and {
+                        { name = "shared", path = "/opt/Odin/shared" },
+                        { name = "vendor", path = "/opt/Odin/vendor" },
+                        { name = "core",   path = "/opt/Odin/core" },
                     } or nil,
                 },
             },
 
-            pyright = {
-                filetypes = { "python" },
-                root_dir = adapt_root_dir(function(fname)
-                    return util.root_pattern("pyproject.toml", "setup.py", "requirements.txt", ".git")(fname)
-                        or util.path.dirname(fname)
-                end),
+            -- clangd: faster indexing, reduced background work
+            --
+            -- Inactive #if regions: clangd grays out code in preprocessor branches
+            -- it considers inactive (e.g., #if SOME_UNDEFINED_MACRO). It does this
+            -- by sending semantic tokens with type "comment" for those regions.
+            -- This overrides treesitter highlighting and makes the code unreadable.
+            --
+            -- Fix: In highlights.lua, we clear @lsp.type.comment.c (and .cpp/.objc)
+            -- so clangd's "comment" tokens have no effect. Treesitter then handles
+            -- syntax highlighting normally for all code, including inactive regions.
+            clangd = {
+                cmd = {
+                    "clangd",
+                    "--background-index",
+                    "--clang-tidy",
+                    "--header-insertion=iwyu",
+                    "--completion-style=detailed",
+                },
+            },
+
+            -- cssls, html, jsonls: PATH-based cmd
+            cssls = { cmd = { "vscode-css-language-server", "--stdio" } },
+            html = { cmd = { "vscode-html-language-server", "--stdio" } },
+            jsonls = {
+                cmd = { "vscode-json-language-server", "--stdio" },
                 settings = {
-                    python = {
-                        analysis = {
-                            autoSearchPaths        = true,
-                            diagnosticMode         = "openFilesOnly",
-                            useLibraryCodeForTypes = true,
-                            skipLibCheck           = true,
-                        },
+                    json = {
+                        validate = { enable = true },
+                    },
+                },
+            },
+
+            -- marksman: PATH-based cmd
+            marksman = { cmd = { "marksman", "server" } },
+
+            -- pyright: PATH-based cmd
+            pyright = { cmd = { "pyright-langserver", "--stdio" } },
+
+            -- vimls: PATH-based cmd
+            vimls = { cmd = { "vim-language-server", "--stdio" } },
+
+            -- yamlls: PATH-based cmd
+            yamlls = {
+                cmd = { "yaml-language-server", "--stdio" },
+                settings = {
+                    yaml = {
+                        keyOrdering = false,
                     },
                 },
             },
@@ -443,6 +209,7 @@ return {
 
         local configured_servers = {}
 
+        -- Merge base config with per-server overrides (preserves nested capabilities).
         local function merge_config(base, override)
             local merged = vim.tbl_deep_extend("force", {}, base, override)
             if override.capabilities then
@@ -451,7 +218,7 @@ return {
             return merged
         end
 
-        -- Setup each server by merging base + overrides
+        -- Configure and enable each server.
         for i = 1, #server_names do
             local name = server_names[i]
             local override = server_overrides[name] or {}
