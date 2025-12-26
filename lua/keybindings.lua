@@ -75,27 +75,51 @@ end
 
 -- Movement
 
-normal('J', '}', "Jump one paragraph backwards.")
-normal('K', '{', "Jump one paragraph forwards.")
-visual('J', '}', "Jump one paragraph backwards in visual mode.")
-visual('K', '{', "Jump one paragraph forwards in visual mode.")
+local function set_paragraph_jump_maps(opts)
+    opts = opts or {}
+    vim.keymap.set("n", "J", "}", vim.tbl_extend("force", {
+        noremap = true,
+        silent = true,
+        desc = "Jump one paragraph backwards.",
+    }, opts))
+    vim.keymap.set("n", "K", "{", vim.tbl_extend("force", {
+        noremap = true,
+        silent = true,
+        desc = "Jump one paragraph forwards.",
+    }, opts))
+    vim.keymap.set("v", "J", "}", vim.tbl_extend("force", {
+        noremap = true,
+        silent = true,
+        desc = "Jump one paragraph backwards in visual mode.",
+    }, opts))
+    vim.keymap.set("v", "K", "{", vim.tbl_extend("force", {
+        noremap = true,
+        silent = true,
+        desc = "Jump one paragraph forwards in visual mode.",
+    }, opts))
+end
+
+set_paragraph_jump_maps()
 
 vim.api.nvim_create_autocmd("LspAttach", {
     callback = function(args)
-        vim.keymap.set("n", "K", "{", {
-            buffer = args.buf,
-            noremap = true,
-            silent = true,
-            desc = "Jump one paragraph forwards.",
-        })
-        vim.keymap.set("v", "K", "{", {
-            buffer = args.buf,
-            noremap = true,
-            silent = true,
-            desc = "Jump one paragraph forwards in visual mode.",
-        })
+        set_paragraph_jump_maps({ buffer = args.buf })
     end,
 })
+
+do
+    local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
+    if get_clients then
+        for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.api.nvim_buf_is_loaded(bufnr) then
+                local clients = get_clients({ bufnr = bufnr })
+                if clients and next(clients) ~= nil then
+                    set_paragraph_jump_maps({ buffer = bufnr })
+                end
+            end
+        end
+    end
+end
 
 normal('<C-Up>', 'ddkP', "Move the current line up.")
 normal('<C-Down>', 'ddp', "Move the current line down.")
