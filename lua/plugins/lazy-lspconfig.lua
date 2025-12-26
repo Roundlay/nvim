@@ -4,7 +4,7 @@ return {
     "neovim/nvim-lspconfig",
     enabled = true,
     lazy = true,
-    event = { "BufReadPre", "BufNewFile" },
+    event = { "VimEnter", "BufReadPre", "BufNewFile" },
     cmd = {
         "LspInfo",
         "LspLog",

@@ -25,10 +25,34 @@ local function get_vscode_light_palette()
         return fallback
     end
 
-    local original_bg = vim.o.background
-    vim.o.background = "light"
-    local palette = colors.get_colors() or {}
-    vim.o.background = original_bg
+    local original_bg = vim.api.nvim_get_option_value("background", { scope = "global" })
+    local palette = nil
+    local ok, result = pcall(function()
+        vim.api.nvim_cmd({
+            cmd = "set",
+            args = { "background=light" },
+            mods = { noautocmd = true, silent = true },
+        }, {})
+
+        local ok_colors, colors_result = pcall(colors.get_colors)
+
+        vim.api.nvim_cmd({
+            cmd = "set",
+            args = { "background=" .. original_bg },
+            mods = { noautocmd = true, silent = true },
+        }, {})
+
+        if ok_colors then
+            return colors_result
+        end
+        return nil
+    end)
+
+    if ok and result ~= nil then
+        palette = result
+    else
+        palette = fallback
+    end
 
     for k, v in pairs(fallback) do
         if palette[k] == nil then
