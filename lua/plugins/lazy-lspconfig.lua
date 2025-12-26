@@ -150,14 +150,14 @@ return {
                 config.focus_id = ms.textDocument_hover
                 if config.border == nil then
                     config.border = {
-                        { "█", "VscodeHoverBorder" },
                         { "▀", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
+                        { "█ ", "VscodeHoverBorder" },
                         { "▄", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
+                        { "█ ", "VscodeHoverBorder" },
+                        { "█ ", "VscodeHoverBorder" },
+                        { "█ ", "VscodeHoverBorder" },
+                        { "█ ", "VscodeHoverBorder" },
+                        { "█ ", "VscodeHoverBorder" },
                     }
                 end
                 if config.max_width == nil or config.max_width > 80 then

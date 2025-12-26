@@ -26,6 +26,7 @@
 - [X] 2025-12-26 Extend hover winhighlight mappings for markdown/treesitter groups + cap width at 80.
 - [X] 2025-12-26 Use block glyph borders for hover float (▀/▄/█).
 - [X] 2025-12-26 Adjust hover border corners to full blocks with top half-block run.
+- [X] 2025-12-26 Add inner padding by widening hover side borders with trailing space.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
