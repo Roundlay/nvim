@@ -7,6 +7,17 @@ local function set_hl(group, opts)
     vim.api.nvim_set_hl(0, group, opts)
 end
 
+local vscode_light = {
+    front = "#343434",
+    bg = "#F8F8F8",
+    border = "#DDDDDD",
+    muted = "#767676",
+    accent = "#0451A5",
+    link = "#0064c1",
+    code = "#0000FF",
+    selection = "#d7eafe",
+}
+
 -- LSP semantic overrides (avoid dimming inactive #if regions).
 local lsp_inactive_types = {
     "namespace",
@@ -64,15 +75,15 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 })
 
 local function apply_lsp_hover_light()
-    set_hl("VscodeHoverNormal", { fg = "#000000", bg = "#F8F8F8" })
-    set_hl("VscodeHoverBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
-    set_hl("VscodeHoverTitle", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
-    set_hl("VscodeHoverMuted", { fg = "#6F6F6F", bg = "#F8F8F8" })
-    set_hl("VscodeHoverHeading", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
-    set_hl("VscodeHoverCode", { fg = "#0000FF", bg = "#F8F8F8" })
-    set_hl("VscodeHoverLink", { fg = "#0000FF", bg = "#F8F8F8", underline = true })
-    set_hl("VscodeHoverStrong", { fg = "#000000", bg = "#F8F8F8", bold = true })
-    set_hl("VscodeHoverItalic", { fg = "#000000", bg = "#F8F8F8", italic = true })
+    set_hl("VscodeHoverNormal", { fg = vscode_light.front, bg = vscode_light.bg })
+    set_hl("VscodeHoverBorder", { fg = vscode_light.border, bg = vscode_light.bg })
+    set_hl("VscodeHoverTitle", { fg = vscode_light.accent, bg = vscode_light.bg, bold = true })
+    set_hl("VscodeHoverMuted", { fg = vscode_light.muted, bg = vscode_light.bg })
+    set_hl("VscodeHoverHeading", { fg = vscode_light.accent, bg = vscode_light.bg, bold = true })
+    set_hl("VscodeHoverCode", { fg = vscode_light.code, bg = vscode_light.bg })
+    set_hl("VscodeHoverLink", { fg = vscode_light.link, bg = vscode_light.bg, underline = true })
+    set_hl("VscodeHoverStrong", { fg = vscode_light.front, bg = vscode_light.bg, bold = true })
+    set_hl("VscodeHoverItalic", { fg = vscode_light.front, bg = vscode_light.bg, italic = true })
 end
 
 apply_lsp_hover_light()
@@ -84,28 +95,28 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 })
 
 local function apply_blink_light()
-    set_hl("BlinkCmpMenu", { fg = "#000000", bg = "#F8F8F8" })
-    set_hl("BlinkCmpMenuBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
-    set_hl("BlinkCmpMenuSelection", { fg = "#000000", bg = "#d7eafe" })
+    set_hl("BlinkCmpMenu", { fg = vscode_light.front, bg = vscode_light.bg })
+    set_hl("BlinkCmpMenuBorder", { fg = vscode_light.border, bg = vscode_light.bg })
+    set_hl("BlinkCmpMenuSelection", { fg = vscode_light.front, bg = vscode_light.selection })
     set_hl("BlinkCmpScrollBarThumb", { fg = "#C4C4C4", bg = "#C4C4C4" })
     set_hl("BlinkCmpScrollBarGutter", { fg = "#E5E5E5", bg = "#E5E5E5" })
 
-    set_hl("BlinkCmpLabel", { fg = "#000000", bg = "#F8F8F8" })
-    set_hl("BlinkCmpLabelMatch", { fg = "#0000FF", bg = "#F8F8F8", bold = true })
-    set_hl("BlinkCmpLabelDeprecated", { fg = "#6F6F6F", bg = "#F8F8F8", strikethrough = true })
-    set_hl("BlinkCmpLabelDetail", { fg = "#6F6F6F", bg = "#F8F8F8" })
-    set_hl("BlinkCmpLabelDescription", { fg = "#6F6F6F", bg = "#F8F8F8" })
-    set_hl("BlinkCmpSource", { fg = "#6F6F6F", bg = "#F8F8F8" })
-    set_hl("BlinkCmpKind", { fg = "#0451A5", bg = "#F8F8F8" })
+    set_hl("BlinkCmpLabel", { fg = vscode_light.front, bg = vscode_light.bg })
+    set_hl("BlinkCmpLabelMatch", { fg = vscode_light.link, bg = vscode_light.bg, bold = true })
+    set_hl("BlinkCmpLabelDeprecated", { fg = vscode_light.muted, bg = vscode_light.bg, strikethrough = true })
+    set_hl("BlinkCmpLabelDetail", { fg = vscode_light.muted, bg = vscode_light.bg })
+    set_hl("BlinkCmpLabelDescription", { fg = vscode_light.muted, bg = vscode_light.bg })
+    set_hl("BlinkCmpSource", { fg = vscode_light.muted, bg = vscode_light.bg })
+    set_hl("BlinkCmpKind", { fg = vscode_light.accent, bg = vscode_light.bg })
 
-    set_hl("BlinkCmpDoc", { fg = "#000000", bg = "#F8F8F8" })
-    set_hl("BlinkCmpDocBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
-    set_hl("BlinkCmpDocSeparator", { fg = "#DDDDDD", bg = "#F8F8F8" })
-    set_hl("BlinkCmpDocCursorLine", { fg = "#000000", bg = "#d7eafe" })
+    set_hl("BlinkCmpDoc", { fg = vscode_light.front, bg = vscode_light.bg })
+    set_hl("BlinkCmpDocBorder", { fg = vscode_light.border, bg = vscode_light.bg })
+    set_hl("BlinkCmpDocSeparator", { fg = vscode_light.border, bg = vscode_light.bg })
+    set_hl("BlinkCmpDocCursorLine", { fg = vscode_light.front, bg = vscode_light.selection })
 
-    set_hl("BlinkCmpSignatureHelp", { fg = "#000000", bg = "#F8F8F8" })
-    set_hl("BlinkCmpSignatureHelpBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
-    set_hl("BlinkCmpSignatureHelpActiveParameter", { fg = "#000000", bg = "#d7eafe", bold = true })
+    set_hl("BlinkCmpSignatureHelp", { fg = vscode_light.front, bg = vscode_light.bg })
+    set_hl("BlinkCmpSignatureHelpBorder", { fg = vscode_light.border, bg = vscode_light.bg })
+    set_hl("BlinkCmpSignatureHelpActiveParameter", { fg = vscode_light.front, bg = vscode_light.selection, bold = true })
 end
 
 apply_blink_light()

@@ -29,6 +29,7 @@
 - [X] 2025-12-26 Add inner padding by widening hover side borders with trailing space.
 - [X] 2025-12-26 Add inner padding by prefix/suffix spaces on hover contents.
 - [X] 2025-12-26 Apply VSCode light hover palette to Blink completion/doc/signature popups.
+- [X] 2025-12-26 Align hover + Blink text colors with VSCode light palette values.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

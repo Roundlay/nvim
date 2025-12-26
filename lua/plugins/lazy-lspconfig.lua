@@ -69,15 +69,25 @@ return {
             local hover_ns = api.nvim_create_namespace("vscode_lsp_hover_range")
 
             local function set_hover_hl()
-                vim.api.nvim_set_hl(0, "VscodeHoverNormal", { fg = "#000000", bg = "#F8F8F8" })
-                vim.api.nvim_set_hl(0, "VscodeHoverBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
-                vim.api.nvim_set_hl(0, "VscodeHoverTitle", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverMuted", { fg = "#6F6F6F", bg = "#F8F8F8" })
-                vim.api.nvim_set_hl(0, "VscodeHoverHeading", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverCode", { fg = "#0000FF", bg = "#F8F8F8" })
-                vim.api.nvim_set_hl(0, "VscodeHoverLink", { fg = "#0000FF", bg = "#F8F8F8", underline = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverStrong", { fg = "#000000", bg = "#F8F8F8", bold = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverItalic", { fg = "#000000", bg = "#F8F8F8", italic = true })
+                local palette = {
+                    front = "#343434",
+                    bg = "#F8F8F8",
+                    border = "#DDDDDD",
+                    muted = "#767676",
+                    accent = "#0451A5",
+                    link = "#0064c1",
+                    code = "#0000FF",
+                }
+
+                vim.api.nvim_set_hl(0, "VscodeHoverNormal", { fg = palette.front, bg = palette.bg })
+                vim.api.nvim_set_hl(0, "VscodeHoverBorder", { fg = palette.border, bg = palette.bg })
+                vim.api.nvim_set_hl(0, "VscodeHoverTitle", { fg = palette.accent, bg = palette.bg, bold = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverMuted", { fg = palette.muted, bg = palette.bg })
+                vim.api.nvim_set_hl(0, "VscodeHoverHeading", { fg = palette.accent, bg = palette.bg, bold = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverCode", { fg = palette.code, bg = palette.bg })
+                vim.api.nvim_set_hl(0, "VscodeHoverLink", { fg = palette.link, bg = palette.bg, underline = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverStrong", { fg = palette.front, bg = palette.bg, bold = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverItalic", { fg = palette.front, bg = palette.bg, italic = true })
             end
 
             local function client_positional_params(params)
