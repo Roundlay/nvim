@@ -80,6 +80,23 @@ normal('K', '{', "Jump one paragraph forwards.")
 visual('J', '}', "Jump one paragraph backwards in visual mode.")
 visual('K', '{', "Jump one paragraph forwards in visual mode.")
 
+vim.api.nvim_create_autocmd("LspAttach", {
+    callback = function(args)
+        vim.keymap.set("n", "K", "{", {
+            buffer = args.buf,
+            noremap = true,
+            silent = true,
+            desc = "Jump one paragraph forwards.",
+        })
+        vim.keymap.set("v", "K", "{", {
+            buffer = args.buf,
+            noremap = true,
+            silent = true,
+            desc = "Jump one paragraph forwards in visual mode.",
+        })
+    end,
+})
+
 normal('<C-Up>', 'ddkP', "Move the current line up.")
 normal('<C-Down>', 'ddp', "Move the current line down.")
 visual('<C-Down>', 'xp`[V`]', "Move selection down.")
@@ -224,14 +241,3 @@ vim.keymap.set('n', '<leader>co', with_copilot("toggle_auto_trigger"), { desc = 
 -- Keep C-\ as a tmux-friendly fallback; C-CR is primary when terminals support extkeys.
 vim.keymap.set('i', '<C-CR>', with_copilot("accept"), { desc = "Accept Copilot suggestion (primary)" })
 vim.keymap.set('i', '<C-\\>', with_copilot("accept"), { desc = "Accept Copilot suggestion (fallback)" })
-
--- Blink
-
--- TODO: Blink seems to have a unique way of handling keybindings that doesn't work with the standard vim.keymap.set function?
--- TODO: See /lua/plugins/lazy-blink-cmp.lua for more details.
--- vim.keymap.set('n', '<C-\\>', require('blink.cmp').select_and_accept, {desc = "Select and accept the current Blink suggestion"})
--- vim.keymap.set('n', '<C-CR>', require('blink.cmp').select_and_accept, {desc = "Select and accept the current Blink suggestion (backup)"})
--- vim.keymap.set('n', '<C-p>', require('blink.cmp').select_prev, {desc = "Select the previous Blink suggestion"})
--- vim.keymap.set('n', '<C-n>', require('blink.cmp').select_next, {desc = "Select the next Blink suggestion"})
-
-

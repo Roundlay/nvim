@@ -18,6 +18,7 @@
 - [X] 2025-12-22 Ensure PATH prioritizes non-WSL Mason bin when lua_ls fallback is needed.
 - [X] 2025-12-22 Reorder PATH entries so Mason bins are deduped and preferred bin is first.
 - [X] 2025-12-26 Stop LSP hover keymap from overriding custom paragraph jump on `K`.
+- [X] 2025-12-26 Reapply `K` paragraph jump on LspAttach to override late buffer maps.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
