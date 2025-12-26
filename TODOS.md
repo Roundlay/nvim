@@ -36,6 +36,7 @@
 - [X] 2025-12-26 Load VSCode light palette in isolated env to avoid touching background.
 - [X] 2025-12-26 Map popup syntax groups to light palette and tune Blink kind colors.
 - [X] 2025-12-26 Simplify hover popup to uniform text color by disabling syntax/TS.
+- [X] 2025-12-26 Size hover popup to min(buffer width, 160) and max 1/3 buffer height.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

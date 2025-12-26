@@ -101,6 +101,11 @@ return {
 
                 config = config or {}
                 config.focus_id = ms.textDocument_hover
+                local win = api.nvim_get_current_win()
+                local win_width = api.nvim_win_get_width(win)
+                local win_height = api.nvim_win_get_height(win)
+                local target_width = math.min(win_width, 160)
+                local target_height = math.max(1, math.floor(win_height / 3))
                 if config.border == nil then
                     config.border = {
                         { "█", "VscodeHoverBorder" },
@@ -113,12 +118,10 @@ return {
                         { "█", "VscodeHoverBorder" },
                     }
                 end
-                if config.max_width == nil or config.max_width > 80 then
-                    config.max_width = 80
-                end
-                if config.wrap_at == nil or config.wrap_at > 80 then
-                    config.wrap_at = 80
-                end
+                config.width = target_width
+                config.max_width = target_width
+                config.wrap_at = target_width
+                config.max_height = target_height
 
                 lsp.buf_request_all(0, ms.textDocument_hover, client_positional_params(), function(results, ctx)
                     local bufnr = assert(ctx.bufnr)
