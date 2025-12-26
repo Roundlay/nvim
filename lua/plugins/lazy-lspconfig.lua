@@ -24,20 +24,26 @@ return {
         -- blink.cmp provides LSP capabilities for snippet/completion support.
         local function get_blink_capabilities()
             local ok, blink = pcall(require, "blink.cmp")
+
             if not ok then
                 ok, blink = pcall(require, "blink-cmp")
             end
+
             if ok and type(blink.get_lsp_capabilities) == "function" then
                 return blink.get_lsp_capabilities() or {}
             end
+
             return {}
         end
 
         local function build_capabilities()
             local capabilities = vim.lsp.protocol.make_client_capabilities()
+
             capabilities.workspace = capabilities.workspace or {}
+
             -- Avoid dynamic file watching overhead unless a server explicitly opts in.
             capabilities.workspace.didChangeWatchedFiles = { dynamicRegistration = false }
+
             return vim.tbl_deep_extend("force", capabilities, get_blink_capabilities())
         end
 
@@ -45,6 +51,7 @@ return {
             if vim.g._vscode_hover_light_applied then
                 return
             end
+
             vim.g._vscode_hover_light_applied = true
 
             local api = vim.api
@@ -52,31 +59,6 @@ return {
             local util = require("vim.lsp.util")
             local ms = require("vim.lsp.protocol").Methods
             local hover_ns = api.nvim_create_namespace("vscode_lsp_hover_range")
-
-            local function set_hover_hl()
-                local palette = vim.g.vscode_light_popup
-                if type(palette) ~= "table" then
-                    palette = {
-                        front = "#343434",
-                        bg = "#F8F8F8",
-                        border = "#DDDDDD",
-                        muted = "#767676",
-                        accent = "#0451A5",
-                        link = "#0064c1",
-                        code = "#0000FF",
-                    }
-                end
-
-                vim.api.nvim_set_hl(0, "VscodeHoverNormal", { fg = palette.front, bg = palette.bg })
-                vim.api.nvim_set_hl(0, "VscodeHoverBorder", { fg = palette.border, bg = palette.bg })
-                vim.api.nvim_set_hl(0, "VscodeHoverTitle", { fg = palette.accent, bg = palette.bg, bold = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverMuted", { fg = palette.muted, bg = palette.bg })
-                vim.api.nvim_set_hl(0, "VscodeHoverHeading", { fg = palette.accent, bg = palette.bg, bold = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverCode", { fg = palette.code, bg = palette.bg })
-                vim.api.nvim_set_hl(0, "VscodeHoverLink", { fg = palette.link, bg = palette.bg, underline = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverStrong", { fg = palette.front, bg = palette.bg, bold = true })
-                vim.api.nvim_set_hl(0, "VscodeHoverItalic", { fg = palette.front, bg = palette.bg, italic = true })
-            end
 
             local function client_positional_params(params)
                 local win = api.nvim_get_current_win()
@@ -89,16 +71,7 @@ return {
                 end
             end
 
-            local winhl = table.concat({
-                "NormalFloat:VscodeHoverNormal",
-                "Normal:VscodeHoverNormal",
-                "FloatBorder:VscodeHoverBorder",
-                "FloatTitle:VscodeHoverNormal",
-            }, ",")
-
             vim.lsp.buf.hover = function(config)
-                set_hover_hl()
-
                 config = config or {}
                 config.focus_id = ms.textDocument_hover
                 local win = api.nvim_get_current_win()
@@ -114,14 +87,14 @@ return {
                 end)
                 if config.border == nil then
                     config.border = {
-                        { "█", "VscodeHoverBorder" },
-                        { "▀", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
-                        { "▄", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
-                        { "█", "VscodeHoverBorder" },
+                        { "█", "FloatBorder" },
+                        { "▀", "FloatBorder" },
+                        { "█", "FloatBorder" },
+                        { "█", "FloatBorder" },
+                        { "█", "FloatBorder" },
+                        { "▄", "FloatBorder" },
+                        { "█", "FloatBorder" },
+                        { "█", "FloatBorder" },
                     }
                 end
                 config.width = target_width
@@ -212,40 +185,12 @@ return {
                         return
                     end
 
-                    do
-                        local cleaned = {}
-                        for i = 1, #contents do
-                            local line = contents[i]
-                            if not line:match("^```") then
-                                cleaned[#cleaned + 1] = line
-                            end
-                        end
-                        while cleaned[1] == "" do
-                            table.remove(cleaned, 1)
-                        end
-                        while cleaned[#cleaned] == "" do
-                            table.remove(cleaned, #cleaned)
-                        end
-                        contents = cleaned
-                    end
-                    format = "plaintext"
-
                     for i = 1, #contents do
                         contents[i] = " " .. contents[i] .. " "
                     end
 
-                    local hover_buf, winid = lsp.util.open_floating_preview(contents, format, config)
-                    if hover_buf and api.nvim_buf_is_valid(hover_buf) then
-                        pcall(vim.treesitter.stop, hover_buf)
-                        vim.bo[hover_buf].syntax = ""
-                        vim.bo[hover_buf].filetype = ""
-                    end
+                    local _, winid = lsp.util.open_floating_preview(contents, format, config)
                     if winid and api.nvim_win_is_valid(winid) then
-                        local ok = pcall(api.nvim_set_option_value, "winhighlight", winhl, { win = winid })
-                        if not ok then
-                            pcall(api.nvim_win_set_option, winid, "winhighlight", winhl)
-                        end
-
                         local float_width = api.nvim_win_get_width(winid)
                         local float_height = api.nvim_win_get_height(winid)
                         local row = math.min(cursor_row, math.max(0, win_height - float_height))
