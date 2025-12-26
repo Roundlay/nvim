@@ -70,6 +70,12 @@ local vscode_popup = {
     link = vscode_light_palette.vscPopupHighlightBlue,
     code = vscode_light_palette.vscBlue,
     selection = vscode_light_palette.vscPopupHighlightLightBlue,
+    keyword = vscode_light_palette.vscBlue,
+    string = vscode_light_palette.vscLightRed,
+    number = vscode_light_palette.vscLightGreen,
+    func = vscode_light_palette.vscYellow,
+    type = vscode_light_palette.vscBlueGreen,
+    constant = vscode_light_palette.vscDarkBlue,
 }
 
 vim.g.vscode_light_popup = vscode_popup
@@ -140,6 +146,16 @@ local function apply_lsp_hover_light()
     set_hl("VscodeHoverLink", { fg = vscode_popup.link, bg = vscode_popup.bg, underline = true })
     set_hl("VscodeHoverStrong", { fg = vscode_popup.front, bg = vscode_popup.bg, bold = true })
     set_hl("VscodeHoverItalic", { fg = vscode_popup.front, bg = vscode_popup.bg, italic = true })
+
+    set_hl("VscodePopupKeyword", { fg = vscode_popup.keyword, bg = vscode_popup.bg })
+    set_hl("VscodePopupString", { fg = vscode_popup.string, bg = vscode_popup.bg })
+    set_hl("VscodePopupNumber", { fg = vscode_popup.number, bg = vscode_popup.bg })
+    set_hl("VscodePopupFunction", { fg = vscode_popup.func, bg = vscode_popup.bg })
+    set_hl("VscodePopupType", { fg = vscode_popup.type, bg = vscode_popup.bg })
+    set_hl("VscodePopupConstant", { fg = vscode_popup.constant, bg = vscode_popup.bg })
+    set_hl("VscodePopupIdentifier", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("VscodePopupOperator", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("VscodePopupPunctuation", { fg = vscode_popup.muted, bg = vscode_popup.bg })
 end
 
 apply_lsp_hover_light()
@@ -164,6 +180,31 @@ local function apply_blink_light()
     set_hl("BlinkCmpLabelDescription", { fg = vscode_popup.muted, bg = vscode_popup.bg })
     set_hl("BlinkCmpSource", { fg = vscode_popup.muted, bg = vscode_popup.bg })
     set_hl("BlinkCmpKind", { fg = vscode_popup.accent, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindText", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindMethod", { fg = vscode_popup.func, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindFunction", { fg = vscode_popup.func, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindConstructor", { fg = vscode_popup.func, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindField", { fg = vscode_popup.constant, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindVariable", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindClass", { fg = vscode_popup.type, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindInterface", { fg = vscode_popup.type, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindModule", { fg = vscode_popup.constant, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindProperty", { fg = vscode_popup.constant, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindUnit", { fg = vscode_popup.number, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindValue", { fg = vscode_popup.number, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindEnum", { fg = vscode_popup.type, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindKeyword", { fg = vscode_popup.keyword, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindSnippet", { fg = vscode_popup.string, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindColor", { fg = vscode_popup.string, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindFile", { fg = vscode_popup.link, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindReference", { fg = vscode_popup.link, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindFolder", { fg = vscode_popup.link, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindEnumMember", { fg = vscode_popup.type, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindConstant", { fg = vscode_popup.constant, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindStruct", { fg = vscode_popup.type, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindEvent", { fg = vscode_popup.keyword, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindOperator", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKindTypeParameter", { fg = vscode_popup.type, bg = vscode_popup.bg })
 
     set_hl("BlinkCmpDoc", { fg = vscode_popup.front, bg = vscode_popup.bg })
     set_hl("BlinkCmpDocBorder", { fg = vscode_popup.border, bg = vscode_popup.bg })
