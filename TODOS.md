@@ -35,6 +35,7 @@
 - [X] 2025-12-26 Read VSCode light palette with noautocmd background swap to avoid theme break.
 - [X] 2025-12-26 Load VSCode light palette in isolated env to avoid touching background.
 - [X] 2025-12-26 Map popup syntax groups to light palette and tune Blink kind colors.
+- [X] 2025-12-26 Simplify hover popup to uniform text color by disabling syntax/TS.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
