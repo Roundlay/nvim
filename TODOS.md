@@ -17,6 +17,7 @@
 - [X] 2025-12-22 Prefer non-WSL Mason bin for lua_ls when libbfd-2.38 is absent.
 - [X] 2025-12-22 Ensure PATH prioritizes non-WSL Mason bin when lua_ls fallback is needed.
 - [X] 2025-12-22 Reorder PATH entries so Mason bins are deduped and preferred bin is first.
+- [X] 2025-12-26 Stop LSP hover keymap from overriding custom paragraph jump on `K`.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
