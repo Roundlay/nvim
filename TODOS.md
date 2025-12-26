@@ -22,6 +22,7 @@
 - [X] 2025-12-26 Reassert paragraph jump maps for already-attached LSP buffers (WSL default LSP maps).
 - [X] 2025-12-26 Style LSP hover float with VSCode light palette (border + winhighlight).
 - [X] 2025-12-26 Map NormalFloat in hover winhighlight to override dark popup background.
+- [X] 2025-12-26 Replace vim.lsp.buf.hover to apply VSCode light winhighlight on the created float.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
