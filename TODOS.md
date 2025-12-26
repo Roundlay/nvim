@@ -39,6 +39,7 @@
 - [X] 2025-12-26 Size hover popup to min(buffer width, 160) and max 1/3 buffer height.
 - [X] 2025-12-26 Center hover popup with width = buffer width - 12 columns.
 - [X] 2025-12-26 Strip hover code fences and anchor popup under cursor line.
+- [X] 2025-12-26 Preserve hover position on refocus by caching cursor row.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

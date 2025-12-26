@@ -106,6 +106,12 @@ return {
                 local win_height = api.nvim_win_get_height(win)
                 local target_width = math.max(1, win_width - 12)
                 local target_height = math.max(1, math.floor(win_height / 3))
+                local cursor_row = 0
+                pcall(function()
+                    cursor_row = api.nvim_win_call(win, function()
+                        return vim.fn.winline()
+                    end)
+                end)
                 if config.border == nil then
                     config.border = {
                         { "█", "VscodeHoverBorder" },
@@ -242,7 +248,6 @@ return {
 
                         local float_width = api.nvim_win_get_width(winid)
                         local float_height = api.nvim_win_get_height(winid)
-                        local cursor_row = vim.fn.winline()
                         local row = math.min(cursor_row, math.max(0, win_height - float_height))
                         local col = math.max(0, math.floor((win_width - float_width) / 2))
                         pcall(api.nvim_win_set_config, winid, {
