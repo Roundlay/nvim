@@ -28,6 +28,7 @@
 - [X] 2025-12-26 Adjust hover border corners to full blocks with top half-block run.
 - [X] 2025-12-26 Add inner padding by widening hover side borders with trailing space.
 - [X] 2025-12-26 Add inner padding by prefix/suffix spaces on hover contents.
+- [X] 2025-12-26 Apply VSCode light hover palette to Blink completion/doc/signature popups.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

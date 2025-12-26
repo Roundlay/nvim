@@ -83,6 +83,39 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     callback = apply_lsp_hover_light,
 })
 
+local function apply_blink_light()
+    set_hl("BlinkCmpMenu", { fg = "#000000", bg = "#F8F8F8" })
+    set_hl("BlinkCmpMenuBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
+    set_hl("BlinkCmpMenuSelection", { fg = "#000000", bg = "#d7eafe" })
+    set_hl("BlinkCmpScrollBarThumb", { fg = "#C4C4C4", bg = "#C4C4C4" })
+    set_hl("BlinkCmpScrollBarGutter", { fg = "#E5E5E5", bg = "#E5E5E5" })
+
+    set_hl("BlinkCmpLabel", { fg = "#000000", bg = "#F8F8F8" })
+    set_hl("BlinkCmpLabelMatch", { fg = "#0000FF", bg = "#F8F8F8", bold = true })
+    set_hl("BlinkCmpLabelDeprecated", { fg = "#6F6F6F", bg = "#F8F8F8", strikethrough = true })
+    set_hl("BlinkCmpLabelDetail", { fg = "#6F6F6F", bg = "#F8F8F8" })
+    set_hl("BlinkCmpLabelDescription", { fg = "#6F6F6F", bg = "#F8F8F8" })
+    set_hl("BlinkCmpSource", { fg = "#6F6F6F", bg = "#F8F8F8" })
+    set_hl("BlinkCmpKind", { fg = "#0451A5", bg = "#F8F8F8" })
+
+    set_hl("BlinkCmpDoc", { fg = "#000000", bg = "#F8F8F8" })
+    set_hl("BlinkCmpDocBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
+    set_hl("BlinkCmpDocSeparator", { fg = "#DDDDDD", bg = "#F8F8F8" })
+    set_hl("BlinkCmpDocCursorLine", { fg = "#000000", bg = "#d7eafe" })
+
+    set_hl("BlinkCmpSignatureHelp", { fg = "#000000", bg = "#F8F8F8" })
+    set_hl("BlinkCmpSignatureHelpBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
+    set_hl("BlinkCmpSignatureHelpActiveParameter", { fg = "#000000", bg = "#d7eafe", bold = true })
+end
+
+apply_blink_light()
+
+local blink_group = vim.api.nvim_create_augroup("BlinkLightPopups", { clear = true })
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = blink_group,
+    callback = apply_blink_light,
+})
+
 -- Visual Studio Dark inspired tab colors
 set_hl("TabLine", { fg = "#969696", bg = "#252526" }) -- Inactive tabs
 set_hl("TabLineFill", { bg = "#1E1E1E" }) -- Tab line background
