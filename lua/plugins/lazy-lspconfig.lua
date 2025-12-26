@@ -206,6 +206,24 @@ return {
                         return
                     end
 
+                    do
+                        local cleaned = {}
+                        for i = 1, #contents do
+                            local line = contents[i]
+                            if not line:match("^```") then
+                                cleaned[#cleaned + 1] = line
+                            end
+                        end
+                        while cleaned[1] == "" do
+                            table.remove(cleaned, 1)
+                        end
+                        while cleaned[#cleaned] == "" do
+                            table.remove(cleaned, #cleaned)
+                        end
+                        contents = cleaned
+                    end
+                    format = "plaintext"
+
                     for i = 1, #contents do
                         contents[i] = " " .. contents[i] .. " "
                     end
@@ -224,7 +242,8 @@ return {
 
                         local float_width = api.nvim_win_get_width(winid)
                         local float_height = api.nvim_win_get_height(winid)
-                        local row = math.max(0, math.floor((win_height - float_height) / 2))
+                        local cursor_row = vim.fn.winline()
+                        local row = math.min(cursor_row, math.max(0, win_height - float_height))
                         local col = math.max(0, math.floor((win_width - float_width) / 2))
                         pcall(api.nvim_win_set_config, winid, {
                             relative = "win",
