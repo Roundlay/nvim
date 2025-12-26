@@ -21,6 +21,7 @@
 - [X] 2025-12-26 Reapply `K` paragraph jump on LspAttach to override late buffer maps.
 - [X] 2025-12-26 Reassert paragraph jump maps for already-attached LSP buffers (WSL default LSP maps).
 - [X] 2025-12-26 Style LSP hover float with VSCode light palette (border + winhighlight).
+- [X] 2025-12-26 Map NormalFloat in hover winhighlight to override dark popup background.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

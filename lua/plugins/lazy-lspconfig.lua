@@ -64,6 +64,7 @@ return {
 
             local base_hover = vim.lsp.handlers["textDocument/hover"] or vim.lsp.handlers.hover
             local winhl = table.concat({
+                "NormalFloat:VscodeHoverNormal",
                 "Normal:VscodeHoverNormal",
                 "FloatBorder:VscodeHoverBorder",
                 "FloatTitle:VscodeHoverTitle",
