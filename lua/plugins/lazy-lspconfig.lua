@@ -104,7 +104,7 @@ return {
                 local win = api.nvim_get_current_win()
                 local win_width = api.nvim_win_get_width(win)
                 local win_height = api.nvim_win_get_height(win)
-                local target_width = math.min(win_width, 160)
+                local target_width = math.max(1, win_width - 12)
                 local target_height = math.max(1, math.floor(win_height / 3))
                 if config.border == nil then
                     config.border = {
@@ -221,6 +221,18 @@ return {
                         if not ok then
                             pcall(api.nvim_win_set_option, winid, "winhighlight", winhl)
                         end
+
+                        local float_width = api.nvim_win_get_width(winid)
+                        local float_height = api.nvim_win_get_height(winid)
+                        local row = math.max(0, math.floor((win_height - float_height) / 2))
+                        local col = math.max(0, math.floor((win_width - float_width) / 2))
+                        pcall(api.nvim_win_set_config, winid, {
+                            relative = "win",
+                            win = win,
+                            anchor = "NW",
+                            row = row,
+                            col = col,
+                        })
                     end
 
                     api.nvim_create_autocmd("WinClosed", {
