@@ -67,6 +67,12 @@ local function apply_lsp_hover_light()
     set_hl("VscodeHoverNormal", { fg = "#000000", bg = "#F8F8F8" })
     set_hl("VscodeHoverBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
     set_hl("VscodeHoverTitle", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
+    set_hl("VscodeHoverMuted", { fg = "#6F6F6F", bg = "#F8F8F8" })
+    set_hl("VscodeHoverHeading", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
+    set_hl("VscodeHoverCode", { fg = "#0000FF", bg = "#F8F8F8" })
+    set_hl("VscodeHoverLink", { fg = "#0000FF", bg = "#F8F8F8", underline = true })
+    set_hl("VscodeHoverStrong", { fg = "#000000", bg = "#F8F8F8", bold = true })
+    set_hl("VscodeHoverItalic", { fg = "#000000", bg = "#F8F8F8", italic = true })
 end
 
 apply_lsp_hover_light()

@@ -72,6 +72,12 @@ return {
                 vim.api.nvim_set_hl(0, "VscodeHoverNormal", { fg = "#000000", bg = "#F8F8F8" })
                 vim.api.nvim_set_hl(0, "VscodeHoverBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
                 vim.api.nvim_set_hl(0, "VscodeHoverTitle", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverMuted", { fg = "#6F6F6F", bg = "#F8F8F8" })
+                vim.api.nvim_set_hl(0, "VscodeHoverHeading", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverCode", { fg = "#0000FF", bg = "#F8F8F8" })
+                vim.api.nvim_set_hl(0, "VscodeHoverLink", { fg = "#0000FF", bg = "#F8F8F8", underline = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverStrong", { fg = "#000000", bg = "#F8F8F8", bold = true })
+                vim.api.nvim_set_hl(0, "VscodeHoverItalic", { fg = "#000000", bg = "#F8F8F8", italic = true })
             end
 
             local function client_positional_params(params)
@@ -90,6 +96,51 @@ return {
                 "Normal:VscodeHoverNormal",
                 "FloatBorder:VscodeHoverBorder",
                 "FloatTitle:VscodeHoverTitle",
+                "Conceal:VscodeHoverMuted",
+                "Delimiter:VscodeHoverMuted",
+                "Special:VscodeHoverCode",
+                "Title:VscodeHoverHeading",
+                "Comment:VscodeHoverMuted",
+                "@comment:VscodeHoverMuted",
+                "@markup.heading:VscodeHoverHeading",
+                "@markup.heading.1:VscodeHoverHeading",
+                "@markup.heading.2:VscodeHoverHeading",
+                "@markup.heading.3:VscodeHoverHeading",
+                "@markup.heading.4:VscodeHoverHeading",
+                "@markup.heading.5:VscodeHoverHeading",
+                "@markup.heading.6:VscodeHoverHeading",
+                "@markup.link:VscodeHoverLink",
+                "@markup.link.label:VscodeHoverLink",
+                "@markup.link.url:VscodeHoverMuted",
+                "@markup.raw:VscodeHoverCode",
+                "@markup.raw.block:VscodeHoverCode",
+                "@markup.raw.delimiter:VscodeHoverMuted",
+                "@markup.list:VscodeHoverNormal",
+                "@markup.list.markdown:VscodeHoverNormal",
+                "@markup.quote:VscodeHoverMuted",
+                "@markup.strong:VscodeHoverStrong",
+                "@markup.italic:VscodeHoverItalic",
+                "@punctuation.delimiter:VscodeHoverMuted",
+                "markdownH1:VscodeHoverHeading",
+                "markdownH2:VscodeHoverHeading",
+                "markdownH3:VscodeHoverHeading",
+                "markdownH4:VscodeHoverHeading",
+                "markdownH5:VscodeHoverHeading",
+                "markdownH6:VscodeHoverHeading",
+                "markdownHeadingDelimiter:VscodeHoverHeading",
+                "markdownCode:VscodeHoverCode",
+                "markdownCodeDelimiter:VscodeHoverMuted",
+                "markdownCodeBlock:VscodeHoverCode",
+                "markdownCodeBlockDelimiter:VscodeHoverMuted",
+                "markdownRule:VscodeHoverMuted",
+                "markdownUrl:VscodeHoverLink",
+                "markdownLinkText:VscodeHoverLink",
+                "markdownId:VscodeHoverMuted",
+                "markdownBold:VscodeHoverStrong",
+                "markdownItalic:VscodeHoverItalic",
+                "markdownBlockquote:VscodeHoverMuted",
+                "markdownListMarker:VscodeHoverNormal",
+                "markdownOrderedListMarker:VscodeHoverNormal",
             }, ",")
 
             vim.lsp.buf.hover = function(config)
@@ -99,6 +150,12 @@ return {
                 config.focus_id = ms.textDocument_hover
                 if config.border == nil then
                     config.border = "single"
+                end
+                if config.max_width == nil or config.max_width > 80 then
+                    config.max_width = 80
+                end
+                if config.wrap_at == nil or config.wrap_at > 80 then
+                    config.wrap_at = 80
                 end
 
                 lsp.buf_request_all(0, ms.textDocument_hover, client_positional_params(), function(results, ctx)
