@@ -20,38 +20,36 @@ local function get_vscode_light_palette()
         vscBlue = "#0000FF",
     }
 
-    local ok, colors = pcall(require, "vscode.colors")
-    if not ok or type(colors.get_colors) ~= "function" then
+    local runtime = vim.api.nvim_get_runtime_file("lua/vscode/colors.lua", false)
+    local path = runtime and runtime[1] or nil
+    if not path then
         return fallback
     end
 
-    local original_bg = vim.api.nvim_get_option_value("background", { scope = "global" })
-    local palette = nil
-    local ok, result = pcall(function()
-        vim.api.nvim_cmd({
-            cmd = "set",
-            args = { "background=light" },
-            mods = { noautocmd = true, silent = true },
-        }, {})
+    local env = {
+        vim = {
+            o = { background = "light" },
+            tbl_extend = vim.tbl_extend,
+        },
+        require = require,
+    }
 
-        local ok_colors, colors_result = pcall(colors.get_colors)
+    local chunk, err = loadfile(path)
+    if not chunk then
+        return fallback
+    end
+    if setfenv then
+        setfenv(chunk, env)
+    end
 
-        vim.api.nvim_cmd({
-            cmd = "set",
-            args = { "background=" .. original_bg },
-            mods = { noautocmd = true, silent = true },
-        }, {})
+    local ok_mod, mod = pcall(chunk)
+    if not ok_mod or type(mod) ~= "table" or type(mod.get_colors) ~= "function" then
+        return fallback
+    end
 
-        if ok_colors then
-            return colors_result
-        end
-        return nil
-    end)
-
-    if ok and result ~= nil then
-        palette = result
-    else
-        palette = fallback
+    local ok_palette, palette = pcall(mod.get_colors)
+    if not ok_palette or type(palette) ~= "table" then
+        return fallback
     end
 
     for k, v in pairs(fallback) do

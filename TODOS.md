@@ -33,6 +33,7 @@
 - [X] 2025-12-26 Pull popup palette from vscode.nvim light colors and sync Blink/LSP mappings.
 - [X] 2025-12-26 Ensure LSP hover mapping works after opening files post-startup.
 - [X] 2025-12-26 Read VSCode light palette with noautocmd background swap to avoid theme break.
+- [X] 2025-12-26 Load VSCode light palette in isolated env to avoid touching background.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
