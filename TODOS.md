@@ -24,6 +24,7 @@
 - [X] 2025-12-26 Map NormalFloat in hover winhighlight to override dark popup background.
 - [X] 2025-12-26 Replace vim.lsp.buf.hover to apply VSCode light winhighlight on the created float.
 - [X] 2025-12-26 Extend hover winhighlight mappings for markdown/treesitter groups + cap width at 80.
+- [X] 2025-12-26 Use block glyph borders for hover float (▀/▄/█).
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.
