@@ -30,6 +30,8 @@
 - [X] 2025-12-26 Add inner padding by prefix/suffix spaces on hover contents.
 - [X] 2025-12-26 Apply VSCode light hover palette to Blink completion/doc/signature popups.
 - [X] 2025-12-26 Align hover + Blink text colors with VSCode light palette values.
+- [X] 2025-12-26 Pull popup palette from vscode.nvim light colors and sync Blink/LSP mappings.
+- [X] 2025-12-26 Ensure LSP hover mapping works after opening files post-startup.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

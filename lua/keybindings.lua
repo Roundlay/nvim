@@ -201,6 +201,9 @@ visual('<leader>w', '<Esc>:lua package.loaded["scripts.viswrap"]=nil; require("s
 
 normal('<n>', '<C-v>', "WIN: Fixes paste overlap within Visual Command Mode.")
 normal('<leader>l', ':Lazy<CR>', "Open the Lazy plugin manager.")
+vim.keymap.set("n", "<leader>k", function()
+    vim.lsp.buf.hover()
+end, { desc = "Hover documentation", silent = true })
 normal("<leader>dt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d ')}, 'c', true, true)<CR>", "Insert current date at cursor.")
 normal("<leader>dtt", ":lua vim.api.nvim_put({os.date('%Y-%m-%d %H:%M:%S')}, 'c', true, true)<CR>", "Insert current date and time at cursor.")
 normal('<leader>s', ':lua vim.cmd("source " .. vim.fn.expand("%:p")) print(vim.fn.expand("%:p") .. " sourced.")<CR>', "Source the current file.")

@@ -4,22 +4,7 @@ return {
     "neovim/nvim-lspconfig",
     enabled = true,
     lazy = true,
-    ft = {
-        -- C/C++/Objective-C (clangd)
-        "c", "cpp", "objc", "objcpp",
-        -- Lua (lua_ls)
-        "lua",
-        -- Python (pyright)
-        "python",
-        -- Odin (ols)
-        "odin",
-        -- Web (html, cssls, jsonls)
-        "html", "css", "json", "jsonc",
-        -- Vim (vimls)
-        "vim",
-        -- Markdown (marksman)
-        "markdown",
-    },
+    event = { "BufReadPre", "BufNewFile" },
     cmd = {
         "LspInfo",
         "LspLog",
@@ -69,15 +54,18 @@ return {
             local hover_ns = api.nvim_create_namespace("vscode_lsp_hover_range")
 
             local function set_hover_hl()
-                local palette = {
-                    front = "#343434",
-                    bg = "#F8F8F8",
-                    border = "#DDDDDD",
-                    muted = "#767676",
-                    accent = "#0451A5",
-                    link = "#0064c1",
-                    code = "#0000FF",
-                }
+                local palette = vim.g.vscode_light_popup
+                if type(palette) ~= "table" then
+                    palette = {
+                        front = "#343434",
+                        bg = "#F8F8F8",
+                        border = "#DDDDDD",
+                        muted = "#767676",
+                        accent = "#0451A5",
+                        link = "#0064c1",
+                        code = "#0000FF",
+                    }
+                end
 
                 vim.api.nvim_set_hl(0, "VscodeHoverNormal", { fg = palette.front, bg = palette.bg })
                 vim.api.nvim_set_hl(0, "VscodeHoverBorder", { fg = palette.border, bg = palette.bg })
@@ -313,7 +301,9 @@ return {
             vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts("Go to declaration"))
             vim.keymap.set("n", "gr", vim.lsp.buf.references, opts("Go to references"))
             vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts("Go to implementation"))
-            vim.keymap.set("n", "<leader>k", vim.lsp.buf.hover, opts("Hover documentation"))
+            vim.keymap.set("n", "<leader>k", function()
+                vim.lsp.buf.hover()
+            end, opts("Hover documentation"))
             vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts("Rename symbol"))
             vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts("Code action"))
         end

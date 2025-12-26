@@ -27,6 +27,16 @@ return {
                 },
             },
             menu = {
+                border = {
+                    { "█", "BlinkCmpMenuBorder" },
+                    { "▀", "BlinkCmpMenuBorder" },
+                    { "█", "BlinkCmpMenuBorder" },
+                    { "█", "BlinkCmpMenuBorder" },
+                    { "█", "BlinkCmpMenuBorder" },
+                    { "▄", "BlinkCmpMenuBorder" },
+                    { "█", "BlinkCmpMenuBorder" },
+                    { "█", "BlinkCmpMenuBorder" },
+                },
                 scrollbar = true,
                 draw = {
                     columns = { { 'label', 'label_description', gap = 1 }, { 'kind' } },
@@ -90,11 +100,35 @@ return {
                     min_width = 40,
                     max_width = 40,
                     -- max_height = 15,
+                    border = {
+                        { "█", "BlinkCmpDocBorder" },
+                        { "▀", "BlinkCmpDocBorder" },
+                        { "█", "BlinkCmpDocBorder" },
+                        { "█", "BlinkCmpDocBorder" },
+                        { "█", "BlinkCmpDocBorder" },
+                        { "▄", "BlinkCmpDocBorder" },
+                        { "█", "BlinkCmpDocBorder" },
+                        { "█", "BlinkCmpDocBorder" },
+                    },
                     scrollbar = true,
                 },
             },
             keyword = {
                 range = 'full',
+            },
+        },
+        signature = {
+            window = {
+                border = {
+                    { "█", "BlinkCmpSignatureHelpBorder" },
+                    { "▀", "BlinkCmpSignatureHelpBorder" },
+                    { "█", "BlinkCmpSignatureHelpBorder" },
+                    { "█", "BlinkCmpSignatureHelpBorder" },
+                    { "█", "BlinkCmpSignatureHelpBorder" },
+                    { "▄", "BlinkCmpSignatureHelpBorder" },
+                    { "█", "BlinkCmpSignatureHelpBorder" },
+                    { "█", "BlinkCmpSignatureHelpBorder" },
+                },
             },
         },
         sources = {

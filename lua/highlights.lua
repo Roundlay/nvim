@@ -7,16 +7,50 @@ local function set_hl(group, opts)
     vim.api.nvim_set_hl(0, group, opts)
 end
 
-local vscode_light = {
-    front = "#343434",
-    bg = "#F8F8F8",
-    border = "#DDDDDD",
-    muted = "#767676",
-    accent = "#0451A5",
-    link = "#0064c1",
-    code = "#0000FF",
-    selection = "#d7eafe",
+local function get_vscode_light_palette()
+    local fallback = {
+        vscFront = "#343434",
+        vscPopupBack = "#F8F8F8",
+        vscPopupFront = "#000000",
+        vscPopupHighlightBlue = "#0064c1",
+        vscPopupHighlightGray = "#767676",
+        vscPopupHighlightLightBlue = "#d7eafe",
+        vscSplitDark = "#DDDDDD",
+        vscLightBlue = "#0451A5",
+        vscBlue = "#0000FF",
+    }
+
+    local ok, colors = pcall(require, "vscode.colors")
+    if not ok or type(colors.get_colors) ~= "function" then
+        return fallback
+    end
+
+    local original_bg = vim.o.background
+    vim.o.background = "light"
+    local palette = colors.get_colors() or {}
+    vim.o.background = original_bg
+
+    for k, v in pairs(fallback) do
+        if palette[k] == nil then
+            palette[k] = v
+        end
+    end
+    return palette
+end
+
+local vscode_light_palette = get_vscode_light_palette()
+local vscode_popup = {
+    front = vscode_light_palette.vscFront,
+    bg = vscode_light_palette.vscPopupBack,
+    border = vscode_light_palette.vscSplitDark,
+    muted = vscode_light_palette.vscPopupHighlightGray,
+    accent = vscode_light_palette.vscLightBlue,
+    link = vscode_light_palette.vscPopupHighlightBlue,
+    code = vscode_light_palette.vscBlue,
+    selection = vscode_light_palette.vscPopupHighlightLightBlue,
 }
+
+vim.g.vscode_light_popup = vscode_popup
 
 -- LSP semantic overrides (avoid dimming inactive #if regions).
 local lsp_inactive_types = {
@@ -75,15 +109,15 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 })
 
 local function apply_lsp_hover_light()
-    set_hl("VscodeHoverNormal", { fg = vscode_light.front, bg = vscode_light.bg })
-    set_hl("VscodeHoverBorder", { fg = vscode_light.border, bg = vscode_light.bg })
-    set_hl("VscodeHoverTitle", { fg = vscode_light.accent, bg = vscode_light.bg, bold = true })
-    set_hl("VscodeHoverMuted", { fg = vscode_light.muted, bg = vscode_light.bg })
-    set_hl("VscodeHoverHeading", { fg = vscode_light.accent, bg = vscode_light.bg, bold = true })
-    set_hl("VscodeHoverCode", { fg = vscode_light.code, bg = vscode_light.bg })
-    set_hl("VscodeHoverLink", { fg = vscode_light.link, bg = vscode_light.bg, underline = true })
-    set_hl("VscodeHoverStrong", { fg = vscode_light.front, bg = vscode_light.bg, bold = true })
-    set_hl("VscodeHoverItalic", { fg = vscode_light.front, bg = vscode_light.bg, italic = true })
+    set_hl("VscodeHoverNormal", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("VscodeHoverBorder", { fg = vscode_popup.border, bg = vscode_popup.bg })
+    set_hl("VscodeHoverTitle", { fg = vscode_popup.accent, bg = vscode_popup.bg, bold = true })
+    set_hl("VscodeHoverMuted", { fg = vscode_popup.muted, bg = vscode_popup.bg })
+    set_hl("VscodeHoverHeading", { fg = vscode_popup.accent, bg = vscode_popup.bg, bold = true })
+    set_hl("VscodeHoverCode", { fg = vscode_popup.code, bg = vscode_popup.bg })
+    set_hl("VscodeHoverLink", { fg = vscode_popup.link, bg = vscode_popup.bg, underline = true })
+    set_hl("VscodeHoverStrong", { fg = vscode_popup.front, bg = vscode_popup.bg, bold = true })
+    set_hl("VscodeHoverItalic", { fg = vscode_popup.front, bg = vscode_popup.bg, italic = true })
 end
 
 apply_lsp_hover_light()
@@ -95,28 +129,28 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 })
 
 local function apply_blink_light()
-    set_hl("BlinkCmpMenu", { fg = vscode_light.front, bg = vscode_light.bg })
-    set_hl("BlinkCmpMenuBorder", { fg = vscode_light.border, bg = vscode_light.bg })
-    set_hl("BlinkCmpMenuSelection", { fg = vscode_light.front, bg = vscode_light.selection })
+    set_hl("BlinkCmpMenu", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("BlinkCmpMenuBorder", { fg = vscode_popup.border, bg = vscode_popup.bg })
+    set_hl("BlinkCmpMenuSelection", { fg = vscode_popup.front, bg = vscode_popup.selection })
     set_hl("BlinkCmpScrollBarThumb", { fg = "#C4C4C4", bg = "#C4C4C4" })
     set_hl("BlinkCmpScrollBarGutter", { fg = "#E5E5E5", bg = "#E5E5E5" })
 
-    set_hl("BlinkCmpLabel", { fg = vscode_light.front, bg = vscode_light.bg })
-    set_hl("BlinkCmpLabelMatch", { fg = vscode_light.link, bg = vscode_light.bg, bold = true })
-    set_hl("BlinkCmpLabelDeprecated", { fg = vscode_light.muted, bg = vscode_light.bg, strikethrough = true })
-    set_hl("BlinkCmpLabelDetail", { fg = vscode_light.muted, bg = vscode_light.bg })
-    set_hl("BlinkCmpLabelDescription", { fg = vscode_light.muted, bg = vscode_light.bg })
-    set_hl("BlinkCmpSource", { fg = vscode_light.muted, bg = vscode_light.bg })
-    set_hl("BlinkCmpKind", { fg = vscode_light.accent, bg = vscode_light.bg })
+    set_hl("BlinkCmpLabel", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("BlinkCmpLabelMatch", { fg = vscode_popup.link, bg = vscode_popup.bg, bold = true })
+    set_hl("BlinkCmpLabelDeprecated", { fg = vscode_popup.muted, bg = vscode_popup.bg, strikethrough = true })
+    set_hl("BlinkCmpLabelDetail", { fg = vscode_popup.muted, bg = vscode_popup.bg })
+    set_hl("BlinkCmpLabelDescription", { fg = vscode_popup.muted, bg = vscode_popup.bg })
+    set_hl("BlinkCmpSource", { fg = vscode_popup.muted, bg = vscode_popup.bg })
+    set_hl("BlinkCmpKind", { fg = vscode_popup.accent, bg = vscode_popup.bg })
 
-    set_hl("BlinkCmpDoc", { fg = vscode_light.front, bg = vscode_light.bg })
-    set_hl("BlinkCmpDocBorder", { fg = vscode_light.border, bg = vscode_light.bg })
-    set_hl("BlinkCmpDocSeparator", { fg = vscode_light.border, bg = vscode_light.bg })
-    set_hl("BlinkCmpDocCursorLine", { fg = vscode_light.front, bg = vscode_light.selection })
+    set_hl("BlinkCmpDoc", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("BlinkCmpDocBorder", { fg = vscode_popup.border, bg = vscode_popup.bg })
+    set_hl("BlinkCmpDocSeparator", { fg = vscode_popup.border, bg = vscode_popup.bg })
+    set_hl("BlinkCmpDocCursorLine", { fg = vscode_popup.front, bg = vscode_popup.selection })
 
-    set_hl("BlinkCmpSignatureHelp", { fg = vscode_light.front, bg = vscode_light.bg })
-    set_hl("BlinkCmpSignatureHelpBorder", { fg = vscode_light.border, bg = vscode_light.bg })
-    set_hl("BlinkCmpSignatureHelpActiveParameter", { fg = vscode_light.front, bg = vscode_light.selection, bold = true })
+    set_hl("BlinkCmpSignatureHelp", { fg = vscode_popup.front, bg = vscode_popup.bg })
+    set_hl("BlinkCmpSignatureHelpBorder", { fg = vscode_popup.border, bg = vscode_popup.bg })
+    set_hl("BlinkCmpSignatureHelpActiveParameter", { fg = vscode_popup.front, bg = vscode_popup.selection, bold = true })
 end
 
 apply_blink_light()
