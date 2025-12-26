@@ -56,6 +56,35 @@ return {
             return vim.tbl_deep_extend("force", capabilities, get_blink_capabilities())
         end
 
+        local function apply_hover_theme()
+            if vim.g._vscode_hover_light_applied then
+                return
+            end
+            vim.g._vscode_hover_light_applied = true
+
+            local base_hover = vim.lsp.handlers["textDocument/hover"] or vim.lsp.handlers.hover
+            local winhl = table.concat({
+                "Normal:VscodeHoverNormal",
+                "FloatBorder:VscodeHoverBorder",
+                "FloatTitle:VscodeHoverTitle",
+            }, ",")
+
+            vim.lsp.handlers["textDocument/hover"] = function(err, result, ctx, config)
+                config = config or {}
+                if config.border == nil then
+                    config.border = "single"
+                end
+                local bufnr, winid = base_hover(err, result, ctx, config)
+                if winid and vim.api.nvim_win_is_valid(winid) then
+                    local ok = pcall(vim.api.nvim_set_option_value, "winhighlight", winhl, { win = winid })
+                    if not ok then
+                        pcall(vim.api.nvim_win_set_option, winid, "winhighlight", winhl)
+                    end
+                end
+                return bufnr, winid
+            end
+        end
+
         local os_info = vim.uv.os_uname()
         local is_windows = os_info and os_info.sysname:match("Windows") ~= nil
         local function norm(path)
@@ -97,6 +126,8 @@ return {
                 debounce_text_changes = 1,
             },
         }
+
+        apply_hover_theme()
 
         local server_names = {
             "clangd",

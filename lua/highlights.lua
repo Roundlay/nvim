@@ -35,11 +35,23 @@ local lsp_inactive_types = {
 }
 
 local function apply_lsp_semantic_overrides()
-    set_hl("@lsp.mod.inactive", { link = "Normal" })
-    set_hl("LspInactiveRegion", { link = "Normal" })
+    -- clangd marks inactive #if regions as semantic token type "comment".
+    -- Clear LSP comment highlighting for C/C++ so treesitter handles it instead.
+    -- This prevents inactive preprocessor blocks from being grayed out.
+    set_hl("@lsp.type.comment.c", {})
+    set_hl("@lsp.type.comment.cpp", {})
+    set_hl("@lsp.type.comment.objc", {})
+
+    -- Also clear inactive region highlights (for other LSP servers)
+    set_hl("@lsp.mod.inactive", {})
+    set_hl("LspInactiveRegion", {})
+    set_hl("@lsp.mod.inactive.c", {})
+    set_hl("@lsp.mod.inactive.cpp", {})
     for i = 1, #lsp_inactive_types do
         local token_type = lsp_inactive_types[i]
-        set_hl("@lsp.typemod." .. token_type .. ".inactive", { link = "@lsp.type." .. token_type })
+        set_hl("@lsp.typemod." .. token_type .. ".inactive", {})
+        set_hl("@lsp.typemod." .. token_type .. ".inactive.c", {})
+        set_hl("@lsp.typemod." .. token_type .. ".inactive.cpp", {})
     end
 end
 
@@ -49,6 +61,20 @@ local lsp_semantic_group = vim.api.nvim_create_augroup("LspSemanticOverrides", {
 vim.api.nvim_create_autocmd("ColorScheme", {
     group = lsp_semantic_group,
     callback = apply_lsp_semantic_overrides,
+})
+
+local function apply_lsp_hover_light()
+    set_hl("VscodeHoverNormal", { fg = "#000000", bg = "#F8F8F8" })
+    set_hl("VscodeHoverBorder", { fg = "#DDDDDD", bg = "#F8F8F8" })
+    set_hl("VscodeHoverTitle", { fg = "#0451A5", bg = "#F8F8F8", bold = true })
+end
+
+apply_lsp_hover_light()
+
+local lsp_hover_group = vim.api.nvim_create_augroup("LspHoverLight", { clear = true })
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = lsp_hover_group,
+    callback = apply_lsp_hover_light,
 })
 
 -- Visual Studio Dark inspired tab colors
