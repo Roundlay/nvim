@@ -150,14 +150,14 @@ return {
                 config.focus_id = ms.textDocument_hover
                 if config.border == nil then
                     config.border = {
+                        { "█", "VscodeHoverBorder" },
                         { "▀", "VscodeHoverBorder" },
-                        { "█ ", "VscodeHoverBorder" },
+                        { "█", "VscodeHoverBorder" },
+                        { "█", "VscodeHoverBorder" },
+                        { "█", "VscodeHoverBorder" },
                         { "▄", "VscodeHoverBorder" },
-                        { "█ ", "VscodeHoverBorder" },
-                        { "█ ", "VscodeHoverBorder" },
-                        { "█ ", "VscodeHoverBorder" },
-                        { "█ ", "VscodeHoverBorder" },
-                        { "█ ", "VscodeHoverBorder" },
+                        { "█", "VscodeHoverBorder" },
+                        { "█", "VscodeHoverBorder" },
                     }
                 end
                 if config.max_width == nil or config.max_width > 80 then
@@ -248,6 +248,10 @@ return {
                             vim.notify("No information available")
                         end
                         return
+                    end
+
+                    for i = 1, #contents do
+                        contents[i] = " " .. contents[i] .. " "
                     end
 
                     local _, winid = lsp.util.open_floating_preview(contents, format, config)
