@@ -41,6 +41,7 @@
 - [X] 2025-12-26 Strip hover code fences and anchor popup under cursor line.
 - [X] 2025-12-26 Preserve hover position on refocus by caching cursor row.
 - [X] 2025-12-26 Remove hover custom highlighting (retain border + sizing).
+- [X] 2025-12-26 Preload Blink on InsertEnter and force Rust fuzzy binaries on WSL.
 
 ## Performance Instrumentation Initiative
 - [X] Create `lua/perf/collector.lua` with fixed-capacity SoA buffers, batching flush, and serializer.

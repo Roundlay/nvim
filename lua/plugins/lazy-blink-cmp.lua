@@ -6,18 +6,17 @@
 
 return {
     'saghen/blink.cmp',
-
     enabled = true,
     lazy = true,
-    event = 'InsertCharPre',
+    event = 'InsertEnter',
     version = '*',
     opts = {
         keymap = {
             preset = 'default',
             ['<C-\\>'] = {'select_and_accept', 'fallback'},
             ['<C-CR>'] = {'select_and_accept', 'fallback'},
-            ['<C-p>'] = {'select_prev', 'fallback'},
-            ['<C-n>'] = {'select_next', 'fallback'},
+            ['<C-p>']  = {'select_prev',       'fallback'},
+            ['<C-n>']  = {'select_next',       'fallback'},
         },
         completion = {
             list = {
@@ -26,260 +25,123 @@ return {
                     auto_insert = false,
                 },
             },
+            trigger = {
+                prefetch_on_insert = true,
+            },
             menu = {
                 border = {
-                    { "█", "BlinkCmpMenuBorder" },
-                    { "▀", "BlinkCmpMenuBorder" },
-                    { "█", "BlinkCmpMenuBorder" },
-                    { "█", "BlinkCmpMenuBorder" },
-                    { "█", "BlinkCmpMenuBorder" },
-                    { "▄", "BlinkCmpMenuBorder" },
-                    { "█", "BlinkCmpMenuBorder" },
-                    { "█", "BlinkCmpMenuBorder" },
+                    { "█", "NonText" },
+                    { "▀", "NonText" },
+                    { "█", "NonText" },
+                    { "█", "NonText" },
+                    { "█", "NonText" },
+                    { "▄", "NonText" },
+                    { "█", "NonText" },
+                    { "█", "NonText" },
                 },
                 scrollbar = true,
                 draw = {
-                    columns = { { 'label', 'label_description', gap = 1 }, { 'kind' } },
-                    align_to = 'label',
-                    padding = { 1, 1 },
-                    gap = 1,
                     cursorline_priority = 10000,
+
+                    gap      = 1,
+                    padding  = { 1, 1 },
+
+                    columns  = {{'label', 'label_description', gap = 1}, {'kind'}},
+                    align_to = 'label',
+
                     components = {
                         kind = {
                             width = { fill = true },
                             ellipsis = true,
-                            text = function(ctx)
-                                return ctx.kind
-                            end,
-                            highlight = function(ctx)
-                                return ctx.kind_hl
-                            end,
                         },
 
                         label = {
                             width = { fill = true, min = 33, max = 33 },
-                            text = function(ctx)
-                                return ctx.label .. ctx.label_detail
-                            end,
                         },
 
                         label_description = {
                             width = { fill = true },
-                            text = function(ctx)
-                                return ctx.label_description
-                            end,
-                            highlight = 'BlinkCmpLabelDescription',
                         },
 
                         source_name = {
                             width = { fill = true },
-                            text = function(ctx)
-                                return ctx.source_name
-                            end,
-                            highlight = 'BlinkCmpSource',
                         },
 
                         source_id = {
                             width = { fill = true },
-                            text = function(ctx)
-                                return ctx.source_id
-                            end,
-                            highlight = 'BlinkCmpSource',
                         },
                     },
                 },
             },
+
             ghost_text = {
                 enabled = false,
             },
+
             documentation = {
-                auto_show = true,
-                auto_show_delay_ms = 0,
-                draw = function(opts) opts.default_implementation() end,
-                window = {
-                    min_width = 40,
-                    max_width = 40,
-                    -- max_height = 15,
-                    border = {
-                        { "█", "BlinkCmpDocBorder" },
-                        { "▀", "BlinkCmpDocBorder" },
-                        { "█", "BlinkCmpDocBorder" },
-                        { "█", "BlinkCmpDocBorder" },
-                        { "█", "BlinkCmpDocBorder" },
-                        { "▄", "BlinkCmpDocBorder" },
-                        { "█", "BlinkCmpDocBorder" },
-                        { "█", "BlinkCmpDocBorder" },
-                    },
-                    winhighlight = table.concat({
-                        "Normal:BlinkCmpDoc",
-                        "FloatBorder:BlinkCmpDocBorder",
-                        "EndOfBuffer:BlinkCmpDoc",
-                        "Identifier:VscodePopupIdentifier",
-                        "Function:VscodePopupFunction",
-                        "Statement:VscodePopupKeyword",
-                        "Keyword:VscodePopupKeyword",
-                        "Conditional:VscodePopupKeyword",
-                        "Repeat:VscodePopupKeyword",
-                        "Exception:VscodePopupKeyword",
-                        "Type:VscodePopupType",
-                        "StorageClass:VscodePopupType",
-                        "Structure:VscodePopupType",
-                        "Typedef:VscodePopupType",
-                        "String:VscodePopupString",
-                        "Character:VscodePopupString",
-                        "Number:VscodePopupNumber",
-                        "Float:VscodePopupNumber",
-                        "Boolean:VscodePopupConstant",
-                        "Constant:VscodePopupConstant",
-                        "Operator:VscodePopupOperator",
-                        "Delimiter:VscodePopupPunctuation",
-                        "PreProc:VscodePopupKeyword",
-                        "Include:VscodePopupKeyword",
-                        "Define:VscodePopupKeyword",
-                        "Macro:VscodePopupKeyword",
-                        "@function:VscodePopupFunction",
-                        "@method:VscodePopupFunction",
-                        "@function.builtin:VscodePopupFunction",
-                        "@type:VscodePopupType",
-                        "@type.builtin:VscodePopupType",
-                        "@keyword:VscodePopupKeyword",
-                        "@keyword.function:VscodePopupKeyword",
-                        "@keyword.return:VscodePopupKeyword",
-                        "@string:VscodePopupString",
-                        "@string.escape:VscodePopupString",
-                        "@string.special:VscodePopupString",
-                        "@number:VscodePopupNumber",
-                        "@float:VscodePopupNumber",
-                        "@boolean:VscodePopupConstant",
-                        "@constant:VscodePopupConstant",
-                        "@constant.builtin:VscodePopupConstant",
-                        "@operator:VscodePopupOperator",
-                        "@variable:VscodePopupIdentifier",
-                        "@variable.builtin:VscodePopupIdentifier",
-                        "@property:VscodePopupIdentifier",
-                        "@field:VscodePopupIdentifier",
-                        "@parameter:VscodePopupIdentifier",
-                        "@punctuation.delimiter:VscodePopupPunctuation",
-                        "@punctuation.bracket:VscodePopupPunctuation",
-                        "@punctuation.special:VscodePopupPunctuation",
-                        "@markup.heading:VscodeHoverHeading",
-                        "@markup.raw:VscodeHoverCode",
-                        "@markup.raw.block:VscodeHoverCode",
-                        "@markup.raw.delimiter:VscodeHoverMuted",
-                        "@markup.link:VscodeHoverLink",
-                        "@markup.link.label:VscodeHoverLink",
-                        "@markup.link.url:VscodeHoverMuted",
-                        "@markup.strong:VscodeHoverStrong",
-                        "@markup.italic:VscodeHoverItalic",
-                        "@punctuation.delimiter:VscodeHoverMuted",
-                        "markdownH1:VscodeHoverHeading",
-                        "markdownH2:VscodeHoverHeading",
-                        "markdownH3:VscodeHoverHeading",
-                        "markdownH4:VscodeHoverHeading",
-                        "markdownH5:VscodeHoverHeading",
-                        "markdownH6:VscodeHoverHeading",
-                        "markdownHeadingDelimiter:VscodeHoverHeading",
-                        "markdownCode:VscodeHoverCode",
-                        "markdownCodeDelimiter:VscodeHoverMuted",
-                        "markdownCodeBlock:VscodeHoverCode",
-                        "markdownCodeBlockDelimiter:VscodeHoverMuted",
-                        "markdownRule:VscodeHoverMuted",
-                        "markdownUrl:VscodeHoverLink",
-                        "markdownLinkText:VscodeHoverLink",
-                        "markdownId:VscodeHoverMuted",
-                        "markdownBold:VscodeHoverStrong",
-                        "markdownItalic:VscodeHoverItalic",
-                        "markdownBlockquote:VscodeHoverMuted",
-                        "markdownListMarker:VscodeHoverNormal",
-                        "markdownOrderedListMarker:VscodeHoverNormal",
-                    }, ","),
-                    scrollbar = true,
-                },
+                auto_show = false ,
             },
+
             keyword = {
                 range = 'full',
             },
         },
+
         signature = {
             window = {
                 border = {
-                    { "█", "BlinkCmpSignatureHelpBorder" },
-                    { "▀", "BlinkCmpSignatureHelpBorder" },
-                    { "█", "BlinkCmpSignatureHelpBorder" },
-                    { "█", "BlinkCmpSignatureHelpBorder" },
-                    { "█", "BlinkCmpSignatureHelpBorder" },
-                    { "▄", "BlinkCmpSignatureHelpBorder" },
-                    { "█", "BlinkCmpSignatureHelpBorder" },
-                    { "█", "BlinkCmpSignatureHelpBorder" },
+                    { "█", "NonText" },
+                    { "▀", "NonText" },
+                    { "█", "NonText" },
+                    { "█", "NonText" },
+                    { "█", "NonText" },
+                    { "▄", "NonText" },
+                    { "█", "NonText" },
+                    { "█", "NonText" },
                 },
-                winhighlight = table.concat({
-                    "Normal:BlinkCmpSignatureHelp",
-                    "FloatBorder:BlinkCmpSignatureHelpBorder",
-                    "Identifier:VscodePopupIdentifier",
-                    "Function:VscodePopupFunction",
-                    "Statement:VscodePopupKeyword",
-                    "Keyword:VscodePopupKeyword",
-                    "Conditional:VscodePopupKeyword",
-                    "Repeat:VscodePopupKeyword",
-                    "Exception:VscodePopupKeyword",
-                    "Type:VscodePopupType",
-                    "StorageClass:VscodePopupType",
-                    "Structure:VscodePopupType",
-                    "Typedef:VscodePopupType",
-                    "String:VscodePopupString",
-                    "Character:VscodePopupString",
-                    "Number:VscodePopupNumber",
-                    "Float:VscodePopupNumber",
-                    "Boolean:VscodePopupConstant",
-                    "Constant:VscodePopupConstant",
-                    "Operator:VscodePopupOperator",
-                    "Delimiter:VscodePopupPunctuation",
-                    "PreProc:VscodePopupKeyword",
-                    "Include:VscodePopupKeyword",
-                    "Define:VscodePopupKeyword",
-                    "Macro:VscodePopupKeyword",
-                    "@function:VscodePopupFunction",
-                    "@method:VscodePopupFunction",
-                    "@function.builtin:VscodePopupFunction",
-                    "@type:VscodePopupType",
-                    "@type.builtin:VscodePopupType",
-                    "@keyword:VscodePopupKeyword",
-                    "@keyword.function:VscodePopupKeyword",
-                    "@keyword.return:VscodePopupKeyword",
-                    "@string:VscodePopupString",
-                    "@string.escape:VscodePopupString",
-                    "@string.special:VscodePopupString",
-                    "@number:VscodePopupNumber",
-                    "@float:VscodePopupNumber",
-                    "@boolean:VscodePopupConstant",
-                    "@constant:VscodePopupConstant",
-                    "@constant.builtin:VscodePopupConstant",
-                    "@operator:VscodePopupOperator",
-                    "@variable:VscodePopupIdentifier",
-                    "@variable.builtin:VscodePopupIdentifier",
-                    "@property:VscodePopupIdentifier",
-                    "@field:VscodePopupIdentifier",
-                    "@parameter:VscodePopupIdentifier",
-                    "@punctuation.delimiter:VscodePopupPunctuation",
-                    "@punctuation.bracket:VscodePopupPunctuation",
-                    "@punctuation.special:VscodePopupPunctuation",
-                }, ","),
             },
         },
+
         sources = {
             default = { 'lsp', 'path', 'snippets' },
         },
     },
+
     opts_extend = { 'sources.default' },
+
     config = function(_, opts)
         local blink_ok, blink = pcall(require, "blink.cmp")
+
         if not blink_ok then
             blink_ok, blink = pcall(require, "blink-cmp")
         end
+
         if not blink_ok then
             vim.notify(vim.inspect(blink), vim.log.levels.ERROR)
             return
         end
+
+        local os_info = vim.uv.os_uname()
+        local machine = os_info and os_info.machine or ""
+        local is_wsl = vim.fn.has("wsl") == 1
+
+        opts.fuzzy = opts.fuzzy or {}
+        opts.fuzzy.implementation = opts.fuzzy.implementation or "prefer_rust_with_warning"
+
+        if is_wsl then
+            local triple = nil
+            if machine == "x86_64" then
+                triple = "x86_64-unknown-linux-gnu"
+            elseif machine == "aarch64" then
+                triple = "aarch64-unknown-linux-gnu"
+            end
+            if triple then
+                opts.fuzzy.prebuilt_binaries = opts.fuzzy.prebuilt_binaries or {}
+                opts.fuzzy.prebuilt_binaries.download = true
+                opts.fuzzy.prebuilt_binaries.force_system_triple = triple
+            end
+        end
+
         blink.setup(opts)
     end,
 }
