@@ -337,6 +337,10 @@ return {
                     "--header-insertion=iwyu",
                     "--completion-style=detailed",
                 },
+                init_options = {
+                    -- Remove the default error limit (20) - show all errors
+                    fallbackFlags = { "-ferror-limit=0" },
+                },
             },
 
             -- cssls, html, jsonls: PATH-based cmd
