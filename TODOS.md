@@ -1,5 +1,45 @@
 # TODOs
 
+## Scrolling Hitching Investigation (2025-12-30) — RESOLVED
+
+**Symptom:** Periodic micro-hitching and tearing-like artifacts during continuous scrolling.
+
+### Resolution Summary
+
+- [X] **ROOT CAUSE IDENTIFIED:** `vim.o.showcmd = false` **combined with tmux pane splits** caused tearing artifacts.
+    - The issue only manifests when Neovim runs in a tmux split (horizontal or vertical).
+    - Single tmux window (no splits) does not exhibit the tearing.
+    - Likely cause: `showcmd=false` alters redraw timing/batching in a way that conflicts with tmux's pane synchronization.
+- [X] **FIX APPLIED:** Commented out `showcmd = false` (line 75), leaving default `true`.
+- [X] **VERIFIED:** Full config now scrolls without tearing. Baseline hitching (~3.5/5) remains due to WSL2/terminal overhead.
+
+### Investigation Method
+
+Bisection testing with isolated test inits (A-Z series) progressively narrowed:
+1. Full config vs `--clean -u NONE` → config-induced (tearing gone with clean)
+2. Plugins vs settings → `settings.lua` caused tearing (Test J)
+3. Display options cluster → `laststatus`/`showcmd`/`showmode` (Test R → V)
+4. Individual settings → `showcmd = false` (Test Y)
+5. Post-fix observation: issue specific to **tmux splits**, not standalone tmux windows
+
+### Collateral Fixes
+
+- [X] Fixed `vim.g` vs `vim.o` API misuse for `hidden`, `mouse`, `timeoutlen`, `ttimeoutlen`.
+- [X] Removed no-op `vim.g.redrawtime = 1`.
+
+### Remaining Baseline Hitching
+
+The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 display server, terminal PTY latency). Not addressable via Neovim config.
+
+### Future Optimization Opportunities (Optional)
+
+- [ ] 2.0 - `pretty_line_numbers` optimization (hoist globals, pre-compute formats, avoid regex in hot path).
+- [ ] 3.0 - Lualine event-driven refresh (replace 1000ms timer with autocmd-based updates).
+- [ ] 4.0 - `custom_diagnostics` optimization (cache diagnostics, reduce `redraw!` calls).
+- [ ] 5.0 - `c_return_types` optimization (file size threshold, aggressive debounce).
+
+---
+
 - [X] 2025-12-21 Override inactive LSP semantic groups to keep inactive C regions fully highlighted.
 - [X] 2025-12-21 Re-enable LSP stack (mason + lspconfig) and centralize server lists.
 - [ ] Analyse perf. log output!

@@ -7,21 +7,7 @@ local M = {}
 -- VISREP
 -- Replace visually selected text globally with a new string. Respects word boundaries, or not.
 
-
--- [ ] You know it would be cool if the VISREP command area just worked like Neovim. I.e. modal editing in there.
--- [ ] TODO Ensure that the first item in the [N/N] list is the one we started with, not the literal first.
--- [ ] TODO Config: Add standard plugin configuration options.
--- [ ] TODO Config: default mode. Add `vim.g.visrep_default_mode = 'boundary'|'anywhere'`.
--- [ ] TODO Config: preview scope. Add `vim.g.visrep_preview = 'viewport'|'global'|'auto'` and `vim.g.visrep_preview_margin = 10` (extra lines above/below viewport).
--- [ ] TODO Theming: expose highlight groups (e.g. VisrepText) as user-configurable.
--- [ ] TODO Debounce: Coalesce rapid keystrokes with ~10–20ms debounce for rerender.
--- [ ] TODO Async index: Implement async build for very large files (>100k lines)?
--- [ ] TODO Unicode boundaries: Use 'iskeyword' or Vim regex classes to widen beyond ASCII.
--- [ ] TODO Multi-line live preview: Extend overlay builder to selections with newlines.
--- [ ] TODO Incremental viewport updates: Diff previous/next visible ranges; update only changed lines.
--- [ ] TODO Case behavior: Option to toggle case sensitivity (e.g. smartcase) per invocation.
--- [?] How should we handle situations where the user wants to replace something with *nothing*?
--- [?] What are the biggest pain points of the default %s search and replace that you're trying to remedy here?
+-- TODO: Don't truncate long strings in the command prompt area. E.g. when trying to visrep GenerateDefaultGridSpcification we see '[N/N] Replace "GenerateDefaultGridSpecific…" boundary with:'.
 
 local function run()
     local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line (1-based), col (0-based bytes)}

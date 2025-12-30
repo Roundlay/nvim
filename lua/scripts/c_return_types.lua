@@ -13,6 +13,8 @@ local c_return_states = {} ---@type table<integer, table>
 local c_return_queries = {} ---@type table<string, any>
 local c_return_marks = {} ---@type table<integer, table<integer, table>>
 
+local islist = vim.islist or vim.tbl_islist
+
 local namespace = vim.api.nvim_create_namespace("c_return_types")
 local augroup = nil
 
@@ -35,7 +37,7 @@ local function extract_hover_text(res)
         if contents.value then
             return contents.value
         end
-        if vim.tbl_islist(contents) then
+        if islist(contents) then
             for _, entry in ipairs(contents) do
                 if type(entry) == "string" then
                     return entry
