@@ -4,6 +4,73 @@ end
 
 local M = {}
 
+-- Upvalue hoisting: reduce table lookups in hot path
+local v = vim.v
+local abs = math.abs
+local tostring = tostring
+
+-- Highlight group name constants (avoid runtime string creation)
+local HL_CURSOR = "CursorLineNr"
+local HL_NORMAL = "LineNr"
+
+-- Format string parts (pre-computed, immutable)
+local FMT_PREFIX = "%#LineNrPrefix#"
+local FMT_SUFFIX = " %*"
+
+-- O(1) digit counter via threshold comparison
+-- Avoids log10() call and handles edge cases cleanly
+local function digit_count(n)
+    if n < 10 then return 1 end
+    if n < 100 then return 2 end
+    if n < 1000 then return 3 end
+    if n < 10000 then return 4 end
+    if n < 100000 then return 5 end
+    if n < 1000000 then return 6 end
+    return 7
+end
+
+-- Zero-padding strings lookup table: zeros_lut[width][zero_count] = "000..."
+-- Pre-computed at module load to avoid runtime string.rep() calls
+local zeros_lut = {}
+for w = 1, 7 do
+    zeros_lut[w] = {}
+    for z = 0, w do
+        zeros_lut[w][z] = string.rep("0", z)
+    end
+end
+
+-- Full pre-computation cache: results_cache[width][line_number][is_cursor]
+-- Trades ~200KB memory for zero allocations in hot path
+local results_cache = {}
+
+-- Fallback formatter for lines beyond cache (rare: files > 10K lines)
+local function format_line_uncached(num, hl, width)
+    local digits = digit_count(num)
+    local zero_count = width - digits
+    local zeros = zeros_lut[width] and zeros_lut[width][zero_count] or ""
+    return FMT_PREFIX .. zeros .. "%#" .. hl .. "#" .. tostring(num) .. FMT_SUFFIX
+end
+
+-- Initialize the full result cache
+-- max_width: maximum digit width to cache (5 = up to 99,999 lines)
+-- max_lines: maximum line number to cache
+local function init_cache(max_width, max_lines)
+    for w = 1, max_width do
+        results_cache[w] = {}
+        for n = 0, max_lines do
+            local digits = digit_count(n)
+            local zero_count = w - digits
+            local zeros = zeros_lut[w] and zeros_lut[w][zero_count] or ""
+            local num_str = tostring(n)
+            results_cache[w][n] = {
+                [true] = FMT_PREFIX .. zeros .. "%#" .. HL_CURSOR .. "#" .. num_str .. FMT_SUFFIX,
+                [false] = FMT_PREFIX .. zeros .. "%#" .. HL_NORMAL .. "#" .. num_str .. FMT_SUFFIX,
+            }
+        end
+    end
+end
+
+-- Module state
 local buf_digit_counts = {}
 local augroup = nil
 
@@ -47,16 +114,16 @@ local function update_window(winid)
 
     local cursorline_enabled = vim.api.nvim_get_option_value("cursorline", { scope = "global", win = winid })
     if not cursorline_enabled then
-        if vim.w._pln_user_cursorlineopt == nil then
-            vim.w._pln_user_cursorlineopt = vim.api.nvim_get_option_value("cursorlineopt", { win = winid })
+        if vim.w._nl_user_cursorlineopt == nil then
+            vim.w._nl_user_cursorlineopt = vim.api.nvim_get_option_value("cursorlineopt", { win = winid })
         end
         vim.api.nvim_set_option_value("cursorlineopt", "number", { win = winid })
         vim.api.nvim_set_option_value("cursorline", true, { win = winid })
-        vim.w._pln_cursorline_forced = true
+        vim.w._nl_cursorline_forced = true
     end
 
     local line_count = vim.api.nvim_buf_line_count(buf)
-    local digits = #tostring(line_count)
+    local digits = digit_count(line_count)
     local required_width = math.max(2, digits + 2)
 
     if vim.api.nvim_win_get_option(winid, "numberwidth") ~= required_width then
@@ -78,7 +145,7 @@ local function setup_autocmds()
         return
     end
 
-    augroup = vim.api.nvim_create_augroup("PrettyLineNumbers", { clear = true })
+    augroup = vim.api.nvim_create_augroup("Numberline", { clear = true })
 
     vim.api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "WinNew", "WinResized" }, {
         group = augroup,
@@ -104,7 +171,7 @@ local function setup_autocmds()
             end
 
             local count = vim.api.nvim_buf_line_count(buf)
-            local digits = #tostring(count)
+            local digits = digit_count(count)
             local cached = buf_digit_counts[buf] or 0
 
             if digits ~= cached then
@@ -124,12 +191,12 @@ local function setup_autocmds()
             local now_on = vim.api.nvim_get_option_value("cursorline", { scope = "global", win = win })
 
             if now_on then
-                local restore = vim.w._pln_user_cursorlineopt or "line,number"
+                local restore = vim.w._nl_user_cursorlineopt or "line,number"
                 vim.api.nvim_set_option_value("cursorlineopt", restore, { scope = "global", win = win })
-                vim.w._pln_cursorline_forced = false
+                vim.w._nl_cursorline_forced = false
             else
                 vim.api.nvim_set_option_value("cursorlineopt", "number", { scope = "global", win = win })
-                vim.w._pln_cursorline_forced = true
+                vim.w._nl_cursorline_forced = true
             end
 
             update_window(win)
@@ -137,26 +204,41 @@ local function setup_autocmds()
     })
 end
 
+-- Hot path: called per-line during rendering
+-- Optimized for zero allocations via pre-computed cache lookup
 local function define_formatter()
     _G.FormatLineNr = function(width, use_rel)
-        if vim.v.virtnum ~= 0 then
+        -- Fast path: skip virtual lines (wrapped lines, folds)
+        if v.virtnum ~= 0 then
             return ""
         end
-        local rel = vim.v.relnum
-        local num = (use_rel == 1 and rel ~= 0) and math.abs(rel) or vim.v.lnum
-        local hl = (rel == 0) and "CursorLineNr" or "LineNr"
-        local padded = ("%0" .. width .. "d"):format(num)
-        local zeros, rest = padded:match("^(0*)(.*)$")
 
-        return ("%%#LineNrPrefix#%s%%#%s#%s %%*"):format(zeros, hl, rest)
+        local rel = v.relnum
+        local is_cursor = rel == 0
+        local num = is_cursor and v.lnum or (use_rel == 1 and abs(rel) or v.lnum)
+
+        -- Cache lookup: O(1) with zero allocations
+        local width_cache = results_cache[width]
+        if width_cache then
+            local num_cache = width_cache[num]
+            if num_cache then
+                return num_cache[is_cursor]
+            end
+        end
+
+        -- Fallback for lines beyond cache (files > 10K lines)
+        return format_line_uncached(num, is_cursor and HL_CURSOR or HL_NORMAL, width)
     end
 end
 
 function M.setup()
-    if vim.g._pln_loaded then
+    if vim.g._numberline_loaded then
         return
     end
-    vim.g._pln_loaded = true
+    vim.g._numberline_loaded = true
+
+    -- Initialize pre-computation cache: 5 widths x 10K lines x 2 variants (~200KB)
+    init_cache(5, 9999)
 
     buf_digit_counts = {}
     for _, win in ipairs(vim.api.nvim_list_wins()) do

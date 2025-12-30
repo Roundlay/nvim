@@ -5,35 +5,41 @@ end
 
 -- Module boiler-plate
 
+-- TODO: Don't we want to avoid globals for performance?
+
 ---@type table<string,any>
 local M = _G.M or {}
 _G.M = M  -- expose for other modules/old code paths
 
 -------------------------------------------------------------------------------
 
--- C Return Type Helper (now in lua/scripts/c_return_types.lua)
-local function get_c_return_module()
-    local ok, mod = pcall(require, "scripts.c_return_types")
+-- TODO: Are we calling these here like this for legacy reasons or is this for some good reason?
+
+local function get_mod(name)
+    local mod_name = "scripts." .. name
+    local ok, mod = pcall(require, mod_name)
     if not ok then
         return nil
     end
     return mod
 end
 
-function M:show_c_return_types()
-    local mod = get_c_return_module()
-    if not mod then
-        return
-    end
-    if mod.setup then
-        mod.setup()
-    end
-    if mod.show then
-        mod.show()
-    end
-end
+-------------------------------------------------------------------------------
 
-M:show_c_return_types()
+get_mod("c_return_types")
+-- function M:show_c_return_types()
+--     local mod = get_c_return_module()
+--     if not mod then
+--         return
+--     end
+--     if mod.setup then
+--         mod.setup()
+--     end
+--     if mod.show then
+--         mod.show()
+--     end
+-- end
+-- M:show_c_return_types()
 
 -- -----------------------------------------------------------------------------
 
@@ -68,8 +74,8 @@ M:custom_diagnostics_formatter()
     -- [ ] Add support for toggleable options like colours, highlighting the
     -- active line in the numberline, padding, etc.
 
-function M:pretty_line_numbers()
-    require("scripts.pretty_line_numbers").setup()
+function M:numberline()
+    require("scripts.numberline").setup()
 end
 
 -- -------------------------------------------------------------------------- --
@@ -98,13 +104,7 @@ end
 
 -- TAG WRAPPER
 
-local function get_wrap_with_tags_module()
-    local ok, mod = pcall(require, "scripts.wrap_with_tags")
-    if not ok then
-        return nil
-    end
-    return mod
-end
+get_mod("wrap_with_tags")
 
 local function run_wrap_with_tags(...)
     local mod = get_wrap_with_tags_module()
@@ -141,6 +141,78 @@ end
 function M:visrep(...)
     return run_visrep(...)
 end
+
+-- VISWRAP
+
+local function get_viswrap_module()
+    local ok, mod = pcall(require, "scripts.viswrap")
+    if not ok then
+        return nil
+    end
+    return mod
+end
+
+local function run_viswrap(...)
+    local mod = get_viswrap_module()
+    if not mod or type(mod.run) ~= "function" then
+        return
+    end
+    return mod.run(...)
+end
+
+function M:viswrap(...)
+    return run_viswrap(...)
+end
+
+-- PAINTBRUSH
+
+local function get_paintbrush_module()
+    local ok, mod = pcall(require, "scripts.paintbrush")
+    if not ok then
+        return nil
+    end
+    return mod
+end
+
+local function run_paintbrush(...)
+    local mod = get_paintbrush_module()
+    if not mod or type(mod.run) ~= "function" then
+        return
+    end
+    return mod.run(...)
+end
+
+function M:paintbrush(...)
+    return run_paintbrush(...)
+end
+
+-- Load paintbrush to register commands
+get_paintbrush_module()
+
+-- -------------------------------------------------------------------------- --
+
+-- MARKDOWN LIST HIGHLIGHTING
+
+local function get_markdown_list_hl_module()
+    local ok, mod = pcall(require, "scripts.markdown_list_hl")
+    if not ok then
+        return nil
+    end
+    return mod
+end
+
+function M:markdown_list_hl(opts)
+    local mod = get_markdown_list_hl_module()
+    if not mod then
+        return
+    end
+    if mod.setup then
+        mod.setup(opts)
+    end
+end
+
+-- Initialize markdown list highlighting
+M:markdown_list_hl()
 
 --------------------------------------------------------------------------------
 -- Slect 0.1.0

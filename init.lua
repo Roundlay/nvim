@@ -21,11 +21,8 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
-if vim.loader and vim.loader.enable then
-    vim.loader.enable()
-end
-
 -- WSL detection
+-- TODO: Document this.
 local function is_wsl()
     local proc_version = '/proc/version'
     if vim.fn.filereadable(proc_version) == 1 then
@@ -54,6 +51,6 @@ vim.api.nvim_create_autocmd("User", {
 vim.api.nvim_create_autocmd("UIEnter", {
     once = true,
     callback = function()
-        pcall(require, "scripts.pretty_line_numbers")
+        pcall(require, "scripts.numberline")
     end,
 })
