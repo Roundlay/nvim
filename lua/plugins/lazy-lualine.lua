@@ -11,30 +11,54 @@ local function compress_path(file_path)
         return ""
     end
 
-    local drive = file_path:match("^(%a:[/\\])") or ""
-    if drive ~= "" then
-        drive = drive:gsub("^%a", string.upper)
+    -- Handle Windows drive letter (C:/ or C:\)
+    local prefix = file_path:match("^(%a:[/\\])") or ""
+
+    -- Handle Unix absolute path (starts with /)
+    if prefix == "" and file_path:sub(1, 1) == "/" then
+        -- Replace home directory with ~
+        local home = vim.env.HOME
+        if home and file_path:sub(1, #home) == home then
+            prefix = "~/"
+            file_path = file_path:sub(#home + 1)
+            -- Strip leading slash after home (now part of prefix)
+            if file_path:sub(1, 1) == "/" then
+                file_path = file_path:sub(2)
+            end
+        else
+            prefix = "/"
+            file_path = file_path:sub(2)
+        end
+    else
+        file_path = file_path:sub(#prefix + 1)
     end
-    local path_without_drive = file_path:sub(#drive + 1)
-    local directories, filename = path_without_drive:match("^(.+[/\\])([^/\\]+)$")
+
+    -- Normalize drive letter to uppercase
+    if prefix:match("^%a:") then
+        prefix = prefix:gsub("^%a", string.upper)
+    end
+
+    -- Split into directories and filename
+    local directories, filename = file_path:match("^(.+[/\\])([^/\\]+)$")
 
     if not filename then
-        return drive .. path_without_drive
+        return prefix .. file_path
     end
 
-    local compressed_directories = directories:gsub("([^/\\]+)([/\\])", compress_directory)
+    -- Compress each directory to first character
+    local compressed = directories:gsub("([^/\\]+)([/\\])", compress_directory)
 
-    return drive .. compressed_directories .. filename
+    return prefix .. compressed .. filename
 end
 
 local function truncated_file_status()
     return function()
         local file_path = vim.api.nvim_buf_get_name(0)
-        local filetype = vim.bo.filetype
+        local file_type = vim.bo.filetype
 
-        if filetype == "oil" then
+        if file_type == "oil" then
             return "OIL: " .. require("oil").get_current_dir()
-        elseif filetype == "term" then
+        elseif file_type == "term" then
             return "Terminal"
         else
             file_path = compress_path(file_path)
@@ -52,6 +76,7 @@ local function truncated_file_status()
                 if file_path ~= "" then
                     return state .. " " .. file_path
                 end
+
                 return state
             end
 
@@ -60,36 +85,36 @@ local function truncated_file_status()
     end
 end
 
-local function display_tabs()
-    return {
-        'tabs',
-        tab_max_length = 40,
-        max_length = vim.o.columns / 3,
-        mode = 0,
-        path = 0,
-        use_mode_colors = true,
-        show_modified_status = true,
-        symbols = {
-            modified = '+',
-        },
-        fmt = function(name, context)
-            local buflist = vim.fn.tabpagebuflist(context.tabnr)
-            local winnr = vim.fn.tabpagewinnr(context.tabnr)
-            local bufnr = buflist[winnr]
-            local mod = vim.fn.getbufvar(bufnr, '&mod')
-            return name .. (mod == 1 and ' +' or '')
-        end,
-        color = function(context)
-            if context.tabnr == vim.fn.tabpagenr() then
-                -- Active tab color
-                return { bg = '#ffffff', fg = '#ffffff' }
-            else
-                -- Inactive tab color
-                return { bg = '#ffffff', fg = '#ffffff' }
-            end
-        end
-    }
-end
+-- local function display_tabs()
+--     return {
+--         'tabs',
+--         tab_max_length = 40,
+--         max_length = vim.o.columns / 3,
+--         mode = 0,
+--         path = 0,
+--         use_mode_colors = true,
+--         show_modified_status = true,
+--         symbols = {
+--             modified = '+',
+--         },
+--         fmt = function(name, context)
+--             local buflist = vim.fn.tabpagebuflist(context.tabnr)
+--             local winnr = vim.fn.tabpagewinnr(context.tabnr)
+--             local bufnr = buflist[winnr]
+--             local mod = vim.fn.getbufvar(bufnr, '&mod')
+--             return name .. (mod == 1 and ' +' or '')
+--         end,
+--         color = function(context)
+--             if context.tabnr == vim.fn.tabpagenr() then
+--                 -- Active tab color
+--                 return { bg = '#ffffff', fg = '#ffffff' }
+--             else
+--                 -- Inactive tab color
+--                 return { bg = '#ffffff', fg = '#ffffff' }
+--             end
+--         end
+--     }
+-- end
 
 local function visual_selection_count()
     return {
@@ -117,9 +142,9 @@ return {
             icons_enabled = false,
             theme = "vscode",
             refresh = {
-              statusline = 1,  -- In miliseconds, default 1000.
-              tabline = 1,
-              winbar = 1,
+              statusline = 1000,
+              tabline = 1000,
+              winbar = 1000,
             }
         },
         extension = {
@@ -132,7 +157,8 @@ return {
             lualine_a = {{"mode", fmt = truncated_mode}},
             lualine_b = {{truncated_file_status()}},
             lualine_c = {},
-            lualine_x = {display_tabs() },
+            --lualine_x = {display_tabs()},
+            lualine_x = {},
             lualine_y = {visual_selection_count()},
             lualine_z = {{"location"}},
         },

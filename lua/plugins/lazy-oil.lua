@@ -3,9 +3,10 @@
 return {
     'stevearc/oil.nvim',
     enabled = true,
-    lazy = true,
-    cmd = "Oil",
     opts = {
+        columns = {
+            "icon",
+        },
         adapters = {
             ["oil://"] = "files",
             ["oil-ssh://"] = false,
@@ -32,6 +33,24 @@ return {
         view_options = {
             show_hidden = false,
             natural_order = "fast",
+            is_hidden_file = function(name, bufnr)
+                return vim.startswith(name, ".")
+            end,
+            is_always_hidden = function(name, bufnr)
+                return false
+            end,
+        },
+        git = {
+            -- Return true to automatically git add/mv/rm files
+            add = function(path)
+                return false
+            end,
+            mv = function(src_path, dest_path)
+                return false
+            end,
+            rm = function(path)
+                return false
+            end,
         },
         float = {
             padding = 2,

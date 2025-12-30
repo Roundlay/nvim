@@ -2,6 +2,7 @@
 
 return {
     "beauwilliams/focus.nvim",
+    enabled = true,
     lazy = true,
     version = false,
     keys = {

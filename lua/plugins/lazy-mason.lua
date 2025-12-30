@@ -10,7 +10,6 @@ return {
         ui = {
             border = "none",
         },
-        PATH = "prepend",
     },
     config = function(_, opts)
 		local mason_ok, mason = pcall(require, "mason")

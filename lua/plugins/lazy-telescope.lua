@@ -22,17 +22,17 @@ return {
             layout_config = {
                 width = function(_, cols, _)
                     if cols > 200 then
-                        return 170  -- Fixed width for large windows
+                        return 180  -- Fixed width for large windows
                     else
-                        return math.floor(cols * 0.87)  -- Dynamic width for smaller windows
+                        return math.floor(cols * 0.87) -- Dynamic width for smaller windows
                     end
                 end,
                 height = function(_, _, max_lines)
-                    return math.floor(max_lines * 0.8)   -- 80% of the window height
+                    return math.floor(max_lines * 0.8) -- 80% of the window height
                 end,
                 prompt_position = "bottom",
-                preview_width = 0.5,                     -- 50% split between preview and results
-                preview_cutoff = 120,                    -- Disable preview if width is less than 120
+                preview_width = 0.5, -- 50% split between preview and results
+                preview_cutoff = 80, -- Disable preview if width is less than 120
             },
             previewer = true,
             prompt_title = "",
