@@ -67,13 +67,6 @@ M:custom_diagnostics_formatter()
 -------------------------------------------------------------------------------
 -- Custom Numberline
 
--- [ ] TODO Doesn't work in help files. Is that because they're READ-ONLY?
--- [ ] TODO Add support for plugin style setup functions within package
--- managers, e.g. Lazy. I.e. refactor this as a plugin.
-    -- [ ] Check Lazy documentation and other plugins.
-    -- [ ] Add support for toggleable options like colours, highlighting the
-    -- active line in the numberline, padding, etc.
-
 function M:numberline()
     require("scripts.numberline").setup()
 end

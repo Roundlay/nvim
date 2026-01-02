@@ -1,3 +1,5 @@
+-- TODO: Why doesn't this work in help files?
+
 if vim.g.vscode then
     return
 end
