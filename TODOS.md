@@ -1,5 +1,10 @@
 # TODOs
 
+## Commit Message Scrub Helper (2026-01-01)
+
+- [X] Add helper script to report commits containing configurable substrings.
+- [X] Add rewrite mode that strips matching lines via git filter-branch.
+
 ## Scrolling Hitching Investigation (2025-12-30) — RESOLVED
 
 **Symptom:** Periodic micro-hitching and tearing-like artifacts during continuous scrolling.
