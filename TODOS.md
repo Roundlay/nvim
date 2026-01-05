@@ -1,5 +1,10 @@
 # TODOs
 
+## OLS LSP Init Errors (2026-01-05)
+
+- [X] Select an executable `ols` command (PATH-first, then platform fallback) to avoid invalid cmd errors.
+- [X] Provide Odin root/command hints and `ODIN_ROOT` env so OLS can initialize without PATH-dependent failures.
+
 ## Commit Message Scrub Helper (2026-01-01)
 
 - [X] Add helper script to report commits containing configurable substrings.
