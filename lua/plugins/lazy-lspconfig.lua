@@ -277,6 +277,63 @@ return {
 
         local is_wsl = is_wsl_runtime()
 
+        local function is_executable(cmd)
+            return type(cmd) == "string" and vim.fn.executable(cmd) == 1
+        end
+
+        local function pick_cmd(candidates)
+            for i = 1, #candidates do
+                local cmd = candidates[i]
+                if cmd and is_executable(cmd[1]) then
+                    return cmd
+                end
+            end
+            return nil
+        end
+
+        local odin_root = nil
+        if is_windows then
+            odin_root = norm("C:/Users/Christopher/scoop/apps/odin/current")
+        elseif is_wsl then
+            odin_root = "/opt/Odin"
+        end
+
+        local odin_bin = nil
+        if odin_root then
+            odin_bin = is_windows and norm(odin_root .. "/odin.exe") or (odin_root .. "/odin")
+        end
+
+        local ols_cmd = nil
+        if is_windows then
+            ols_cmd = pick_cmd({
+                { "ols" },
+                { norm("C:/Users/Christopher/AppData/Local/ols/ols.exe") },
+            })
+        else
+            local mason_ols = vim.fn.stdpath("data") .. "/mason/bin/ols"
+            ols_cmd = pick_cmd({
+                { "ols" },
+                { mason_ols },
+            })
+        end
+
+        local ols_collections = nil
+        if odin_root then
+            local shared = odin_root .. "/shared"
+            local vendor = odin_root .. "/vendor"
+            local core = odin_root .. "/core"
+            if is_windows then
+                shared = norm(shared)
+                vendor = norm(vendor)
+                core = norm(core)
+            end
+            ols_collections = {
+                { name = "shared", path = shared },
+                { name = "vendor", path = vendor },
+                { name = "core", path = core },
+            }
+        end
+
         -- Explicit cmd entries ensure PATH-based binaries are used, avoiding
         -- stale builds in the nvim-wsl Mason directory. PATH includes the
         -- up-to-date ~/.local/share/nvim/mason/bin/.
@@ -300,24 +357,34 @@ return {
             },
 
             -- ols: Cross-platform Odin language server
-            ols = {
-                filetypes = { "odin" },
-                cmd = is_windows
-                    and { norm("C:/Users/Christopher/AppData/Local/ols/ols.exe") }
-                    or { "ols" },
-                init_options = {
-                    checker_args = { "-strict-style" },
-                    collections = is_windows and {
-                        { name = "shared", path = norm("C:/Users/Christopher/scoop/apps/odin/current/shared") },
-                        { name = "vendor", path = norm("C:/Users/Christopher/scoop/apps/odin/current/vendor") },
-                        { name = "core",   path = norm("C:/Users/Christopher/scoop/apps/odin/current/core") },
-                    } or is_wsl and {
-                        { name = "shared", path = "/opt/Odin/shared" },
-                        { name = "vendor", path = "/opt/Odin/vendor" },
-                        { name = "core",   path = "/opt/Odin/core" },
-                    } or nil,
-                },
-            },
+            ols = (function()
+                local config = {
+                    filetypes = { "odin" },
+                    init_options = {
+                        checker_args = "-strict-style",
+                    },
+                }
+
+                if ols_cmd then
+                    config.cmd = ols_cmd
+                end
+
+                if odin_root then
+                    local path_sep = is_windows and ";" or ":"
+                    config.cmd_env = {
+                        ODIN_ROOT = odin_root,
+                        PATH = odin_root .. path_sep .. (vim.env.PATH or ""),
+                    }
+                    config.init_options.odin_root_override = odin_root
+                    config.init_options.odin_command = odin_bin
+                end
+
+                if ols_collections then
+                    config.init_options.collections = ols_collections
+                end
+
+                return config
+            end)(),
 
             -- clangd: faster indexing, reduced background work
             --
