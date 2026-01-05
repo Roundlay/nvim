@@ -157,6 +157,7 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [ ] ./lua/scripts/visrep.lua:20 Extend live preview to multi-line selections.
 - [ ] ./lua/scripts/visrep.lua:21 Diff previous/next visible ranges so viewport updates are incremental.
 - [ ] ./lua/scripts/visrep.lua:22 Offer case-sensitivity toggles (smartcase / explicit modes) per run.
+- [~] 2026-01-05 Drafted Visrep TODOs brainstorming doc at docs/plans/brainstorming.md (scope + prompt length).
 
 ### ./lua/scripts/c_return_types.lua
 - [ ] ./lua/scripts/c_return_types.lua:484 Provide a lightweight toggle/disable path so large files aren’t penalized.
