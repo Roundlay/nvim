@@ -150,19 +150,6 @@ local function run()
         return by_any, by_bnd, nav_any, nav_bnd
     end
 
-    local function get_ts_node_at(bufnr, row, col)
-        if not vim.treesitter then return nil end
-        if vim.treesitter.get_node then
-            local ok, node = pcall(vim.treesitter.get_node, { buf = bufnr, pos = { row, col } })
-            if ok then return node end
-        end
-        if vim.treesitter.get_node_at_pos then
-            local ok, node = pcall(vim.treesitter.get_node_at_pos, bufnr, row, col)
-            if ok then return node end
-        end
-        return nil
-    end
-
     local function build_scope_ranges(bufnr, sel)
         if not vim.treesitter or not vim.treesitter.get_parser then
             return nil, 'Visrep: scoped mode unavailable (no Tree-sitter)'
@@ -171,42 +158,35 @@ local function run()
         if not ok_parser or not parser then
             return nil, 'Visrep: scoped mode unavailable (no Tree-sitter parser)'
         end
-
-        local end_col = sel.ecol_excl
-        if end_col > sel.scol then
-            end_col = end_col - 1
-        else
-            end_col = sel.scol
+        local trees = parser:parse()
+        local tree = trees and trees[1] or nil
+        if not tree then
+            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter tree)'
+        end
+        local root = tree:root()
+        if not root then
+            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter root)'
         end
 
-        local start_node = get_ts_node_at(bufnr, sel.srow, sel.scol)
-        local end_node   = get_ts_node_at(bufnr, sel.erow, end_col)
-        if not start_node or not end_node then
-            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter node)'
+        local node = nil
+        if root.named_descendant_for_range then
+            node = root:named_descendant_for_range(sel.srow, sel.scol, sel.erow, sel.ecol_excl)
         end
-
-        local ancestors = {}
-        local n = start_node
-        while n do
-            if n:named() then ancestors[n] = true end
-            n = n:parent()
-        end
-
-        local lca = nil
-        n = end_node
-        while n do
-            if n:named() and ancestors[n] then
-                lca = n
-                break
+        if not node and root.descendant_for_range then
+            node = root:descendant_for_range(sel.srow, sel.scol, sel.erow, sel.ecol_excl)
+            while node and not node:named() do
+                node = node:parent()
             end
-            n = n:parent()
         end
-        if not lca then
+        if not node and root:named() then
+            node = root
+        end
+        if not node then
             return nil, 'Visrep: scoped mode unavailable (no named Tree-sitter node)'
         end
 
         local ranges = {}
-        n = lca
+        local n = node
         while n do
             if n:named() then
                 local srow, scol, erow, ecol = n:range()
