@@ -7,7 +7,7 @@ local M = {}
 -- VISREP
 -- Replace visually selected text globally with a new string. Respects word boundaries, or not.
 
--- TODO: Don't truncate long strings in the command prompt area. E.g. when trying to visrep GenerateDefaultGridSpcification we see '[N/N] Replace "GenerateDefaultGridSpecific…" boundary with:'.
+-- Scoped mode: <S-Tab> toggles Tree-sitter scope, <C-k>/<C-j> expand/contract.
 
 local function run()
     local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line (1-based), col (0-based bytes)}
@@ -147,43 +147,172 @@ local function run()
                 if list_bnd then by_bnd[lnum] = list_bnd end
             end
         end
-        -- ensure selection present in both maps and nav lists
-        local function ensure(listmap, navlist)
-            local exists = false
-            local t = listmap[sel_lnum]
-            if t then
-                for _, iv in ipairs(t) do
-                    if iv.col0 == sel_col0 and iv.col1 == sel_col1 then exists = true; break end
-                end
-            end
-            if not exists then
-                if not t then t = {}; listmap[sel_lnum] = t end
-                push_merged(t, sel_col0, sel_col1)
-                navlist[#navlist + 1] = { lnum = sel_lnum, col0 = sel_col0, col1 = sel_col1 }
-            end
-        end
-        ensure(by_any, nav_any)
-        ensure(by_bnd, nav_bnd)
         return by_any, by_bnd, nav_any, nav_bnd
+    end
+
+    local function get_ts_node_at(bufnr, row, col)
+        if not vim.treesitter then return nil end
+        if vim.treesitter.get_node then
+            local ok, node = pcall(vim.treesitter.get_node, { buf = bufnr, pos = { row, col } })
+            if ok then return node end
+        end
+        if vim.treesitter.get_node_at_pos then
+            local ok, node = pcall(vim.treesitter.get_node_at_pos, bufnr, row, col)
+            if ok then return node end
+        end
+        return nil
+    end
+
+    local function build_scope_ranges(bufnr, sel)
+        if not vim.treesitter or not vim.treesitter.get_parser then
+            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter)'
+        end
+        local ok_parser, parser = pcall(vim.treesitter.get_parser, bufnr)
+        if not ok_parser or not parser then
+            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter parser)'
+        end
+
+        local end_col = sel.ecol_excl
+        if end_col > sel.scol then
+            end_col = end_col - 1
+        else
+            end_col = sel.scol
+        end
+
+        local start_node = get_ts_node_at(bufnr, sel.srow, sel.scol)
+        local end_node   = get_ts_node_at(bufnr, sel.erow, end_col)
+        if not start_node or not end_node then
+            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter node)'
+        end
+
+        local ancestors = {}
+        local n = start_node
+        while n do
+            if n:named() then ancestors[n] = true end
+            n = n:parent()
+        end
+
+        local lca = nil
+        n = end_node
+        while n do
+            if n:named() and ancestors[n] then
+                lca = n
+                break
+            end
+            n = n:parent()
+        end
+        if not lca then
+            return nil, 'Visrep: scoped mode unavailable (no named Tree-sitter node)'
+        end
+
+        local ranges = {}
+        n = lca
+        while n do
+            if n:named() then
+                local srow, scol, erow, ecol = n:range()
+                ranges[#ranges + 1] = { srow = srow, scol = scol, erow = erow, ecol = ecol }
+            end
+            n = n:parent()
+        end
+
+        if #ranges == 0 then
+            return nil, 'Visrep: scoped mode unavailable (no named Tree-sitter node)'
+        end
+        return ranges, nil
     end
     
     local ns = vim.api.nvim_create_namespace('VisrepPreview')
     local function clear_ns(bufnr)
         vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
     end
-    
+
     -- lazy init highlight groups
     pcall(vim.api.nvim_set_hl, 0, 'VisrepText',  { link = 'IncSearch' })
+    pcall(vim.api.nvim_set_hl, 0, 'VisrepScopeDim', { link = 'NonText' })
     
     local literal = pattern
     local cur_idx = nil
+    local sel_is_valid = false
+    local scoped_enabled = false
+    local scope_ranges = nil
+    local scope_idx = nil
+    local scope_range = nil
     local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, literal, sel.srow, sel.scol, sel.ecol_excl)
     local active_by_line = nil
     local nav_targets = nil
+
+    local function notify_scope_unavailable(msg)
+        vim.api.nvim_echo({{msg or 'Visrep: scoped mode unavailable', 'WarningMsg'}}, false, {})
+        vim.cmd('redraw')
+    end
+
+    local function match_in_scope(m, scope)
+        if not scope then return true end
+        local lnum = m.lnum
+        if lnum < scope.srow or lnum > scope.erow then return false end
+        if scope.srow == scope.erow then
+            return m.col0 >= scope.scol and m.col1 <= scope.ecol
+        end
+        if lnum == scope.srow then
+            return m.col0 >= scope.scol
+        end
+        if lnum == scope.erow then
+            return m.col1 <= scope.ecol
+        end
+        return true
+    end
+
+    local function filter_by_scope(by_line, nav, scope)
+        if not scope then return by_line, nav end
+        local scoped_by_line = {}
+        local scoped_nav = {}
+        for i = 1, #nav do
+            local m = nav[i]
+            if match_in_scope(m, scope) then
+                local list = scoped_by_line[m.lnum]
+                if not list then
+                    list = {}
+                    scoped_by_line[m.lnum] = list
+                end
+                list[#list + 1] = m
+                scoped_nav[#scoped_nav + 1] = m
+            end
+        end
+        return scoped_by_line, scoped_nav
+    end
+
+    local function render_scope_dim(bufnr, scope)
+        if not scope then return end
+        local line_count = vim.api.nvim_buf_line_count(bufnr)
+        if line_count == 0 then return end
+        local last_row = line_count - 1
+        local last_line = vim.api.nvim_buf_get_lines(bufnr, last_row, last_row + 1, false)[1] or ''
+        local last_col = #last_line
+
+        if scope.srow > 0 or scope.scol > 0 then
+            vim.api.nvim_buf_set_extmark(bufnr, ns, 0, 0, {
+                end_row = scope.srow,
+                end_col = scope.scol,
+                hl_group = 'VisrepScopeDim',
+                hl_eol = true,
+                priority = 100,
+            })
+        end
+
+        if scope.erow < last_row or scope.ecol < last_col then
+            vim.api.nvim_buf_set_extmark(bufnr, ns, scope.erow, scope.ecol, {
+                end_row = last_row,
+                end_col = last_col,
+                hl_group = 'VisrepScopeDim',
+                hl_eol = true,
+                priority = 100,
+            })
+        end
+    end
     
     local function jump_to(step)
         if #nav_targets == 0 then return end
-        if not cur_idx then
+        if not cur_idx or cur_idx <= 0 then
             cur_idx = (step >= 0) and 1 or #nav_targets
         else
             cur_idx = ((cur_idx - 1 + step) % #nav_targets) + 1
@@ -198,21 +327,49 @@ local function run()
     
     local function update_prompt(repl)
         local cnt_total = #nav_targets
-        local idx = cur_idx or (cnt_total > 0 and 1 or 0)
+        local idx = cur_idx or 0
         local label = (mode == 'boundary') and 'boundary' or 'anywhere'
+        local scope_tag = scoped_enabled and ' [scoped]' or ''
         local shown = literal
-        if #shown > 30 then shown = shown:sub(1, 27) .. '…' end
-        local prompt = string.format('[%d/%d] Replace "%s" %s with: %s', idx, cnt_total, shown, label, repl or '')
+        local max_len = 77
+        local shown_len = vim.fn.strchars(shown)
+        if shown_len > max_len then
+            shown = vim.fn.strcharpart(shown, 0, max_len) .. '…'
+        end
+        local prompt = string.format('[%d/%d] Replace "%s" %s%s with: %s', idx, cnt_total, shown, label, scope_tag, repl or '')
         vim.api.nvim_echo({{prompt, 'Normal'}}, false, {})
         vim.cmd('redraw')
     end
     
+    local function enable_scope()
+        if not scope_ranges then
+            local ranges, err = build_scope_ranges(bufnr, sel)
+            if not ranges then
+                notify_scope_unavailable(err)
+                return false
+            end
+            scope_ranges = ranges
+            if not scope_idx or scope_idx < 1 or scope_idx > #scope_ranges then
+                scope_idx = 1
+            end
+        end
+        scoped_enabled = true
+        return true
+    end
+
     local function rerender(repl)
         clear_ns(bufnr)
         local prev_idx = cur_idx
-        -- Select active line-index and nav list by mode
-        active_by_line = (mode == 'boundary') and by_line_bnd or by_line_any
-        nav_targets    = (mode == 'boundary') and nav_bnd     or nav_any
+        -- Select active line-index and nav list by mode, then filter by scope.
+        local base_by_line = (mode == 'boundary') and by_line_bnd or by_line_any
+        local base_nav     = (mode == 'boundary') and nav_bnd     or nav_any
+
+        scope_range = (scoped_enabled and scope_ranges and scope_ranges[scope_idx]) or nil
+        active_by_line, nav_targets = filter_by_scope(base_by_line, base_nav, scope_range)
+
+        if scope_range then
+            render_scope_dim(bufnr, scope_range)
+        end
 
         local repl_txt = repl or ''
 
@@ -264,22 +421,27 @@ local function run()
             draw_line(lnum, line, list)
         end
 
-        -- choose current index: keep previous if possible, else prefer selection, else 1
+        sel_is_valid = false
+        local sel_index = nil
+        for i, t in ipairs(nav_targets) do
+            if t.lnum == sel.srow and t.col0 == sel.scol and t.col1 == sel.ecol_excl then
+                sel_index = i
+                break
+            end
+        end
+        sel_is_valid = sel_index ~= nil
+
+        -- choose current index: keep previous if possible (when selection is valid), else prefer selection, else 0
         if #nav_targets == 0 then
-            cur_idx = nil
-        else
+            cur_idx = 0
+        elseif sel_is_valid then
             if prev_idx and prev_idx >= 1 and prev_idx <= #nav_targets then
                 cur_idx = prev_idx
             else
-                -- prefer selection index if present
-                local sel_index = nil
-                for i, t in ipairs(nav_targets) do
-                    if t.lnum == sel.srow and t.col0 == sel.scol and t.col1 == sel.ecol_excl then
-                        sel_index = i; break
-                    end
-                end
-                cur_idx = sel_index or 1
+                cur_idx = sel_index
             end
+        else
+            cur_idx = 0
         end
 
         update_prompt(repl)
@@ -294,12 +456,31 @@ local function run()
                 local as_char = vim.fn.nr2char(key)
                 local trans_num = as_char and vim.fn.keytrans(as_char) or ''
                 local trans_num_l = string.lower(trans_num or '')
-                if key == 9 or trans_num_l == '<tab>' then -- Tab
+                if trans_num_l == '<s-tab>' then -- Shift-Tab (toggle scope)
+                    if scoped_enabled then
+                        scoped_enabled = false
+                        rerender(input)
+                    else
+                        if enable_scope() then
+                            rerender(input)
+                        end
+                    end
+                elseif trans_num_l == '<c-k>' or trans_num == '^K' then -- Ctrl-K (expand scope)
+                    if scoped_enabled and scope_ranges and scope_idx < #scope_ranges then
+                        scope_idx = scope_idx + 1
+                        rerender(input)
+                    end
+                elseif trans_num_l == '<c-j>' or trans_num_l == '<nl>' or trans_num == '^J' then -- Ctrl-J (contract scope)
+                    if scoped_enabled and scope_ranges and scope_idx > 1 then
+                        scope_idx = scope_idx - 1
+                        rerender(input)
+                    end
+                elseif key == 9 or trans_num_l == '<tab>' then -- Tab
                     if pattern_word then
                         mode = (mode == 'boundary') and 'anywhere' or 'boundary'
                     end
                     rerender(input)
-                elseif key == 13 or key == 10 or trans_num_l == '<cr>' then -- Enter
+                elseif key == 13 or trans_num_l == '<cr>' then -- Enter
                     clear_ns(bufnr)
                     new_string = input
                     break
@@ -311,11 +492,15 @@ local function run()
                     input = input:sub(1, math.max(0, #input - 1))
                     rerender(input)
                 elseif key == 14 or trans_num_l == '<c-n>' or trans_num == '^N' then -- Ctrl-N
-                    jump_to(1)
-                    rerender(input)
+                    if sel_is_valid then
+                        jump_to(1)
+                        rerender(input)
+                    end
                 elseif key == 16 or trans_num_l == '<c-p>' or trans_num == '^P' then -- Ctrl-P
-                    jump_to(-1)
-                    rerender(input)
+                    if sel_is_valid then
+                        jump_to(-1)
+                        rerender(input)
+                    end
                 else
                     local ch = as_char
                     if ch and ch ~= '' then
@@ -327,7 +512,26 @@ local function run()
                 -- Special key sequence as string; normalize with keytrans
                 local trans = vim.fn.keytrans(key)
                 local tl = string.lower(trans)
-                if tl == '<tab>' then
+                if tl == '<s-tab>' then
+                    if scoped_enabled then
+                        scoped_enabled = false
+                        rerender(input)
+                    else
+                        if enable_scope() then
+                            rerender(input)
+                        end
+                    end
+                elseif tl == '<c-k>' or trans == '^K' then
+                    if scoped_enabled and scope_ranges and scope_idx < #scope_ranges then
+                        scope_idx = scope_idx + 1
+                        rerender(input)
+                    end
+                elseif tl == '<c-j>' or tl == '<nl>' or trans == '^J' then
+                    if scoped_enabled and scope_ranges and scope_idx > 1 then
+                        scope_idx = scope_idx - 1
+                        rerender(input)
+                    end
+                elseif tl == '<tab>' then
                     if pattern_word then
                         mode = (mode == 'boundary') and 'anywhere' or 'boundary'
                     end
@@ -344,11 +548,15 @@ local function run()
                     input = input:sub(1, math.max(0, #input - 1))
                     rerender(input)
                 elseif tl == '<c-n>' or trans == '^N' then
-                    jump_to(1)
-                    rerender(input)
+                    if sel_is_valid then
+                        jump_to(1)
+                        rerender(input)
+                    end
                 elseif tl == '<c-p>' or trans == '^P' then
-                    jump_to(-1)
-                    rerender(input)
+                    if sel_is_valid then
+                        jump_to(-1)
+                        rerender(input)
+                    end
                 else
                     -- ignore other specials
                 end
@@ -358,6 +566,52 @@ local function run()
         -- Multi-line selection: simpler prompt with no live preview
         new_string = vim.fn.input(string.format('Replace "%s" with: ', pattern))
         if new_string == '' then return end
+    end
+
+    local function build_replaced_line(line, matches, repl)
+        if not matches or #matches == 0 then return line end
+        local parts = {}
+        local prev_end = 0
+        for _, mm in ipairs(matches) do
+            if mm.col0 > prev_end then
+                parts[#parts + 1] = line:sub(prev_end + 1, mm.col0)
+            end
+            if repl ~= '' then
+                parts[#parts + 1] = repl
+            end
+            prev_end = mm.col1
+        end
+        parts[#parts + 1] = line:sub(prev_end + 1)
+        return table.concat(parts)
+    end
+
+    local function apply_replacements_by_line(bufnr, by_line, repl)
+        local line_nums = {}
+        for lnum, _ in pairs(by_line) do
+            line_nums[#line_nums + 1] = lnum
+        end
+        table.sort(line_nums)
+
+        for i = 1, #line_nums do
+            local lnum = line_nums[i]
+            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
+            local new_line = build_replaced_line(line, by_line[lnum], repl)
+            if new_line ~= line then
+                vim.api.nvim_buf_set_lines(bufnr, lnum, lnum + 1, false, { new_line })
+            end
+        end
+    end
+
+    if is_single_line then
+        if not nav_targets or #nav_targets == 0 then
+            vim.api.nvim_win_set_cursor(0, cursor_pos)
+            return
+        end
+        if scoped_enabled and scope_range then
+            apply_replacements_by_line(bufnr, active_by_line, new_string)
+            vim.api.nvim_win_set_cursor(0, cursor_pos)
+            return
+        end
     end
     
     -- Pick a separator that is not in pattern or new_string
