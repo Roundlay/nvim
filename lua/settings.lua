@@ -3,6 +3,8 @@ if vim.g.vscode then
     return
 end
 
+vim.g.markdown_plain_mode = true
+
 if vim.g.neovide then
     -- See: https://neovide.dev/configuration.html
     vim.o.guifont = "SF Mono:h14"

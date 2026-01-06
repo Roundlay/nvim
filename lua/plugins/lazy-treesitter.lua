@@ -10,7 +10,6 @@ return {
         ensure_installed = {
             "c",
             "lua",
-            "markdown",
             "odin",
             "query",
             "toml",
@@ -20,7 +19,6 @@ return {
         highlight = {
             enable = true,
             additional_vim_regex_highlighting = false,
-            disable = vim.g.markdown_plain_mode and { "markdown", "markdown_inline" } or nil,
         },
     },
     config = function(_, opts)

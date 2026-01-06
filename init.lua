@@ -20,7 +20,6 @@
 
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
-vim.g.markdown_plain_mode = true
 
 -- WSL detection
 -- TODO: Document this.

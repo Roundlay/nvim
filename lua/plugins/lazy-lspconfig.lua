@@ -268,7 +268,6 @@ return {
             "html",
             "jsonls",
             "lua_ls",
-            "marksman",
             "ols",
             "pyright",
             "vimls",
