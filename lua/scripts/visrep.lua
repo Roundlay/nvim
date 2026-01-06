@@ -190,6 +190,9 @@ local function run()
     local active_by_line = nil
     local nav_targets = nil
     local session = { active = false }
+    local function force_normal()
+        pcall(vim.cmd, 'normal! \\<Esc>')
+    end
 
     local function match_in_scope(m, scope)
         if not scope then return true end
@@ -298,7 +301,7 @@ local function run()
 
     local function finish_scope_selection(picked)
         clear_scope_maps()
-        pcall(vim.cmd, 'normal! \\<Esc>')
+        force_normal()
         if picked then
             scope_range = picked
             scoped_enabled = true
@@ -479,6 +482,7 @@ local function run()
     local function finalize()
         if is_single_line then
             if not nav_targets or #nav_targets == 0 then
+                force_normal()
                 vim.api.nvim_win_set_cursor(0, cursor_pos)
                 session.active = false
                 M._visrep_session = nil
@@ -486,6 +490,7 @@ local function run()
             end
             if scoped_enabled and scope_range then
                 apply_replacements_by_line(bufnr, active_by_line, new_string)
+                force_normal()
                 vim.api.nvim_win_set_cursor(0, cursor_pos)
                 session.active = false
                 M._visrep_session = nil
@@ -504,6 +509,7 @@ local function run()
         end
         if not sep then
             print('Visrep: could not find a suitable separator.')
+            force_normal()
             session.active = false
             M._visrep_session = nil
             return
@@ -527,6 +533,7 @@ local function run()
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, srow, erow + 1, false)
             if #lines == 0 then
+                force_normal()
                 vim.api.nvim_win_set_cursor(0, cursor_pos)
                 session.active = false
                 M._visrep_session = nil
@@ -576,6 +583,7 @@ local function run()
         end
 
         -- Restore the cursor position
+        force_normal()
         vim.api.nvim_win_set_cursor(0, cursor_pos)
         session.active = false
         M._visrep_session = nil
