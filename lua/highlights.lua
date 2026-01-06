@@ -103,6 +103,9 @@ local function strip_underline(hl)
 end
 
 local function apply_markdown_overrides()
+    set_hl("@markup.link.markdown_inline", { link = "@markup.link.label" })
+    set_hl("@markup.link.markdown", { link = "@markup.link.label" })
+
     local ok_link, link_hl = pcall(vim.api.nvim_get_hl, 0, { name = "@markup.link.label", link = false })
     set_hl("@markup.link.label.markdown_inline", strip_underline(ok_link and link_hl or nil))
 
