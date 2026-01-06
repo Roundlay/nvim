@@ -19,6 +19,7 @@ local function run()
     if start_mark[1] == 0 or end_mark[1] == 0 then
         return
     end
+    pcall(vim.cmd, 'normal! \\<Esc>')
 
     -- Convert to 0-based rows and normalise ordering.
     local srow = start_mark[1] - 1
