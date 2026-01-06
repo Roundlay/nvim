@@ -195,6 +195,9 @@ local function get_markdown_list_hl_module()
 end
 
 function M:markdown_list_hl(opts)
+    if vim.g.markdown_plain_mode then
+        return
+    end
     local mod = get_markdown_list_hl_module()
     if not mod then
         return
