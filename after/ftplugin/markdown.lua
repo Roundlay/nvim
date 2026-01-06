@@ -10,7 +10,7 @@ vim.fn.matchadd("MarkdownXmlTag", pattern)
 local inline_code_pattern = [[\v`[^`\n]+`]]
 vim.fn.matchadd("MarkdownInlineCode", inline_code_pattern, 110)
 
--- Prevent underline styling on bracket markers like "[+]" at BOL when they are
--- not followed by link/reference syntax.
-local bracket_plain_pattern = [[\v^\s*\[[^]\n]+\]\ze(\s*$|\s*[^:(])]]
+-- Prevent underline styling on bracket markers like "[+]" when they are not
+-- followed by link/reference syntax.
+local bracket_plain_pattern = [[\v\[[^]\n]+\]\ze(\s*$|\s*[^([:])]]
 vim.fn.matchadd("MarkdownBracketPlain", bracket_plain_pattern, 120)
