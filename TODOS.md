@@ -9,6 +9,11 @@
 
 - [X] Disable auto-install and pin a minimal `ensure_installed` parser list.
 
+## Markdown Highlight Quirks (2026-01-06)
+
+- [X] Keep inline code highlighting inside raw HTML-style tag blocks.
+- [X] Suppress underline styling on bracketed markers like `[+]` at BOL.
+
 ## OLS LSP Init Errors (2026-01-05)
 
 - [X] Select an executable `ols` command (PATH-first, then platform fallback) to avoid invalid cmd errors.
