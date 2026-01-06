@@ -88,6 +88,39 @@ set_hl("MarkdownList4", { fg = "#c678dd", bold = true }) -- purple (level 3, 9, 
 set_hl("MarkdownList5", { fg = "#e06c75", bold = true }) -- red (level 4, 10, ...)
 set_hl("MarkdownList6", { fg = "#d19a66", bold = true }) -- orange (level 5, 11, ...)
 
+local function strip_underline(hl)
+    local out = {}
+    if type(hl) == "table" then
+        out = vim.tbl_extend("force", out, hl)
+    end
+    out.underline = false
+    out.undercurl = false
+    out.underdouble = false
+    out.underdotted = false
+    out.underdashed = false
+    out.sp = nil
+    return out
+end
+
+local function apply_markdown_overrides()
+    local ok_link, link_hl = pcall(vim.api.nvim_get_hl, 0, { name = "@markup.link.label", link = false })
+    set_hl("@markup.link.label.markdown_inline", strip_underline(ok_link and link_hl or nil))
+
+    local ok_unchecked, unchecked_hl =
+        pcall(vim.api.nvim_get_hl, 0, { name = "@markup.list.unchecked", link = false })
+    set_hl("@markup.list.unchecked.markdown", strip_underline(ok_unchecked and unchecked_hl or nil))
+
+    local ok_checked, checked_hl = pcall(vim.api.nvim_get_hl, 0, { name = "@markup.list.checked", link = false })
+    set_hl("@markup.list.checked.markdown", strip_underline(ok_checked and checked_hl or nil))
+end
+
+apply_markdown_overrides()
+local markdown_override_group = vim.api.nvim_create_augroup("MarkdownHighlightOverrides", { clear = true })
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = markdown_override_group,
+    callback = apply_markdown_overrides,
+})
+
 -- Window divider highlights for narrow unfocused windows
 set_hl("VertSplit", { fg = "#404040", bg = "NONE", bold = true })
 -- set_hl("WinSeparator", { fg = "#68217A", bg = "NONE", bold = true })
