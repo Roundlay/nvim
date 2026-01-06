@@ -6,7 +6,16 @@ return {
     lazy = false,
     opts = {
         sync_install = false,
-        auto_install = true,
+        auto_install = false,
+        ensure_installed = {
+            "c",
+            "lua",
+            "markdown",
+            "odin",
+            "query",
+            "toml",
+            "vimdoc",
+        },
         ignore_install = {},
         highlight = {
             enable = true,
