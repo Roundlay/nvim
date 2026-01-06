@@ -197,6 +197,10 @@ local function run()
     local function match_in_scope(m, scope)
         if not scope then return true end
         local lnum = m.lnum
+        if scope.block then
+            if lnum < scope.srow or lnum > scope.erow then return false end
+            return m.col0 >= scope.scol and m.col1 <= scope.ecol
+        end
         if lnum < scope.srow or lnum > scope.erow then return false end
         if scope.srow == scope.erow then
             return m.col0 >= scope.scol and m.col1 <= scope.ecol
@@ -338,7 +342,24 @@ local function run()
             local mode_now = vim.fn.mode()
             local smark
             local emark
-            if mode_now:find('[vV\22]') then
+            if mode_now == 'V' then
+                local vpos = vim.fn.getpos('v')
+                local cpos = vim.fn.getpos('.')
+                local sline = math.min(vpos[2], cpos[2])
+                local eline = math.max(vpos[2], cpos[2])
+                local end_line = vim.api.nvim_buf_get_lines(bufnr, eline - 1, eline, false)[1] or ''
+                smark = { sline, 0 }
+                emark = { eline, #end_line }
+            elseif mode_now == '\22' then
+                local vpos = vim.fn.getpos('v')
+                local cpos = vim.fn.getpos('.')
+                local sline = math.min(vpos[2], cpos[2])
+                local eline = math.max(vpos[2], cpos[2])
+                local scol = math.max(0, math.min(vpos[3], cpos[3]) - 1)
+                local ecol = math.max(0, math.max(vpos[3], cpos[3]) - 1)
+                smark = { sline, scol }
+                emark = { eline, ecol }
+            elseif mode_now:find('[vV\22]') then
                 local vpos = vim.fn.getpos('v')
                 local cpos = vim.fn.getpos('.')
                 smark = { vpos[2], math.max(0, vpos[3] - 1) }
@@ -348,6 +369,9 @@ local function run()
                 emark = vim.api.nvim_buf_get_mark(bufnr, '>')
             end
             local picked = marks_to_range(bufnr, smark, emark)
+            if picked and mode_now == '\22' then
+                picked.block = true
+            end
             finish_scope_selection(picked)
         end, { buffer = bufnr, silent = true, nowait = true })
         vim.keymap.set({ 'n', 'v' }, '<Esc>', function()
