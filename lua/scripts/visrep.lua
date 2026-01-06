@@ -332,8 +332,18 @@ local function run()
 
         scope_maps_active = true
         vim.keymap.set({ 'n', 'v' }, '<CR>', function()
-            local smark = vim.api.nvim_buf_get_mark(bufnr, '<')
-            local emark = vim.api.nvim_buf_get_mark(bufnr, '>')
+            local mode_now = vim.fn.mode()
+            local smark
+            local emark
+            if mode_now:find('[vV\22]') then
+                local vpos = vim.fn.getpos('v')
+                local cpos = vim.fn.getpos('.')
+                smark = { vpos[2], math.max(0, vpos[3] - 1) }
+                emark = { cpos[2], math.max(0, cpos[3] - 1) }
+            else
+                smark = vim.api.nvim_buf_get_mark(bufnr, '<')
+                emark = vim.api.nvim_buf_get_mark(bufnr, '>')
+            end
             local picked = marks_to_range(bufnr, smark, emark)
             finish_scope_selection(picked)
         end, { buffer = bufnr, silent = true, nowait = true })
