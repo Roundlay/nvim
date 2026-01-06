@@ -76,7 +76,7 @@ set_hl("CustomDiagLine", { bg = "#5a1f1f" })
 
 -- XML-style tags in markdown (e.g., <example>, </example>)
 set_hl("MarkdownXmlTag", { fg = "#d7ba7d", bold = true })
-set_hl("MarkdownInlineCode", { link = "@markup.raw" })
+set_hl("MarkdownInlineCode", { link = "@markup.raw.markdown_inline" })
 set_hl("MarkdownBracketPlain", { link = "Normal" })
 
 -- Markdown nested list markers - cycling colors by depth

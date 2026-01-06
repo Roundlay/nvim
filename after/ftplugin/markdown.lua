@@ -8,7 +8,7 @@ vim.fn.matchadd("MarkdownXmlTag", pattern)
 -- Inline code spans inside raw HTML blocks are not parsed by the markdown
 -- grammar; add a lightweight regex match so backticks stay highlighted.
 local inline_code_pattern = [[\v`[^`\n]+`]]
-vim.fn.matchadd("MarkdownInlineCode", inline_code_pattern, 110)
+vim.fn.matchadd("MarkdownInlineCode", inline_code_pattern, 90)
 
 -- Prevent underline styling on bracket markers like "[+]" when they are not
 -- followed by link/reference syntax.
