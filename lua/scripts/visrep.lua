@@ -426,105 +426,118 @@ local function run()
     
     if is_single_line then
         local input = ''
-        rerender(input)
+        local function input_loop()
+            rerender(input)
+            while true do
+                local key = vim.fn.getchar()
+                if type(key) == 'number' then
+                    local as_char = vim.fn.nr2char(key)
+                    local trans_num = as_char and vim.fn.keytrans(as_char) or ''
+                    local trans_num_l = string.lower(trans_num or '')
+                    if trans_num_l == '<s-tab>' then -- Shift-Tab (toggle scope)
+                        if scoped_enabled then
+                            scoped_enabled = false
+                            scope_range = nil
+                            rerender(input)
+                        else
+                            clear_ns(bufnr)
+                            return "scope"
+                        end
+                    elseif key == 9 or trans_num_l == '<tab>' then -- Tab
+                        if pattern_word then
+                            mode = (mode == 'boundary') and 'anywhere' or 'boundary'
+                        end
+                        rerender(input)
+                    elseif key == 13 or trans_num_l == '<cr>' then -- Enter
+                        clear_ns(bufnr)
+                        new_string = input
+                        return "apply"
+                    elseif key == 27 or trans_num_l == '<esc>' then -- Esc
+                        clear_ns(bufnr)
+                        vim.api.nvim_win_set_cursor(0, cursor_pos)
+                        return "cancel"
+                    elseif key == 8 or key == 127 or trans_num_l == '<bs>' or trans_num_l == '<c-h>' then -- Backspace
+                        input = input:sub(1, math.max(0, #input - 1))
+                        rerender(input)
+                    elseif key == 14 or trans_num_l == '<c-n>' or trans_num == '^N' then -- Ctrl-N
+                        if sel_is_valid then
+                            jump_to(1)
+                            rerender(input)
+                        end
+                    elseif key == 16 or trans_num_l == '<c-p>' or trans_num == '^P' then -- Ctrl-P
+                        if sel_is_valid then
+                            jump_to(-1)
+                            rerender(input)
+                        end
+                    else
+                        local ch = as_char
+                        if ch and ch ~= '' then
+                            input = input .. ch
+                            rerender(input)
+                        end
+                    end
+                else
+                    -- Special key sequence as string; normalize with keytrans
+                    local trans = vim.fn.keytrans(key)
+                    local tl = string.lower(trans)
+                    if tl == '<s-tab>' then
+                        if scoped_enabled then
+                            scoped_enabled = false
+                            scope_range = nil
+                            rerender(input)
+                        else
+                            clear_ns(bufnr)
+                            return "scope"
+                        end
+                    elseif tl == '<tab>' then
+                        if pattern_word then
+                            mode = (mode == 'boundary') and 'anywhere' or 'boundary'
+                        end
+                        rerender(input)
+                    elseif tl == '<cr>' then
+                        clear_ns(bufnr)
+                        new_string = input
+                        return "apply"
+                    elseif tl == '<esc>' then
+                        clear_ns(bufnr)
+                        vim.api.nvim_win_set_cursor(0, cursor_pos)
+                        return "cancel"
+                    elseif tl == '<bs>' or tl == '<c-h>' then
+                        input = input:sub(1, math.max(0, #input - 1))
+                        rerender(input)
+                    elseif tl == '<c-n>' or trans == '^N' then
+                        if sel_is_valid then
+                            jump_to(1)
+                            rerender(input)
+                        end
+                    elseif tl == '<c-p>' or trans == '^P' then
+                        if sel_is_valid then
+                            jump_to(-1)
+                            rerender(input)
+                        end
+                    else
+                        -- ignore other specials
+                    end
+                end
+            end
+        end
+
         while true do
-            local key = vim.fn.getchar()
-            if type(key) == 'number' then
-                local as_char = vim.fn.nr2char(key)
-                local trans_num = as_char and vim.fn.keytrans(as_char) or ''
-                local trans_num_l = string.lower(trans_num or '')
-                if trans_num_l == '<s-tab>' then -- Shift-Tab (toggle scope)
-                    if scoped_enabled then
-                        scoped_enabled = false
-                        scope_range = nil
-                        rerender(input)
-                    else
-                        local picked = select_scope_range()
-                        if picked then
-                            scope_range = picked
-                            scoped_enabled = true
-                        end
-                        rerender(input)
-                    end
-                elseif key == 9 or trans_num_l == '<tab>' then -- Tab
-                    if pattern_word then
-                        mode = (mode == 'boundary') and 'anywhere' or 'boundary'
-                    end
-                    rerender(input)
-                elseif key == 13 or trans_num_l == '<cr>' then -- Enter
-                    clear_ns(bufnr)
-                    new_string = input
-                    break
-                elseif key == 27 or trans_num_l == '<esc>' then -- Esc
-                    clear_ns(bufnr)
-                    vim.api.nvim_win_set_cursor(0, cursor_pos)
-                    return
-                elseif key == 8 or key == 127 or trans_num_l == '<bs>' or trans_num_l == '<c-h>' then -- Backspace
-                    input = input:sub(1, math.max(0, #input - 1))
-                    rerender(input)
-                elseif key == 14 or trans_num_l == '<c-n>' or trans_num == '^N' then -- Ctrl-N
-                    if sel_is_valid then
-                        jump_to(1)
-                        rerender(input)
-                    end
-                elseif key == 16 or trans_num_l == '<c-p>' or trans_num == '^P' then -- Ctrl-P
-                    if sel_is_valid then
-                        jump_to(-1)
-                        rerender(input)
-                    end
+            local action = input_loop()
+            if action == "scope" then
+                local picked = select_scope_range()
+                if picked then
+                    scope_range = picked
+                    scoped_enabled = true
                 else
-                    local ch = as_char
-                    if ch and ch ~= '' then
-                        input = input .. ch
-                        rerender(input)
-                    end
+                    scope_range = nil
+                    scoped_enabled = false
                 end
+                rerender(input)
+            elseif action == "apply" then
+                break
             else
-                -- Special key sequence as string; normalize with keytrans
-                local trans = vim.fn.keytrans(key)
-                local tl = string.lower(trans)
-                if tl == '<s-tab>' then
-                    if scoped_enabled then
-                        scoped_enabled = false
-                        scope_range = nil
-                        rerender(input)
-                    else
-                        local picked = select_scope_range()
-                        if picked then
-                            scope_range = picked
-                            scoped_enabled = true
-                        end
-                        rerender(input)
-                    end
-                elseif tl == '<tab>' then
-                    if pattern_word then
-                        mode = (mode == 'boundary') and 'anywhere' or 'boundary'
-                    end
-                    rerender(input)
-                elseif tl == '<cr>' then
-                    clear_ns(bufnr)
-                    new_string = input
-                    break
-                elseif tl == '<esc>' then
-                    clear_ns(bufnr)
-                    vim.api.nvim_win_set_cursor(0, cursor_pos)
-                    return
-                elseif tl == '<bs>' or tl == '<c-h>' then
-                    input = input:sub(1, math.max(0, #input - 1))
-                    rerender(input)
-                elseif tl == '<c-n>' or trans == '^N' then
-                    if sel_is_valid then
-                        jump_to(1)
-                        rerender(input)
-                    end
-                elseif tl == '<c-p>' or trans == '^P' then
-                    if sel_is_valid then
-                        jump_to(-1)
-                        rerender(input)
-                    end
-                else
-                    -- ignore other specials
-                end
+                return
             end
         end
     else
