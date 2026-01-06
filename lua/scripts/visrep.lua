@@ -292,16 +292,21 @@ local function run()
 
         local done = false
         local result = nil
+        local function exit_visual()
+            pcall(vim.cmd, 'normal! \\<Esc>')
+        end
 
         local function accept()
             local smark = vim.api.nvim_buf_get_mark(bufnr, '<')
             local emark = vim.api.nvim_buf_get_mark(bufnr, '>')
             result = marks_to_range(bufnr, smark, emark)
+            exit_visual()
             done = true
         end
 
         local function cancel()
             result = nil
+            exit_visual()
             done = true
         end
 
