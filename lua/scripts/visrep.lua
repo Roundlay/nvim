@@ -7,7 +7,7 @@ local M = {}
 -- VISREP
 -- Replace visually selected text globally with a new string. Respects word boundaries, or not.
 
--- Scoped mode: <S-Tab> toggles Tree-sitter scope, <C-k>/<C-j> expand/contract.
+-- Scoped mode: <S-Tab> toggles manual scope selection.
 
 local function run()
     local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line (1-based), col (0-based bytes)}
@@ -54,6 +54,28 @@ local function run()
         return nb
     end
     local end_excl = next_byte(end_line, ecol)
+
+    local function marks_to_range(bufnr, smark, emark)
+        if smark[1] == 0 or emark[1] == 0 then
+            return nil
+        end
+        local srow = smark[1] - 1
+        local scol = smark[2]
+        local erow = emark[1] - 1
+        local ecol = emark[2]
+        if srow > erow or (srow == erow and scol > ecol) then
+            srow, erow = erow, srow
+            scol, ecol = ecol, scol
+        end
+
+        local sline = vim.api.nvim_buf_get_lines(bufnr, srow, srow + 1, false)[1] or ''
+        local eline = vim.api.nvim_buf_get_lines(bufnr, erow, erow + 1, false)[1] or ''
+        scol = clamp_col(sline, scol)
+        ecol = clamp_col(eline, ecol)
+        local ecol_excl = next_byte(eline, ecol)
+
+        return { srow = srow, scol = scol, erow = erow, ecol = ecol_excl }
+    end
 
     local selection_lines = vim.api.nvim_buf_get_text(bufnr, srow, scol, erow, end_excl, {})
     local pattern = table.concat(selection_lines, '\n')
@@ -150,57 +172,6 @@ local function run()
         return by_any, by_bnd, nav_any, nav_bnd
     end
 
-    local function build_scope_ranges(bufnr, sel)
-        if not vim.treesitter or not vim.treesitter.get_parser then
-            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter)'
-        end
-        local ok_parser, parser = pcall(vim.treesitter.get_parser, bufnr)
-        if not ok_parser or not parser then
-            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter parser)'
-        end
-        local trees = parser:parse()
-        local tree = trees and trees[1] or nil
-        if not tree then
-            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter tree)'
-        end
-        local root = tree:root()
-        if not root then
-            return nil, 'Visrep: scoped mode unavailable (no Tree-sitter root)'
-        end
-
-        local node = nil
-        if root.named_descendant_for_range then
-            node = root:named_descendant_for_range(sel.srow, sel.scol, sel.erow, sel.ecol_excl)
-        end
-        if not node and root.descendant_for_range then
-            node = root:descendant_for_range(sel.srow, sel.scol, sel.erow, sel.ecol_excl)
-            while node and not node:named() do
-                node = node:parent()
-            end
-        end
-        if not node and root:named() then
-            node = root
-        end
-        if not node then
-            return nil, 'Visrep: scoped mode unavailable (no named Tree-sitter node)'
-        end
-
-        local ranges = {}
-        local n = node
-        while n do
-            if n:named() then
-                local srow, scol, erow, ecol = n:range()
-                ranges[#ranges + 1] = { srow = srow, scol = scol, erow = erow, ecol = ecol }
-            end
-            n = n:parent()
-        end
-
-        if #ranges == 0 then
-            return nil, 'Visrep: scoped mode unavailable (no named Tree-sitter node)'
-        end
-        return ranges, nil
-    end
-    
     local ns = vim.api.nvim_create_namespace('VisrepPreview')
     local function clear_ns(bufnr)
         vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
@@ -214,17 +185,10 @@ local function run()
     local cur_idx = nil
     local sel_is_valid = false
     local scoped_enabled = false
-    local scope_ranges = nil
-    local scope_idx = nil
     local scope_range = nil
     local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, literal, sel.srow, sel.scol, sel.ecol_excl)
     local active_by_line = nil
     local nav_targets = nil
-
-    local function notify_scope_unavailable(msg)
-        vim.api.nvim_echo({{msg or 'Visrep: scoped mode unavailable', 'WarningMsg'}}, false, {})
-        vim.cmd('redraw')
-    end
 
     local function match_in_scope(m, scope)
         if not scope then return true end
@@ -321,20 +285,48 @@ local function run()
         vim.cmd('redraw')
     end
     
-    local function enable_scope()
-        if not scope_ranges then
-            local ranges, err = build_scope_ranges(bufnr, sel)
-            if not ranges then
-                notify_scope_unavailable(err)
-                return false
-            end
-            scope_ranges = ranges
-            if not scope_idx or scope_idx < 1 or scope_idx > #scope_ranges then
-                scope_idx = 1
-            end
+    local function select_scope_range()
+        clear_ns(bufnr)
+        vim.api.nvim_echo({{ "Visrep: select scope and press <Enter> (or <Esc> to cancel)", "ModeMsg" }}, false, {})
+        vim.cmd('redraw')
+
+        local done = false
+        local result = nil
+
+        local function accept()
+            local smark = vim.api.nvim_buf_get_mark(bufnr, '<')
+            local emark = vim.api.nvim_buf_get_mark(bufnr, '>')
+            result = marks_to_range(bufnr, smark, emark)
+            done = true
         end
-        scoped_enabled = true
-        return true
+
+        local function cancel()
+            result = nil
+            done = true
+        end
+
+        local function map(lhs, rhs)
+            vim.keymap.set({ 'n', 'v' }, lhs, rhs, { buffer = bufnr, silent = true, nowait = true })
+        end
+        local function unmap(lhs)
+            pcall(vim.keymap.del, { 'n', 'v' }, lhs, { buffer = bufnr })
+        end
+
+        map('<CR>', function()
+            accept()
+        end)
+        map('<Esc>', function()
+            cancel()
+        end)
+
+        vim.wait(1000000, function()
+            return done
+        end, 10)
+
+        unmap('<CR>')
+        unmap('<Esc>')
+
+        return result
     end
 
     local function rerender(repl)
@@ -344,11 +336,11 @@ local function run()
         local base_by_line = (mode == 'boundary') and by_line_bnd or by_line_any
         local base_nav     = (mode == 'boundary') and nav_bnd     or nav_any
 
-        scope_range = (scoped_enabled and scope_ranges and scope_ranges[scope_idx]) or nil
-        active_by_line, nav_targets = filter_by_scope(base_by_line, base_nav, scope_range)
+        local active_scope = scoped_enabled and scope_range or nil
+        active_by_line, nav_targets = filter_by_scope(base_by_line, base_nav, active_scope)
 
-        if scope_range then
-            render_scope_dim(bufnr, scope_range)
+        if active_scope then
+            render_scope_dim(bufnr, active_scope)
         end
 
         local repl_txt = repl or ''
@@ -439,20 +431,14 @@ local function run()
                 if trans_num_l == '<s-tab>' then -- Shift-Tab (toggle scope)
                     if scoped_enabled then
                         scoped_enabled = false
+                        scope_range = nil
                         rerender(input)
                     else
-                        if enable_scope() then
-                            rerender(input)
+                        local picked = select_scope_range()
+                        if picked then
+                            scope_range = picked
+                            scoped_enabled = true
                         end
-                    end
-                elseif trans_num_l == '<c-k>' or trans_num == '^K' then -- Ctrl-K (expand scope)
-                    if scoped_enabled and scope_ranges and scope_idx < #scope_ranges then
-                        scope_idx = scope_idx + 1
-                        rerender(input)
-                    end
-                elseif trans_num_l == '<c-j>' or trans_num_l == '<nl>' or trans_num == '^J' then -- Ctrl-J (contract scope)
-                    if scoped_enabled and scope_ranges and scope_idx > 1 then
-                        scope_idx = scope_idx - 1
                         rerender(input)
                     end
                 elseif key == 9 or trans_num_l == '<tab>' then -- Tab
@@ -495,20 +481,14 @@ local function run()
                 if tl == '<s-tab>' then
                     if scoped_enabled then
                         scoped_enabled = false
+                        scope_range = nil
                         rerender(input)
                     else
-                        if enable_scope() then
-                            rerender(input)
+                        local picked = select_scope_range()
+                        if picked then
+                            scope_range = picked
+                            scoped_enabled = true
                         end
-                    end
-                elseif tl == '<c-k>' or trans == '^K' then
-                    if scoped_enabled and scope_ranges and scope_idx < #scope_ranges then
-                        scope_idx = scope_idx + 1
-                        rerender(input)
-                    end
-                elseif tl == '<c-j>' or tl == '<nl>' or trans == '^J' then
-                    if scoped_enabled and scope_ranges and scope_idx > 1 then
-                        scope_idx = scope_idx - 1
                         rerender(input)
                     end
                 elseif tl == '<tab>' then
