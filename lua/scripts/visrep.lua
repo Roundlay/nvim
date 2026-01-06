@@ -192,6 +192,9 @@ local function run()
     local nav_targets = nil
     local session = { active = false }
     local function force_normal()
+        local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+        pcall(vim.api.nvim_feedkeys, esc, 'n', false)
+        pcall(vim.cmd, 'stopinsert')
         pcall(vim.cmd, 'normal! \\<Esc>')
     end
 
@@ -505,6 +508,7 @@ local function run()
     end
 
     local function finalize()
+        force_normal()
         if is_single_line then
             if not nav_targets or #nav_targets == 0 then
                 force_normal()
