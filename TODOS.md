@@ -5,6 +5,10 @@
 - [X] Skip auto-install for parsers that require grammar generation when `tree-sitter` or `node` is missing.
 - [~] Install `tree-sitter` CLI + NodeJS if Swift Treesitter highlighting is needed.
 
+## Treesitter Minimal Footprint (2026-01-06)
+
+- [X] Disable auto-install and pin a minimal `ensure_installed` parser list.
+
 ## OLS LSP Init Errors (2026-01-05)
 
 - [X] Select an executable `ols` command (PATH-first, then platform fallback) to avoid invalid cmd errors.
