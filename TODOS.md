@@ -14,6 +14,10 @@
 - [X] Keep inline code highlighting inside raw HTML-style tag blocks.
 - [X] Suppress underline styling on bracketed markers like `[+]` when not followed by link/reference syntax.
 
+## Markdown Plain Mode (2026-01-06)
+
+- [X] Disable Treesitter markdown highlights and custom markdown highlight hooks.
+
 ## OLS LSP Init Errors (2026-01-05)
 
 - [X] Select an executable `ols` command (PATH-first, then platform fallback) to avoid invalid cmd errors.
