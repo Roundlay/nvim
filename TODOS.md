@@ -12,7 +12,7 @@
 ## Markdown Highlight Quirks (2026-01-06)
 
 - [X] Keep inline code highlighting inside raw HTML-style tag blocks.
-- [X] Suppress underline styling on bracketed markers like `[+]` at BOL.
+- [X] Suppress underline styling on bracketed markers like `[+]` when not followed by link/reference syntax.
 
 ## OLS LSP Init Errors (2026-01-05)
 
