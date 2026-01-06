@@ -17,6 +17,7 @@
 ## Markdown Plain Mode (2026-01-06)
 
 - [X] Disable Treesitter markdown highlights and custom markdown highlight hooks.
+- [X] Remove Markdown parser/LSP wiring from the plugin lists.
 
 ## OLS LSP Init Errors (2026-01-05)
 
