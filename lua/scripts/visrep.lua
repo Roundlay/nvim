@@ -189,6 +189,7 @@ local function run()
     local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, literal, sel.srow, sel.scol, sel.ecol_excl)
     local active_by_line = nil
     local nav_targets = nil
+    local session = { active = false }
 
     local function match_in_scope(m, scope)
         if not scope then return true end
@@ -285,53 +286,60 @@ local function run()
         vim.cmd('redraw')
     end
     
-    local function select_scope_range()
+    local scope_maps_active = false
+    local function clear_scope_maps()
+        if not scope_maps_active then
+            return
+        end
+        pcall(vim.keymap.del, { 'n', 'v' }, '<CR>', { buffer = bufnr })
+        pcall(vim.keymap.del, { 'n', 'v' }, '<Esc>', { buffer = bufnr })
+        scope_maps_active = false
+    end
+
+    local function finish_scope_selection(picked)
+        clear_scope_maps()
+        pcall(vim.cmd, 'normal! \\<Esc>')
+        if picked then
+            scope_range = picked
+            scoped_enabled = true
+        else
+            scope_range = nil
+            scoped_enabled = false
+        end
+        if not session.active then
+            return
+        end
+        vim.schedule(function()
+            if not session.active then
+                return
+            end
+            local action = session.input_loop()
+            if action == "apply" then
+                session.finalize()
+                session.active = false
+                M._visrep_session = nil
+            elseif action == "cancel" then
+                session.active = false
+                M._visrep_session = nil
+            end
+        end)
+    end
+
+    local function begin_scope_selection()
         clear_ns(bufnr)
         vim.api.nvim_echo({{ "Visrep: select scope and press <Enter> (or <Esc> to cancel)", "ModeMsg" }}, false, {})
         vim.cmd('redraw')
 
-        local done = false
-        local result = nil
-        local function exit_visual()
-            pcall(vim.cmd, 'normal! \\<Esc>')
-        end
-
-        local function accept()
+        scope_maps_active = true
+        vim.keymap.set({ 'n', 'v' }, '<CR>', function()
             local smark = vim.api.nvim_buf_get_mark(bufnr, '<')
             local emark = vim.api.nvim_buf_get_mark(bufnr, '>')
-            result = marks_to_range(bufnr, smark, emark)
-            exit_visual()
-            done = true
-        end
-
-        local function cancel()
-            result = nil
-            exit_visual()
-            done = true
-        end
-
-        local function map(lhs, rhs)
-            vim.keymap.set({ 'n', 'v' }, lhs, rhs, { buffer = bufnr, silent = true, nowait = true })
-        end
-        local function unmap(lhs)
-            pcall(vim.keymap.del, { 'n', 'v' }, lhs, { buffer = bufnr })
-        end
-
-        map('<CR>', function()
-            accept()
-        end)
-        map('<Esc>', function()
-            cancel()
-        end)
-
-        vim.wait(1000000, function()
-            return done
-        end, 10)
-
-        unmap('<CR>')
-        unmap('<Esc>')
-
-        return result
+            local picked = marks_to_range(bufnr, smark, emark)
+            finish_scope_selection(picked)
+        end, { buffer = bufnr, silent = true, nowait = true })
+        vim.keymap.set({ 'n', 'v' }, '<Esc>', function()
+            finish_scope_selection(nil)
+        end, { buffer = bufnr, silent = true, nowait = true })
     end
 
     local function rerender(repl)
@@ -423,6 +431,145 @@ local function run()
 
         update_prompt(repl)
     end
+
+    local function build_replaced_line(line, matches, repl)
+        if not matches or #matches == 0 then return line end
+        local parts = {}
+        local prev_end = 0
+        for _, mm in ipairs(matches) do
+            if mm.col0 > prev_end then
+                parts[#parts + 1] = line:sub(prev_end + 1, mm.col0)
+            end
+            if repl ~= '' then
+                parts[#parts + 1] = repl
+            end
+            prev_end = mm.col1
+        end
+        parts[#parts + 1] = line:sub(prev_end + 1)
+        return table.concat(parts)
+    end
+
+    local function apply_replacements_by_line(bufnr, by_line, repl)
+        local line_nums = {}
+        for lnum, _ in pairs(by_line) do
+            line_nums[#line_nums + 1] = lnum
+        end
+        table.sort(line_nums)
+
+        for i = 1, #line_nums do
+            local lnum = line_nums[i]
+            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
+            local new_line = build_replaced_line(line, by_line[lnum], repl)
+            if new_line ~= line then
+                vim.api.nvim_buf_set_lines(bufnr, lnum, lnum + 1, false, { new_line })
+            end
+        end
+    end
+
+    local function finalize()
+        if is_single_line then
+            if not nav_targets or #nav_targets == 0 then
+                vim.api.nvim_win_set_cursor(0, cursor_pos)
+                session.active = false
+                M._visrep_session = nil
+                return
+            end
+            if scoped_enabled and scope_range then
+                apply_replacements_by_line(bufnr, active_by_line, new_string)
+                vim.api.nvim_win_set_cursor(0, cursor_pos)
+                session.active = false
+                M._visrep_session = nil
+                return
+            end
+        end
+
+        -- Pick a separator that is not in pattern or new_string
+        local separators = { '/', '#', '%', '!', '@', '$', '^', '&', '*', '+', '=', '?', '|', '~' }
+        local sep = nil
+        for _, s in ipairs(separators) do
+            if not pattern:find(s, 1, true) and not new_string:find(s, 1, true) then
+                sep = s
+                break
+            end
+        end
+        if not sep then
+            print('Visrep: could not find a suitable separator.')
+            session.active = false
+            M._visrep_session = nil
+            return
+        end
+
+        local regex_specials = '().%+-*?[]^$\\|/'
+        local escaped_new_string = vim.fn.escape(new_string, sep .. '\\' .. regex_specials)
+
+        -- Choose the active pattern based on preview mode.
+        local active_pattern = (mode == 'boundary') and (pattern_word or pattern_any) or pattern_any
+
+        -- Perform the substitution globally; add 'e' to suppress errors when not found.
+        local before_tick = vim.api.nvim_buf_get_changedtick(bufnr)
+        pcall(vim.cmd, ':%s' .. sep .. active_pattern .. sep .. escaped_new_string .. sep .. 'ge')
+
+        local after_tick = vim.api.nvim_buf_get_changedtick(bufnr)
+        if after_tick == before_tick then
+            -- No global matches: replace the originally selected region only.
+            local srow = sel.srow
+            local erow = sel.erow
+
+            local lines = vim.api.nvim_buf_get_lines(bufnr, srow, erow + 1, false)
+            if #lines == 0 then
+                vim.api.nvim_win_set_cursor(0, cursor_pos)
+                session.active = false
+                M._visrep_session = nil
+                return
+            end
+
+            local first_line = lines[1]
+            local last_line  = lines[#lines]
+
+            local start_col1 = sel.scol + 1          -- 1-based inclusive
+            local end_col1   = sel.ecol_excl         -- 1-based inclusive (end_excl0 == end_incl1)
+
+            -- Clamp end column for safety
+            if erow == srow then
+                if end_col1 > #first_line then end_col1 = #first_line end
+            else
+                if end_col1 > #last_line then end_col1 = #last_line end
+            end
+
+            local prefix = first_line:sub(1, start_col1 - 1)
+            local suffix = last_line:sub(end_col1 + 1)
+
+            local rep_lines = vim.split(new_string, "\n", true)
+
+            local new_lines
+            if srow == erow then
+                if #rep_lines <= 1 then
+                    new_lines = { prefix .. new_string .. suffix }
+                else
+                    new_lines = {}
+                    new_lines[1] = prefix .. rep_lines[1]
+                    for i = 2, #rep_lines - 1 do new_lines[#new_lines + 1] = rep_lines[i] end
+                    new_lines[#new_lines + 1] = rep_lines[#rep_lines] .. suffix
+                end
+            else
+                if #rep_lines <= 1 then
+                    new_lines = { prefix .. new_string .. suffix }
+                else
+                    new_lines = {}
+                    new_lines[1] = prefix .. rep_lines[1]
+                    for i = 2, #rep_lines - 1 do new_lines[#new_lines + 1] = rep_lines[i] end
+                    new_lines[#new_lines + 1] = rep_lines[#rep_lines] .. suffix
+                end
+            end
+
+            vim.api.nvim_buf_set_lines(bufnr, srow, erow + 1, false, new_lines)
+        end
+
+        -- Restore the cursor position
+        vim.api.nvim_win_set_cursor(0, cursor_pos)
+        session.active = false
+        M._visrep_session = nil
+    end
     
     if is_single_line then
         local input = ''
@@ -440,8 +587,8 @@ local function run()
                             scope_range = nil
                             rerender(input)
                         else
-                            clear_ns(bufnr)
-                            return "scope"
+                            begin_scope_selection()
+                            return "defer"
                         end
                     elseif key == 9 or trans_num_l == '<tab>' then -- Tab
                         if pattern_word then
@@ -486,8 +633,8 @@ local function run()
                             scope_range = nil
                             rerender(input)
                         else
-                            clear_ns(bufnr)
-                            return "scope"
+                            begin_scope_selection()
+                            return "defer"
                         end
                     elseif tl == '<tab>' then
                         if pattern_word then
@@ -522,23 +669,19 @@ local function run()
             end
         end
 
-        while true do
-            local action = input_loop()
-            if action == "scope" then
-                local picked = select_scope_range()
-                if picked then
-                    scope_range = picked
-                    scoped_enabled = true
-                else
-                    scope_range = nil
-                    scoped_enabled = false
-                end
-                rerender(input)
-            elseif action == "apply" then
-                break
-            else
-                return
-            end
+        session.input_loop = input_loop
+        session.finalize = finalize
+        session.active = true
+        M._visrep_session = session
+
+        local action = input_loop()
+        if action == "defer" then
+            return
+        end
+        if action == "cancel" then
+            session.active = false
+            M._visrep_session = nil
+            return
         end
     else
         -- Multi-line selection: simpler prompt with no live preview
@@ -546,132 +689,7 @@ local function run()
         if new_string == '' then return end
     end
 
-    local function build_replaced_line(line, matches, repl)
-        if not matches or #matches == 0 then return line end
-        local parts = {}
-        local prev_end = 0
-        for _, mm in ipairs(matches) do
-            if mm.col0 > prev_end then
-                parts[#parts + 1] = line:sub(prev_end + 1, mm.col0)
-            end
-            if repl ~= '' then
-                parts[#parts + 1] = repl
-            end
-            prev_end = mm.col1
-        end
-        parts[#parts + 1] = line:sub(prev_end + 1)
-        return table.concat(parts)
-    end
-
-    local function apply_replacements_by_line(bufnr, by_line, repl)
-        local line_nums = {}
-        for lnum, _ in pairs(by_line) do
-            line_nums[#line_nums + 1] = lnum
-        end
-        table.sort(line_nums)
-
-        for i = 1, #line_nums do
-            local lnum = line_nums[i]
-            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
-            local new_line = build_replaced_line(line, by_line[lnum], repl)
-            if new_line ~= line then
-                vim.api.nvim_buf_set_lines(bufnr, lnum, lnum + 1, false, { new_line })
-            end
-        end
-    end
-
-    if is_single_line then
-        if not nav_targets or #nav_targets == 0 then
-            vim.api.nvim_win_set_cursor(0, cursor_pos)
-            return
-        end
-        if scoped_enabled and scope_range then
-            apply_replacements_by_line(bufnr, active_by_line, new_string)
-            vim.api.nvim_win_set_cursor(0, cursor_pos)
-            return
-        end
-    end
-    
-    -- Pick a separator that is not in pattern or new_string
-    local separators = { '/', '#', '%', '!', '@', '$', '^', '&', '*', '+', '=', '?', '|', '~' }
-    local sep = nil
-    for _, s in ipairs(separators) do
-        if not pattern:find(s, 1, true) and not new_string:find(s, 1, true) then
-            sep = s
-            break
-        end
-    end
-    if not sep then
-        print('Visrep: could not find a suitable separator.')
-        return
-    end
-    
-    local regex_specials = '().%+-*?[]^$\\|/'
-    local escaped_new_string = vim.fn.escape(new_string, sep .. '\\' .. regex_specials)
-    
-    -- Choose the active pattern based on preview mode.
-    local active_pattern = (mode == 'boundary') and (pattern_word or pattern_any) or pattern_any
-    
-    -- Perform the substitution globally; add 'e' to suppress errors when not found.
-    local before_tick = vim.api.nvim_buf_get_changedtick(bufnr)
-    pcall(vim.cmd, ':%s' .. sep .. active_pattern .. sep .. escaped_new_string .. sep .. 'ge')
-    
-    local after_tick = vim.api.nvim_buf_get_changedtick(bufnr)
-    if after_tick == before_tick then
-        -- No global matches: replace the originally selected region only.
-        local srow = sel.srow
-        local erow = sel.erow
-    
-        local lines = vim.api.nvim_buf_get_lines(bufnr, srow, erow + 1, false)
-        if #lines == 0 then
-            vim.api.nvim_win_set_cursor(0, cursor_pos)
-            return
-        end
-    
-        local first_line = lines[1]
-        local last_line  = lines[#lines]
-    
-        local start_col1 = sel.scol + 1          -- 1-based inclusive
-        local end_col1   = sel.ecol_excl         -- 1-based inclusive (end_excl0 == end_incl1)
-    
-        -- Clamp end column for safety
-        if erow == srow then
-            if end_col1 > #first_line then end_col1 = #first_line end
-        else
-            if end_col1 > #last_line then end_col1 = #last_line end
-        end
-    
-        local prefix = first_line:sub(1, start_col1 - 1)
-        local suffix = last_line:sub(end_col1 + 1)
-    
-        local rep_lines = vim.split(new_string, "\n", true)
-    
-        local new_lines
-        if srow == erow then
-            if #rep_lines <= 1 then
-                new_lines = { prefix .. new_string .. suffix }
-            else
-                new_lines = {}
-                new_lines[1] = prefix .. rep_lines[1]
-                for i = 2, #rep_lines - 1 do new_lines[#new_lines + 1] = rep_lines[i] end
-                new_lines[#new_lines + 1] = rep_lines[#rep_lines] .. suffix
-            end
-        else
-            if #rep_lines <= 1 then
-                new_lines = { prefix .. new_string .. suffix }
-            else
-                new_lines = {}
-                new_lines[1] = prefix .. rep_lines[1]
-                for i = 2, #rep_lines - 1 do new_lines[#new_lines + 1] = rep_lines[i] end
-                new_lines[#new_lines + 1] = rep_lines[#rep_lines] .. suffix
-            end
-        end
-    
-        vim.api.nvim_buf_set_lines(bufnr, srow, erow + 1, false, new_lines)
-    end
-    
-    -- Restore the cursor position
-    vim.api.nvim_win_set_cursor(0, cursor_pos)
+    finalize()
 end
 
 function M.run()
