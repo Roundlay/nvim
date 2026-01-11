@@ -174,8 +174,8 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [-] 2026-01-05 Add Tree-sitter scoped mode toggle/expand/contract with out-of-scope dimming.
     - [~] Dropped: replaced by manual scope selection to avoid Tree-sitter dependency.
 - [X] 2026-01-06 Add manual scoped selection (Shift-Tab) for Visrep with dimmed out-of-scope regions.
-- [X] 2026-01-11 Align preview match indexing with Vim regex so dotted path segments preview correctly.
-- [~] 2026-01-11 Preview matching now uses `vim.regex` with literal-length normalization to track the same bytes as the final :s pattern.
+- [X] 2026-01-11 Align preview matching with Vim regex and handle wrapped lines so dotted paths preview correctly.
+- [~] 2026-01-11 Preview switches to per-match overlays when `wrap` is enabled to avoid truncation on wrapped segments.
 - [ ] ./lua/scripts/visrep.lua:12 Ensure the `[N/N]` navigator starts at the original match rather than the literal first.
 - [ ] ./lua/scripts/visrep.lua:13 Provide standard plugin configuration hooks for Visrep.
 - [ ] ./lua/scripts/visrep.lua:14 Add `vim.g.visrep_default_mode = 'boundary'|'anywhere'` to control the initial boundary mode.
