@@ -131,7 +131,7 @@ local function run()
         end
     end
     
-    local function scan_regex_matches(bufnr, lnum, line, re, by_line, nav, literal_len)
+    local function scan_regex_matches(bufnr, lnum, line, re, by_line, nav)
         if not re then return end
         local line_len = #line
         if line_len == 0 then return end
@@ -142,12 +142,6 @@ local function run()
             if not s then break end
             local abs_s = start + s
             local abs_e = start + e
-            if literal_len and literal_len > 0 then
-                local match_len = abs_e - abs_s
-                if match_len + 1 == literal_len then
-                    abs_e = abs_e + 1
-                end
-            end
             if abs_e < abs_s then
                 break
             end
@@ -165,7 +159,7 @@ local function run()
         end
     end
 
-    local function build_match_index(bufnr, lines, re_any, re_bnd, literal_len)
+    local function build_match_index(bufnr, lines, re_any, re_bnd)
         local by_any = {}
         local by_bnd = {}
         local nav_any = {}
@@ -175,9 +169,9 @@ local function run()
         end
         for lnum = 0, #lines - 1 do
             local line = lines[lnum + 1] or ''
-            scan_regex_matches(bufnr, lnum, line, re_any, by_any, nav_any, literal_len)
+            scan_regex_matches(bufnr, lnum, line, re_any, by_any, nav_any)
             if re_bnd then
-                scan_regex_matches(bufnr, lnum, line, re_bnd, by_bnd, nav_bnd, literal_len)
+                scan_regex_matches(bufnr, lnum, line, re_bnd, by_bnd, nav_bnd)
             end
         end
         if not re_bnd then
@@ -197,11 +191,10 @@ local function run()
     pcall(vim.api.nvim_set_hl, 0, 'VisrepScopeDim', { link = 'NonText' })
     
     local literal = pattern
-    local literal_len = #literal
     local lines_cache = nil
     local re_any = nil
     local re_bnd = nil
-    if is_single_line and literal_len > 0 then
+    if is_single_line and #literal > 0 then
         lines_cache = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
         re_any = vim.regex(pattern_any)
         if pattern_word then
@@ -212,7 +205,7 @@ local function run()
     local sel_is_valid = false
     local scoped_enabled = false
     local scope_range = nil
-    local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, lines_cache, re_any, re_bnd, literal_len)
+    local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, lines_cache, re_any, re_bnd)
     local active_by_line = nil
     local nav_targets = nil
     local session = { active = false }
@@ -423,8 +416,9 @@ local function run()
         end
 
         local repl_txt = repl or ''
+        local wrap_active = vim.wo.wrap
 
-        local function draw_line(lnum, line, matches)
+        local function draw_line_full(lnum, line, matches)
             -- Build a preview string for the whole line so downstream text shifts to
             -- reflect the replacement width instead of being overdrawn.
             local chunks = {}
@@ -466,10 +460,41 @@ local function run()
             })
         end
 
-        -- Draw an overlay per line so the preview reflects spacing changes.
+        local function draw_line_matches(lnum, line, matches)
+            for _, mm in ipairs(matches) do
+                local orig = line:sub(mm.col0 + 1, mm.col1)
+                local orig_w = vim.fn.strdisplaywidth(orig)
+                local chunks = {}
+                local repl_w = 0
+                if repl_txt ~= '' then
+                    chunks[#chunks + 1] = { repl_txt, 'VisrepText' }
+                    repl_w = vim.fn.strdisplaywidth(repl_txt)
+                end
+                local pad = orig_w - repl_w
+                if pad > 0 then
+                    chunks[#chunks + 1] = { string.rep(' ', pad), nil }
+                elseif repl_txt == '' and orig_w > 0 then
+                    chunks[#chunks + 1] = { string.rep(' ', orig_w), nil }
+                end
+                if #chunks > 0 then
+                    vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, mm.col0, {
+                        virt_text = chunks,
+                        virt_text_pos = 'overlay',
+                        priority = 210,
+                    })
+                end
+            end
+        end
+
+        -- Draw per-line overlay for nowrap (accurate spacing). For wrapped lines,
+        -- fall back to per-match overlays so later wrap segments still preview.
         for lnum, list in pairs(active_by_line) do
             local line = (lines_cache and lines_cache[lnum + 1]) or vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
-            draw_line(lnum, line, list)
+            if wrap_active then
+                draw_line_matches(lnum, line, list)
+            else
+                draw_line_full(lnum, line, list)
+            end
         end
 
         sel_is_valid = false
