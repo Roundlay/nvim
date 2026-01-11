@@ -122,11 +122,6 @@ local function run()
     -- you type. Toggle boundary/anywhere with <Tab>, apply on <Enter>, cancel on <Esc>.
     local mode = (defaults_to_boundary and 'boundary') or 'anywhere'
     
-    local function is_word_char_byte(b)
-        if not b then return false end
-        return (b >= 48 and b <= 57) or (b >= 65 and b <= 90) or (b == 95) or (b >= 97 and b <= 122)
-    end
-    
     local function push_merged(list, col0, col1)
         local n = #list
         if n == 0 or col0 > list[n].col1 then
@@ -136,39 +131,58 @@ local function run()
         end
     end
     
-    local function build_match_index(bufnr, literal, sel_lnum, sel_col0, sel_col1)
-        local lc = vim.api.nvim_buf_line_count(bufnr)
+    local function scan_regex_matches(bufnr, lnum, line, re, by_line, nav, literal_len)
+        if not re then return end
+        local line_len = #line
+        if line_len == 0 then return end
+        local start = 0
+        local list = nil
+        while start <= line_len do
+            local s, e = re:match_line(bufnr, lnum, start)
+            if not s then break end
+            local abs_s = start + s
+            local abs_e = start + e
+            if literal_len and literal_len > 0 then
+                local match_len = abs_e - abs_s
+                if match_len + 1 == literal_len then
+                    abs_e = abs_e + 1
+                end
+            end
+            if abs_e < abs_s then
+                break
+            end
+            if abs_e == abs_s then
+                start = abs_e + 1
+            else
+                list = list or {}
+                push_merged(list, abs_s, abs_e)
+                nav[#nav + 1] = { lnum = lnum, col0 = abs_s, col1 = abs_e }
+                start = abs_e
+            end
+        end
+        if list then
+            by_line[lnum] = list
+        end
+    end
+
+    local function build_match_index(bufnr, lines, re_any, re_bnd, literal_len)
         local by_any = {}
         local by_bnd = {}
         local nav_any = {}
         local nav_bnd = {}
-        if #literal > 0 then
-            for lnum = 0, lc - 1 do
-                local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
-                local init = 1
-                local list_any = nil
-                local list_bnd = nil
-                while true do
-                    local s, e = string.find(line, literal, init, true)
-                    if not s then break end
-                    local c0, c1 = s - 1, e
-                    -- anywhere list
-                    list_any = list_any or {}
-                    push_merged(list_any, c0, c1)
-                    nav_any[#nav_any + 1] = { lnum = lnum, col0 = c0, col1 = c1 }
-                    -- boundary list
-                    local prev = (s > 1) and string.byte(line, s - 1) or nil
-                    local nextb = (e < #line) and string.byte(line, e + 1) or nil
-                    if not is_word_char_byte(prev) and not is_word_char_byte(nextb) then
-                        list_bnd = list_bnd or {}
-                        push_merged(list_bnd, c0, c1)
-                        nav_bnd[#nav_bnd + 1] = { lnum = lnum, col0 = c0, col1 = c1 }
-                    end
-                    init = e + 1
-                end
-                if list_any then by_any[lnum] = list_any end
-                if list_bnd then by_bnd[lnum] = list_bnd end
+        if not re_any or not lines then
+            return by_any, by_bnd, nav_any, nav_bnd
+        end
+        for lnum = 0, #lines - 1 do
+            local line = lines[lnum + 1] or ''
+            scan_regex_matches(bufnr, lnum, line, re_any, by_any, nav_any, literal_len)
+            if re_bnd then
+                scan_regex_matches(bufnr, lnum, line, re_bnd, by_bnd, nav_bnd, literal_len)
             end
+        end
+        if not re_bnd then
+            by_bnd = by_any
+            nav_bnd = nav_any
         end
         return by_any, by_bnd, nav_any, nav_bnd
     end
@@ -183,11 +197,22 @@ local function run()
     pcall(vim.api.nvim_set_hl, 0, 'VisrepScopeDim', { link = 'NonText' })
     
     local literal = pattern
+    local literal_len = #literal
+    local lines_cache = nil
+    local re_any = nil
+    local re_bnd = nil
+    if is_single_line and literal_len > 0 then
+        lines_cache = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        re_any = vim.regex(pattern_any)
+        if pattern_word then
+            re_bnd = vim.regex(pattern_word)
+        end
+    end
     local cur_idx = nil
     local sel_is_valid = false
     local scoped_enabled = false
     local scope_range = nil
-    local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, literal, sel.srow, sel.scol, sel.ecol_excl)
+    local by_line_any, by_line_bnd, nav_any, nav_bnd = build_match_index(bufnr, lines_cache, re_any, re_bnd, literal_len)
     local active_by_line = nil
     local nav_targets = nil
     local session = { active = false }
@@ -443,7 +468,7 @@ local function run()
 
         -- Draw an overlay per line so the preview reflects spacing changes.
         for lnum, list in pairs(active_by_line) do
-            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
+            local line = (lines_cache and lines_cache[lnum + 1]) or vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
             draw_line(lnum, line, list)
         end
 
