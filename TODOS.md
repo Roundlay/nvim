@@ -155,6 +155,12 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [ ] ./lua/keybindings.lua:225 Work out Blink's custom keybinding requirements instead of relying on `vim.keymap.set` defaults.
     - [ ] ./lua/keybindings.lua:226 Cross-reference `./lua/plugins/lazy-blink-cmp.lua` so the Blink mappings align with the plugin config.
 
+### ./lua/highlights.lua
+- [X] 2026-02-23 Add Treesitter-driven TODO-marker highlights for `[ ]`, `[X]`, `[+]`, `[~]`, `[!]`, and `[@]`, with optional palette overrides via `vim.g.todo_comment_marker_colours`.
+- [X] 2026-02-23 Add fallback highlight definitions for `CustomDiagText` and `CustomDiagLine` used by `./lua/scripts/custom_diagnostics.lua`.
+- [X] 2026-02-23 Replace ad-hoc markdown underline stripping with reusable helpers that copy source groups and clear underline attributes.
+- [X] 2026-02-23 Keep the C/C++ inactive-semantic-token override and document the clangd rationale inline.
+
 ### ./lua/scripts.lua
 - [ ] ./lua/scripts.lua:8 Remove the global `_G.M` exposure or justify it with measured startup costs.
 - [ ] ./lua/scripts.lua:16 Audit the eager module calls (e.g. `scripts.c_return_types`, `scripts.custom_diagnostics`) and document why they run on load.
