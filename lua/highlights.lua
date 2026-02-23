@@ -113,51 +113,37 @@ local function apply_markdown_overrides()
 end
 
 local todo_marker_ns = api.nvim_create_namespace("TodoCommentMarkers")
-local comment_query_cache = {}
-local marker_refresh_generation = {}
-local todo_markers = {}
+local pending_marker_refresh = {}
+local comment_query_text = "(comment) @comment"
+local todo_markers = {
+    { marker = "[ ]", fg = "#9CDCFE", hl_group = "TodoCommentMarkerPending" },
+    { marker = "[X]", fg = "#6A9955", hl_group = "TodoCommentMarkerDone" },
+    { marker = "[+]", fg = "#4EC9B0", hl_group = "TodoCommentMarkerAdded" },
+    { marker = "[~]", fg = "#DCDCAA", hl_group = "TodoCommentMarkerNote" },
+    { marker = "[!]", fg = "#F44747", hl_group = "TodoCommentMarkerAlert" },
+    { marker = "[@]", fg = "#C586C0", hl_group = "TodoCommentMarkerResume" },
+}
 
-local function marker_group_name(marker)
-    local bytes = {}
-    for i = 1, #marker do
-        bytes[#bytes + 1] = string.format("%02X", marker:byte(i))
+local function apply_todo_marker_palette_overrides()
+    local palette_override = vim.g.todo_comment_marker_colours
+    if type(palette_override) ~= "table" then
+        return
     end
-    return "TodoCommentMarker_" .. table.concat(bytes, "_")
-end
 
-local function register_todo_comment_marker(marker, fg, opts)
-    local hl_opts = vim.tbl_extend("force", { fg = fg, bold = true }, opts or {})
-    local spec = {
-        marker = marker,
-        marker_len = #marker,
-        hl_group = marker_group_name(marker),
-        hl_opts = hl_opts,
-    }
-    todo_markers[#todo_markers + 1] = spec
-    set_hl(spec.hl_group, spec.hl_opts)
+    for i = 1, #todo_markers do
+        local spec = todo_markers[i]
+        local override = palette_override[spec.marker]
+        if type(override) == "string" and override ~= "" then
+            spec.fg = override
+        end
+    end
 end
 
 local function apply_todo_marker_group_overrides()
     for i = 1, #todo_markers do
         local spec = todo_markers[i]
-        set_hl(spec.hl_group, spec.hl_opts)
+        set_hl(spec.hl_group, { fg = spec.fg, bold = true })
     end
-end
-
-local function get_comment_query(lang)
-    local cached = comment_query_cache[lang]
-    if cached ~= nil then
-        return cached or nil
-    end
-
-    local ok, query = pcall(vim.treesitter.query.parse, lang, "(comment) @comment")
-    if not ok then
-        comment_query_cache[lang] = false
-        return nil
-    end
-
-    comment_query_cache[lang] = query
-    return query
 end
 
 local function highlight_markers_on_line(buf, row, line, first_col, last_col)
@@ -185,7 +171,7 @@ local function highlight_markers_on_line(buf, row, line, first_col, last_col)
                 priority = 220,
             })
 
-            search_from = start_col + spec.marker_len
+            search_from = start_col + #spec.marker
         end
     end
 end
@@ -234,8 +220,8 @@ local function refresh_todo_comment_markers(buf)
         return
     end
 
-    local query = get_comment_query(parser:lang())
-    if not query then
+    local ok_query, query = pcall(vim.treesitter.query.parse, parser:lang(), comment_query_text)
+    if not ok_query or not query then
         return
     end
 
@@ -255,47 +241,21 @@ local function schedule_todo_comment_refresh(buf)
         return
     end
 
-    local generation = (marker_refresh_generation[buf] or 0) + 1
-    marker_refresh_generation[buf] = generation
+    if pending_marker_refresh[buf] then
+        return
+    end
+    pending_marker_refresh[buf] = true
 
-    vim.defer_fn(function()
+    vim.schedule(function()
+        pending_marker_refresh[buf] = nil
         if not api.nvim_buf_is_valid(buf) then
-            marker_refresh_generation[buf] = nil
-            return
-        end
-        if marker_refresh_generation[buf] ~= generation then
             return
         end
         refresh_todo_comment_markers(buf)
-    end, 18)
+    end)
 end
 
-do
-    local marker_palette = {
-        { marker = "[ ]", fg = "#9CDCFE" },
-        { marker = "[X]", fg = "#6A9955" },
-        { marker = "[+]", fg = "#4EC9B0" },
-        { marker = "[~]", fg = "#DCDCAA" },
-        { marker = "[!]", fg = "#F44747" },
-        { marker = "[@]", fg = "#C586C0" },
-    }
-
-    local palette_override = vim.g.todo_comment_marker_colours
-    if type(palette_override) == "table" then
-        for i = 1, #marker_palette do
-            local entry = marker_palette[i]
-            local override = palette_override[entry.marker]
-            if type(override) == "string" and override ~= "" then
-                entry.fg = override
-            end
-        end
-    end
-
-    for i = 1, #marker_palette do
-        local entry = marker_palette[i]
-        register_todo_comment_marker(entry.marker, entry.fg)
-    end
-end
+apply_todo_marker_palette_overrides()
 
 local function apply_all_highlight_overrides()
     apply_lsp_semantic_overrides()
@@ -319,10 +279,8 @@ api.nvim_create_autocmd("ColorScheme", {
 local todo_marker_group = api.nvim_create_augroup("TodoCommentMarkerRefresh", { clear = true })
 api.nvim_create_autocmd({
     "BufEnter",
-    "BufWinEnter",
     "FileType",
     "TextChanged",
-    "TextChangedI",
     "InsertLeave",
     "BufWritePost",
 }, {
@@ -335,6 +293,6 @@ api.nvim_create_autocmd({
 api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
     group = todo_marker_group,
     callback = function(args)
-        marker_refresh_generation[args.buf] = nil
+        pending_marker_refresh[args.buf] = nil
     end,
 })
