@@ -1,0 +1,16 @@
+[IDENTITY] Codex session 2026-02-23:
+User requested a practical simplification of lua/highlights.lua after review feedback that the TODO-marker subsystem felt over-engineered.
+
+Rationale and decision process:
+- Kept the correctness-critical behavior (comment-node-only marker highlighting via Treesitter, optional marker palette override, and ColorScheme reapplication) while cutting internal machinery that did not add user-visible value.
+- Replaced dynamic byte-encoded highlight group generation with fixed semantic group names to make configuration and debugging explicit.
+- Removed generation-based deferred refresh and replaced it with a single queued per-buffer refresh via vim.schedule; this keeps coalescing semantics with less state and fewer branches.
+- Removed TextChangedI and BufWinEnter refresh events to reduce update chatter while preserving updates on normal edits, insert exit, writes, filetype assignment, and buffer entry.
+
+Alternatives considered:
+- Full removal of Treesitter comment-node traversal in favor of regex/matchadd-only approach: rejected to preserve comment-only precision across languages.
+- Keeping old cache/debounce stack untouched: rejected because complexity was the user concern and code path had become harder to audit.
+
+Evidence:
+- Headless load validation passed: nvim --headless -u NONE with package.path pointed at repo lua/, then require("highlights").
+- Diff reduced TODO marker subsystem footprint (1 file changed, net -42 lines).
