@@ -3,17 +3,8 @@ if vim.g.vscode then
 end
 
 local api = vim.api
-local ts = vim.treesitter
 
-local function set_hl(group, opts)
-    api.nvim_set_hl(0, group, opts)
-end
-
-local function set_hl_default(group, opts)
-    set_hl(group, vim.tbl_extend("force", { default = true }, opts or {}))
-end
-
-local function get_hl(group)
+local function read_hl(group)
     local ok, hl = pcall(api.nvim_get_hl, 0, { name = group, link = false })
     if not ok or type(hl) ~= "table" then
         return nil
@@ -21,22 +12,19 @@ local function get_hl(group)
     return hl
 end
 
-local function copy_without_underlines(hl)
-    local out = {}
-    if type(hl) == "table" then
-        out = vim.tbl_extend("force", out, hl)
+local function apply_without_underlines(target_group, source_group)
+    local source_hl = read_hl(source_group)
+    local hl = {}
+    if type(source_hl) == "table" then
+        hl = vim.tbl_extend("force", hl, source_hl)
     end
-    out.underline = false
-    out.undercurl = false
-    out.underdouble = false
-    out.underdotted = false
-    out.underdashed = false
-    out.sp = nil
-    return out
-end
-
-local function set_hl_without_underlines(target_group, source_group)
-    set_hl(target_group, copy_without_underlines(get_hl(source_group)))
+    hl.underline = false
+    hl.undercurl = false
+    hl.underdouble = false
+    hl.underdotted = false
+    hl.underdashed = false
+    hl.sp = nil
+    api.nvim_set_hl(0, target_group, hl)
 end
 
 -- clangd marks inactive #if branches as semantic-token "comment", which can
@@ -68,231 +56,60 @@ local lsp_inactive_types = {
 }
 
 local function apply_lsp_semantic_overrides()
-    set_hl("@lsp.type.comment.c", {})
-    set_hl("@lsp.type.comment.cpp", {})
-    set_hl("@lsp.type.comment.objc", {})
+    api.nvim_set_hl(0, "@lsp.type.comment.c", {})
+    api.nvim_set_hl(0, "@lsp.type.comment.cpp", {})
+    api.nvim_set_hl(0, "@lsp.type.comment.objc", {})
 
-    set_hl("@lsp.mod.inactive", {})
-    set_hl("LspInactiveRegion", {})
-    set_hl("@lsp.mod.inactive.c", {})
-    set_hl("@lsp.mod.inactive.cpp", {})
+    api.nvim_set_hl(0, "@lsp.mod.inactive", {})
+    api.nvim_set_hl(0, "LspInactiveRegion", {})
+    api.nvim_set_hl(0, "@lsp.mod.inactive.c", {})
+    api.nvim_set_hl(0, "@lsp.mod.inactive.cpp", {})
 
     for i = 1, #lsp_inactive_types do
         local token_type = lsp_inactive_types[i]
-        set_hl("@lsp.typemod." .. token_type .. ".inactive", {})
-        set_hl("@lsp.typemod." .. token_type .. ".inactive.c", {})
-        set_hl("@lsp.typemod." .. token_type .. ".inactive.cpp", {})
+        api.nvim_set_hl(0, "@lsp.typemod." .. token_type .. ".inactive", {})
+        api.nvim_set_hl(0, "@lsp.typemod." .. token_type .. ".inactive.c", {})
+        api.nvim_set_hl(0, "@lsp.typemod." .. token_type .. ".inactive.cpp", {})
     end
 end
 
 local function apply_custom_diagnostic_overrides()
     -- Used by lua/scripts/custom_diagnostics.lua
-    set_hl_default("CustomDiagText", { link = "DiagnosticVirtualTextError" })
+    api.nvim_set_hl(0, "CustomDiagText", { default = true, link = "DiagnosticVirtualTextError" })
 
-    if get_hl("DiagnosticVirtualLinesError") then
-        set_hl_default("CustomDiagLine", { link = "DiagnosticVirtualLinesError" })
+    if read_hl("DiagnosticVirtualLinesError") then
+        api.nvim_set_hl(0, "CustomDiagLine", { default = true, link = "DiagnosticVirtualLinesError" })
         return
     end
 
-    local virtual_text_error = get_hl("DiagnosticVirtualTextError")
+    local virtual_text_error = read_hl("DiagnosticVirtualTextError")
     if virtual_text_error and virtual_text_error.bg then
-        set_hl_default("CustomDiagLine", { bg = virtual_text_error.bg })
+        api.nvim_set_hl(0, "CustomDiagLine", { default = true, bg = virtual_text_error.bg })
         return
     end
 
-    set_hl_default("CustomDiagLine", { link = "DiffDelete" })
+    api.nvim_set_hl(0, "CustomDiagLine", { default = true, link = "DiffDelete" })
 end
 
 local function apply_markdown_overrides()
-    set_hl("@markup.link.markdown_inline", { link = "@markup.link.label" })
-    set_hl("@markup.link.markdown", { link = "@markup.link.label" })
+    api.nvim_set_hl(0, "@markup.link.markdown_inline", { link = "@markup.link.label" })
+    api.nvim_set_hl(0, "@markup.link.markdown", { link = "@markup.link.label" })
 
-    set_hl_without_underlines("@markup.link.label.markdown_inline", "@markup.link.label")
-    set_hl_without_underlines("@markup.list.unchecked.markdown", "@markup.list.unchecked")
-    set_hl_without_underlines("@markup.list.checked.markdown", "@markup.list.checked")
+    apply_without_underlines("@markup.link.label.markdown_inline", "@markup.link.label")
+    apply_without_underlines("@markup.list.unchecked.markdown", "@markup.list.unchecked")
+    apply_without_underlines("@markup.list.checked.markdown", "@markup.list.checked")
 end
-
-local todo_marker_ns = api.nvim_create_namespace("TodoCommentMarkers")
-local pending_marker_refresh = {}
-local comment_query_text = "(comment) @comment"
-local todo_markers = {
-    { marker = "[ ]", fg = "#9CDCFE", hl_group = "TodoCommentMarkerPending" },
-    { marker = "[X]", fg = "#6A9955", hl_group = "TodoCommentMarkerDone" },
-    { marker = "[+]", fg = "#4EC9B0", hl_group = "TodoCommentMarkerAdded" },
-    { marker = "[~]", fg = "#DCDCAA", hl_group = "TodoCommentMarkerNote" },
-    { marker = "[!]", fg = "#F44747", hl_group = "TodoCommentMarkerAlert" },
-    { marker = "[@]", fg = "#C586C0", hl_group = "TodoCommentMarkerResume" },
-}
-
-local function apply_todo_marker_palette_overrides()
-    local palette_override = vim.g.todo_comment_marker_colours
-    if type(palette_override) ~= "table" then
-        return
-    end
-
-    for i = 1, #todo_markers do
-        local spec = todo_markers[i]
-        local override = palette_override[spec.marker]
-        if type(override) == "string" and override ~= "" then
-            spec.fg = override
-        end
-    end
-end
-
-local function apply_todo_marker_group_overrides()
-    for i = 1, #todo_markers do
-        local spec = todo_markers[i]
-        set_hl(spec.hl_group, { fg = spec.fg, bold = true })
-    end
-end
-
-local function highlight_markers_on_line(buf, row, line, first_col, last_col)
-    if first_col >= last_col then
-        return
-    end
-
-    for i = 1, #todo_markers do
-        local spec = todo_markers[i]
-        local search_from = first_col + 1
-
-        while true do
-            local start_col, end_col = string.find(line, spec.marker, search_from, true)
-            if not start_col then
-                break
-            end
-
-            if end_col > last_col then
-                break
-            end
-
-            api.nvim_buf_set_extmark(buf, todo_marker_ns, row, start_col - 1, {
-                end_col = end_col,
-                hl_group = spec.hl_group,
-                priority = 220,
-            })
-
-            search_from = start_col + #spec.marker
-        end
-    end
-end
-
-local function highlight_markers_on_comment_node(buf, node)
-    local start_row, start_col, end_row, end_col = node:range()
-    local lines = api.nvim_buf_get_lines(buf, start_row, end_row + 1, false)
-
-    for i = 1, #lines do
-        local row = start_row + i - 1
-        local line = lines[i]
-        local first_col = 0
-        local last_col = #line
-
-        if row == start_row then
-            first_col = start_col
-        end
-        if row == end_row then
-            last_col = end_col
-        end
-
-        if first_col < 0 then
-            first_col = 0
-        end
-        if last_col > #line then
-            last_col = #line
-        end
-
-        highlight_markers_on_line(buf, row, line, first_col, last_col)
-    end
-end
-
-local function refresh_todo_comment_markers(buf)
-    if not api.nvim_buf_is_valid(buf) then
-        return
-    end
-
-    api.nvim_buf_clear_namespace(buf, todo_marker_ns, 0, -1)
-
-    if vim.bo[buf].buftype ~= "" or #todo_markers == 0 then
-        return
-    end
-
-    local ok_parser, parser = pcall(ts.get_parser, buf)
-    if not ok_parser or not parser then
-        return
-    end
-
-    local ok_query, query = pcall(vim.treesitter.query.parse, parser:lang(), comment_query_text)
-    if not ok_query or not query then
-        return
-    end
-
-    local tree = parser:parse()[1]
-    if not tree then
-        return
-    end
-
-    local root = tree:root()
-    for _, node in query:iter_captures(root, buf, 0, -1) do
-        highlight_markers_on_comment_node(buf, node)
-    end
-end
-
-local function schedule_todo_comment_refresh(buf)
-    if not api.nvim_buf_is_valid(buf) then
-        return
-    end
-
-    if pending_marker_refresh[buf] then
-        return
-    end
-    pending_marker_refresh[buf] = true
-
-    vim.schedule(function()
-        pending_marker_refresh[buf] = nil
-        if not api.nvim_buf_is_valid(buf) then
-            return
-        end
-        refresh_todo_comment_markers(buf)
-    end)
-end
-
-apply_todo_marker_palette_overrides()
 
 local function apply_all_highlight_overrides()
     apply_lsp_semantic_overrides()
     apply_custom_diagnostic_overrides()
     apply_markdown_overrides()
-    apply_todo_marker_group_overrides()
 end
 
 apply_all_highlight_overrides()
-schedule_todo_comment_refresh(api.nvim_get_current_buf())
 
 local highlight_override_group = api.nvim_create_augroup("HighlightOverrides", { clear = true })
 api.nvim_create_autocmd("ColorScheme", {
     group = highlight_override_group,
-    callback = function()
-        apply_all_highlight_overrides()
-        schedule_todo_comment_refresh(api.nvim_get_current_buf())
-    end,
-})
-
-local todo_marker_group = api.nvim_create_augroup("TodoCommentMarkerRefresh", { clear = true })
-api.nvim_create_autocmd({
-    "BufEnter",
-    "FileType",
-    "TextChanged",
-    "InsertLeave",
-    "BufWritePost",
-}, {
-    group = todo_marker_group,
-    callback = function(args)
-        schedule_todo_comment_refresh(args.buf)
-    end,
-})
-
-api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
-    group = todo_marker_group,
-    callback = function(args)
-        pending_marker_refresh[args.buf] = nil
-    end,
+    callback = apply_all_highlight_overrides,
 })

@@ -160,6 +160,8 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [X] 2026-02-23 Add fallback highlight definitions for `CustomDiagText` and `CustomDiagLine` used by `./lua/scripts/custom_diagnostics.lua`.
 - [X] 2026-02-23 Replace ad-hoc markdown underline stripping with reusable helpers that copy source groups and clear underline attributes.
 - [X] 2026-02-23 Keep the C/C++ inactive-semantic-token override and document the clangd rationale inline.
+- [X] 2026-02-23 Simplify TODO-marker highlight plumbing: fixed marker groups, single queued refresh, and reduced refresh autocmd chatter.
+- [X] 2026-02-24 Remove Treesitter/extmark TODO-marker coloring and keep `highlights.lua` API-first with direct `nvim_set_hl` overrides.
 
 ### ./lua/scripts.lua
 - [ ] ./lua/scripts.lua:8 Remove the global `_G.M` exposure or justify it with measured startup costs.
