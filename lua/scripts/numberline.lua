@@ -9,6 +9,7 @@ local M = {}
 -- Upvalue hoisting: reduce table lookups in hot path
 local v = vim.v
 local abs = math.abs
+local floor = math.floor
 local tostring = tostring
 
 -- Highlight group name constants (avoid runtime string creation)
@@ -18,6 +19,73 @@ local HL_NORMAL = "LineNr"
 -- Format string parts (pre-computed, immutable)
 local FMT_PREFIX = "%#LineNrPrefix#"
 local FMT_SUFFIX = " %*"
+
+local function get_hl(name)
+    local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
+    if not ok or type(hl) ~= "table" then
+        return nil
+    end
+    return hl
+end
+
+local function clamp_channel(value)
+    if value < 0 then
+        return 0
+    end
+    if value > 255 then
+        return 255
+    end
+    return floor(value + 0.5)
+end
+
+local function blend_rgb(fg, bg, alpha)
+    local fg_r = floor(fg / 0x10000) % 0x100
+    local fg_g = floor(fg / 0x100) % 0x100
+    local fg_b = fg % 0x100
+
+    local bg_r = floor(bg / 0x10000) % 0x100
+    local bg_g = floor(bg / 0x100) % 0x100
+    local bg_b = bg % 0x100
+
+    local r = clamp_channel((fg_r * alpha) + (bg_r * (1 - alpha)))
+    local g = clamp_channel((fg_g * alpha) + (bg_g * (1 - alpha)))
+    local b = clamp_channel((fg_b * alpha) + (bg_b * (1 - alpha)))
+
+    return (r * 0x10000) + (g * 0x100) + b
+end
+
+local function scale_rgb(color, factor)
+    local r = clamp_channel((floor(color / 0x10000) % 0x100) * factor)
+    local g = clamp_channel((floor(color / 0x100) % 0x100) * factor)
+    local b = clamp_channel((color % 0x100) * factor)
+    return (r * 0x10000) + (g * 0x100) + b
+end
+
+local function apply_prefix_highlight()
+    local line_nr_hl = get_hl(HL_NORMAL)
+    if not line_nr_hl or not line_nr_hl.fg then
+        return
+    end
+
+    local existing_prefix = get_hl("LineNrPrefix")
+    if existing_prefix and existing_prefix.fg and existing_prefix.fg ~= line_nr_hl.fg then
+        return
+    end
+
+    local normal_hl = get_hl("Normal")
+    local dimmed_fg
+    if normal_hl and normal_hl.bg then
+        dimmed_fg = blend_rgb(line_nr_hl.fg, normal_hl.bg, 0.55)
+    else
+        dimmed_fg = scale_rgb(line_nr_hl.fg, 0.72)
+    end
+
+    local opts = { fg = dimmed_fg }
+    if line_nr_hl.bg then
+        opts.bg = line_nr_hl.bg
+    end
+    vim.api.nvim_set_hl(0, "LineNrPrefix", opts)
+end
 
 -- O(1) digit counter via threshold comparison
 -- Avoids log10() call and handles edge cases cleanly
@@ -204,6 +272,11 @@ local function setup_autocmds()
             update_window(win)
         end,
     })
+
+    vim.api.nvim_create_autocmd("ColorScheme", {
+        group = augroup,
+        callback = apply_prefix_highlight,
+    })
 end
 
 -- Hot path: called per-line during rendering
@@ -241,6 +314,7 @@ function M.setup()
 
     -- Initialize pre-computation cache: 5 widths x 10K lines x 2 variants (~200KB)
     init_cache(5, 9999)
+    apply_prefix_highlight()
 
     buf_digit_counts = {}
     for _, win in ipairs(vim.api.nvim_list_wins()) do
