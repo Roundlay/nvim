@@ -1,0 +1,16 @@
+[IDENTITY] Codex session 2026-02-24:
+User reported that custom numberline colors regressed and leading-zero dimming no longer appeared in lua/scripts/numberline.lua.
+
+Rationale and decision process:
+- Root cause was highlight ownership drift: numberline formatter emits %#LineNrPrefix#, but active colorscheme path (vscode.nvim) left LineNrPrefix unset, so zero padding rendered with no distinct style.
+- Implemented a local, feature-owned fallback in numberline.lua rather than reintroducing hard-coded global palette values elsewhere. This keeps the behavior attached to the component that consumes the highlight group.
+- Fallback only applies when LineNrPrefix is missing or equal to LineNr, preserving themes that intentionally define a distinct prefix.
+- Derived fallback color from existing runtime highlight data (LineNr + Normal) and re-applied it on ColorScheme to survive theme reloads.
+
+Alternatives considered:
+- Reintroduce static LineNr/CursorLineNr/LineNrPrefix overrides in lua/highlights.lua: rejected because it hard-codes palette policy globally and can conflict with theme intent.
+- Rename formatter to a new custom group and force users to define it manually: rejected for poorer out-of-box behavior and migration friction.
+
+Evidence:
+- Headless validation with XDG_CONFIG_HOME pointed at this repo showed LineNrPrefix nil before requiring numberline, then non-nil and distinct from LineNr after numberline setup.
+- Re-running :colorscheme vscode kept the derived prefix color stable, confirming ColorScheme reapply behavior.
