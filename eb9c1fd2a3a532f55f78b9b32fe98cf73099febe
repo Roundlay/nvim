@@ -1,0 +1,14 @@
+[CODEX] session 2026-02-28:
+Context:
+User requested a cleaner, API-inline style for lua/highlights.lua and disliked the previous direction that routed most behavior through layered apply_* helper functions.
+
+Rationale:
+I flattened the structure to a single apply_highlight_overrides pass containing direct nvim_set_hl calls for all stable overrides (LSP inactive groups and markdown links). This keeps the data flow visible in one place and removes the previous call-chain orchestration.
+
+Design boundary:
+Two tiny helpers remain: one to read existing highlight definitions (needed for defensive fallbacks and copying) and one to apply no-underline clones. These are retained because they depend on runtime colorscheme data and cannot be represented as static literals without behavior loss.
+
+Evidence:
+- Headless require(highlights) succeeds.
+- hlexists(CustomDiagText)=1, hlexists(CustomDiagLine)=1, and markdown inline target group exists after load.
+- ColorScheme autocmd still re-applies through the single flattened override pass.
