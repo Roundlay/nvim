@@ -1,7 +1,6 @@
 -- telescope.nvim
 return {
     'nvim-telescope/telescope.nvim',
-    enabled = true,
     version = false,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
@@ -10,7 +9,8 @@ return {
         { ";f", "<cmd>Telescope find_files<CR>", desc = "Find file..." },
         { ";g", "<cmd>Telescope live_grep<CR>", desc = "GREP..." },
         { ";b", "<cmd>Telescope buffers<CR>", desc = "Find buffer..." },
-        { ";;", "<cmd>Telescope help_tags<CR>", desc = "Display help tags..." },
+        -- Use `:` (not <cmd>) so CmdlineEnter triggers before help navigation.
+        { ";;", ":Telescope help_tags<CR>", desc = "Display help tags..." },
         { ";c", "<cmd>Telescope commands<CR>", desc = "Display command history..." },
     },
     dependencies = {
@@ -48,12 +48,4 @@ return {
             preview = { msg_bg_fillchar = '' },
         },
     },
-    config = function(_, opts)
-		local telescope_ok, telescope = pcall(require, "telescope")
-		if not telescope_ok then
-            vim.notify(vim.inspect(telescope), vim.log.levels.ERROR)
-			return
-		end
-        telescope.setup(opts)
-    end,
 }

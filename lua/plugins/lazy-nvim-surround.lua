@@ -3,31 +3,19 @@
 return {
     "kylechui/nvim-surround",
     version = "*",
-    enabled = true,
-    lazy = "true",
-    -- event = "VeryLazy",
-    -- event = "BufWinEnter",
+    lazy = true,
+    event = "CmdlineEnter",
+    init = function()
+        -- nvim-surround v4 removes `setup({ keymaps = ... })`; use custom maps
+        -- via <Plug> targets and disable defaults before plugin load.
+        vim.g.nvim_surround_no_mappings = true
+    end,
     keys = {
-        { "<C-e>", mode = { "n", "v", }, desc = "Activate the nvim-surround plugin in normal/visual mode." },
+        { "<C-e>", "<Plug>(nvim-surround-normal)", mode = "n", desc = "Add a surrounding pair around a motion." },
+        { "<C-e>l", "<Plug>(nvim-surround-normal-line)", mode = "n", desc = "Add a surrounding pair around a motion on new lines." },
+        { "<C-e><C-e>", "<Plug>(nvim-surround-normal-cur-line)", mode = "n", desc = "Add a surrounding pair around the current line on new lines." },
+        { "<C-e>", "<Plug>(nvim-surround-visual)", mode = "x", desc = "Add a surrounding pair around a visual selection." },
+        { "<C-e>d", "<Plug>(nvim-surround-delete)", mode = "n", desc = "Delete a surrounding pair." },
+        { "<C-e>c", "<Plug>(nvim-surround-change)", mode = "n", desc = "Change a surrounding pair." },
     },
-    opts = {
-        -- TODO: Add keymaps that cycle through surrounds. E.g. `<C-e>` three times for '(', four for '{', etc.
-        keymaps = {
-            normal = "<C-e>",
-            normal_line = "<C-e>l",
-            normal_cur_line = "<C-e><C-e>",
-            visual = "<C-e>",
-            delete = "<C-e>d",
-            change = "<C-e>c",
-        },
-    },
-    config = function(_, opts)
-        local nvim_surround_ok, nvim_surround = pcall(require, "nvim-surround")
-        if not nvim_surround_ok then
-            vim.notify(vim.inspect(nvim_surround), vim.log.levels.ERROR)
-            return
-        end
-        nvim_surround.setup(opts)
-    end
 }
-
