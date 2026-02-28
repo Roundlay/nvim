@@ -1,0 +1,13 @@
+[CODEX] session 2026-02-28:
+Context:
+Final grouping for user-requested complete commit sweep of all remaining unstaged/untracked items.
+
+Rationale:
+This bundle is repository hygiene/state capture: remove files that appear stale relative to current workflow (old brainstorming plan and git message scrub utility) and add Serena project metadata that defines local assistant project behavior. Grouping these together avoids mixing housekeeping with runtime config commits.
+
+Alternatives considered:
+- Dropping .serena from version control: not chosen because user explicitly asked to commit all unstaged/untracked changes.
+
+Evidence:
+- Added .serena/.gitignore and .serena/project.yml.
+- Removed docs/plans/brainstorming.md and tools/git_commit_msg_scrub.py.
