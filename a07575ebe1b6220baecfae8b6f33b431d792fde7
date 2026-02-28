@@ -1,0 +1,14 @@
+[CODEX] session 2026-02-28:
+Context:
+User reported two regressions after nvim-surround update: custom mappings in lua/plugins/lazy-nvim-surround.lua stopped working, and Telescope help navigation raised E661 for nvim-surround.migrating.v3_to_v4.
+
+Rationale:
+Installed lockfile revision points to nvim-surround v4.0.x, where setup({ keymaps = ... }) was removed. The plugin now expects users to disable defaults via g:nvim_surround_no_mappings and bind custom keys to exposed <Plug> mappings. I migrated the existing <C-e> workflow to those <Plug> targets to preserve user behavior while following the documented v4 interface.
+
+Help-tag analysis:
+The tag exists in nvim-surround docs, but fails when plugin docs are not yet on runtimepath. Telescope resolves help entries as tag@lang and calls :help directly; with no loaded plugin docs this produced E661 for @en. Because user chose CmdlineEnter loading semantics, I routed the ;; Telescope help mapping through ':' form so CmdlineEnter reliably fires in that path before help-tag selection.
+
+Evidence:
+- Headless validation shows no deprecation notify about v4 keymaps.
+- After CmdlineEnter, maparg resolves to <Plug>(nvim-surround-*) targets for <C-e>, <C-e>l, <C-e><C-e>, <C-e>d, <C-e>c, and visual <C-e>.
+- help nvim-surround.migrating.v3_to_v4@en succeeds after CmdlineEnter trigger in the same environment.
