@@ -223,6 +223,8 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [ ] ./lua/plugins/lazy-mini-align.lua:32 Provide custom alignment presets instead of using the default setup.
 
 ### ./lua/plugins/lazy-nvim-surround.lua
+- [X] 2026-02-28 Migrate deprecated v3 `opts.keymaps` config to v4 `<Plug>` keybindings and disable defaults via `vim.g.nvim_surround_no_mappings`.
+- [X] 2026-02-28 Route `;;` help flow through `:` command mode so `CmdlineEnter` fires before Telescope help-tag navigation.
 - [ ] ./lua/plugins/lazy-nvim-surround.lua:14 Add cycling keymaps (e.g. repeated `<C-e>`) for selecting surround pairs.
 
 ### ./lua/plug.bak
