@@ -20,12 +20,4 @@ return {
         highlight_single_match = true,
         debounce_timeout = 1,
     },
-    config = function(_, opts)
-        local local_highlight_ok, local_highlight = pcall(require, "local-highlight")
-        if not local_highlight_ok then
-            vim.notify(vim.inspect(local_highlight), vim.log.levels.ERROR)
-            return
-        end
-        local_highlight.setup(opts)
-    end
 }

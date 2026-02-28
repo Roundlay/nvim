@@ -29,6 +29,9 @@ return {
                 prefetch_on_insert = true,
             },
             menu = {
+
+                -- We should probably just do this in settings: "On neovim 0.11+, you may use the `vim.o.winborder` option to set the default border for all floating windows. You may override that option with your own border value as shown below."
+
                 border = {
                     { "█", "NonText" },
                     { "▀", "NonText" },
@@ -110,16 +113,7 @@ return {
     opts_extend = { 'sources.default' },
 
     config = function(_, opts)
-        local blink_ok, blink = pcall(require, "blink.cmp")
-
-        if not blink_ok then
-            blink_ok, blink = pcall(require, "blink-cmp")
-        end
-
-        if not blink_ok then
-            vim.notify(vim.inspect(blink), vim.log.levels.ERROR)
-            return
-        end
+        local blink = require("blink.cmp")
 
         local os_info = vim.uv.os_uname()
         local machine = os_info and os_info.machine or ""

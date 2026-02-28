@@ -25,10 +25,6 @@ return {
         local function get_blink_capabilities()
             local ok, blink = pcall(require, "blink.cmp")
 
-            if not ok then
-                ok, blink = pcall(require, "blink-cmp")
-            end
-
             if ok and type(blink.get_lsp_capabilities) == "function" then
                 return blink.get_lsp_capabilities() or {}
             end

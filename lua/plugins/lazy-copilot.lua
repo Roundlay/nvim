@@ -22,8 +22,6 @@
 return {
     "zbirenbaum/copilot.lua",
     build = ":Copilot auth",
-    enabled = true,
-    lazy = true,
     cmd = "Copilot",
     event = "InsertEnter",
     opts = {
@@ -56,12 +54,4 @@ return {
         return vim.fs.dirname(vim.fs.find(".git", { upward = true })[1])
       end,
     },
-    config = function(_, opts)
-        local copilot_ok, copilot = pcall(require, "copilot")
-        if not copilot_ok then
-            vim.notify(vim.inspect(copilot), vim.log.levels.ERROR)
-            return
-        end
-        copilot.setup(opts)
-    end
 }

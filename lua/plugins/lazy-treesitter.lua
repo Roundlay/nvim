@@ -1,9 +1,7 @@
 return {
     "nvim-treesitter/nvim-treesitter",
-    enabled = true,
     version = false,
     build = ":TSUpdateSync",
-    lazy = false,
     opts = {
         sync_install = false,
         auto_install = false,
@@ -22,11 +20,7 @@ return {
         },
     },
     config = function(_, opts)
-        local nvim_treesitter_ok, nvim_treesitter = pcall(require, "nvim-treesitter.configs")
-        if not nvim_treesitter_ok then
-            print("Error loading `nvim_treesitter`.")
-            return
-        end
+        local nvim_treesitter = require("nvim-treesitter.configs")
         if opts.auto_install then
             -- Avoid auto-install errors for parsers that require tree-sitter generate.
             local has_ts_cli = vim.fn.executable("tree-sitter") == 1

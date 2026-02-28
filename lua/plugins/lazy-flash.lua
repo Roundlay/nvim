@@ -2,7 +2,6 @@
 
 return {
     "folke/flash.nvim",
-    enabled = true,
     event = "VeryLazy",
     opts = {
         search = {
@@ -39,12 +38,4 @@ return {
         { "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
         { "S", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
     },
-    config = function(_, opts)
-        local flash_ok, flash = pcall(require, "flash")
-        if not flash_ok then
-            vim.notify(vim.inspect(flash), vim.log.levels.ERROR)
-            return
-        end
-        flash.setup(opts)
-    end,
 }

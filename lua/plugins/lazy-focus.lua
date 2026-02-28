@@ -2,8 +2,6 @@
 
 return {
     "beauwilliams/focus.nvim",
-    enabled = true,
-    lazy = true,
     version = false,
     keys = {
         { "<C-w>", "<C-w>", desc = "Enter Window mode" },
@@ -18,12 +16,4 @@ return {
             height = 0,    -- Don't change height
         },
     },
-    config = function(_, opts)
-        local focus_ok, focus = pcall(require, "focus")
-        if not focus_ok then
-            vim.notify(vim.inspect(focus), vim.log.levels.ERROR)
-            return
-        end
-        focus.setup(opts)
-    end
 }

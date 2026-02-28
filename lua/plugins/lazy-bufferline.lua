@@ -13,12 +13,4 @@ return {
             close_icon = "⨯",
         },
     },
-    config = function (_, opts)
-        local bufferline_ok, bufferline = pcall(require, "bufferline")
-        if not bufferline_ok then
-            vim.notify(vim.inspect(bufferline), vim.log.levels.ERROR)
-            return
-        end
-        bufferline.setup(opts)
-    end
 }

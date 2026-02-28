@@ -2,18 +2,12 @@
 
 return {
     "williamboman/mason-lspconfig.nvim",
-    lazy = true,
-    enabled = true,
     dependencies = {
         -- Depedencies to be loaded before nvim-lspconfig.
         "williamboman/mason.nvim",
     },
     config = function(_, opts)
-        local mason_lspconfig_ok, mason_lspconfig = pcall(require, "mason-lspconfig")
-        if not mason_lspconfig_ok then
-            vim.notify(vim.inspect(mason_lspconfig), vim.log.levels.ERROR)
-            return
-        end
+        local mason_lspconfig = require("mason-lspconfig")
         -- lspconfig server names (mason-lspconfig translates to Mason package names)
         local server_names = {
             "clangd",

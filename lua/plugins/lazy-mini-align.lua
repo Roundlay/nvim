@@ -3,7 +3,6 @@
 return {
     "echasnovski/mini.align",
     -- name = "mini-align",
-    enabled = true,
     lazy = true, -- We may want to align text immediately upon launching Neovim.
     -- event = {"BufReadPost", "InsertCharPre"},
     keys = {
@@ -23,12 +22,4 @@ return {
           end,
         },
     },
-    config = function(_, opts)
-        local mini_align_ok, mini_align = pcall(require, "mini.align")
-        if not mini_align_ok then
-            print("Issue loading 'mini.align'.")
-            return
-        end
-        mini_align.setup(opts) -- TODO Add custom alignment rules.
-    end
 }

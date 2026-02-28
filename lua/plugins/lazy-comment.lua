@@ -2,7 +2,6 @@
 
 return {
     'numToStr/Comment.nvim',
-    enabled = true,
     lazy = true,
     keys = {
         {"gcc", mode = {"n"}, desc = "Toggle linewise comment"},
@@ -15,12 +14,4 @@ return {
             basic = true
         },
     },
-    config = function(_, opts)
-		local comment_ok, comment = pcall(require, "Comment")
-		if not comment_ok then
-            vim.notify(vim.inspect(comment), vim.log.levels.ERROR)
-			return
-		end
-        comment.setup(opts)
-    end
 }

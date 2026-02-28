@@ -2,7 +2,6 @@
 
 return {
     'stevearc/oil.nvim',
-    enabled = true,
     opts = {
         columns = {
             "icon",
@@ -75,11 +74,6 @@ return {
           end
         end
 
-        local oil_ok, oil = pcall(require, "oil")
-        if not oil_ok then
-            vim.notify(vim.inspect(oil), vim.log.levels.ERROR)
-            return
-        end
-        oil.setup(opts)
+        require("oil").setup(opts)
     end,
 }

@@ -5,7 +5,6 @@
 
 return {
     "DanielGavin/ols",
-    enabled = true,
     condition = function() if (vim.g.vscode) then return false end end,
     lazy = true,
     ft = "odin",

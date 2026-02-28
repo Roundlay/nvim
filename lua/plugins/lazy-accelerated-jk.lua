@@ -26,12 +26,4 @@ return {
         -- after last j/k input, and the count to decelerate steps. The default values seem to be {{150, 9999}}.
         deceleration_table = {{5, 50}},
     },
-    config = function(_, opts)
-		local acceleratedjk_ok, accelerated_jk = pcall(require, "accelerated-jk")
-		if not acceleratedjk_ok then
-            vim.notify(vim.inspect(accelerated_jk), vim.log.levels.ERROR)
-			return
-		end
-        accelerated_jk.setup(opts)
-    end,
 }

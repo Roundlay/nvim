@@ -9,12 +9,7 @@ return {
         "hrsh7th/cmp-buffer",
     },
     config = function()
-        local cmp_ok, cmp = pcall(require, "cmp")
-
-        if not cmp_ok then
-            vim.notify(vim.inspect(cmp), vim.log.levels.ERROR)
-            return
-        end
+        local cmp = require("cmp")
 
         cmp.setup({
             enabled = function()
