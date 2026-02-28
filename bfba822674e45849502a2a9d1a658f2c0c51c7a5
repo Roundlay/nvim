@@ -1,0 +1,14 @@
+[CODEX] session 2026-02-28:
+Context:
+Third grouping in the user-requested full commit sweep, focused on script runtime surface cleanup.
+
+Rationale:
+The changed files in this group all reflect reducing active/legacy script paths: c_return_types/custom_diagnostics eager calls were commented, paintbrush bootstrap was commented, and markdown_list_hl.lua was removed. Keeping this in one commit preserves a single operational narrative: narrower default script activation and less legacy module load pressure.
+
+Notes:
+- highlights.lua change is structural reordering of the underline helper, no behavior delta.
+- keybindings.lua change is whitespace cleanup only, included as adjacent low-risk noise.
+
+Evidence:
+- lua/scripts/markdown_list_hl.lua deleted.
+- lua/scripts.lua no longer eagerly triggers those optional script modules on load.
