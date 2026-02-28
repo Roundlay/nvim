@@ -1,0 +1,15 @@
+[CODEX] session 2026-02-28:
+Context:
+Second logical grouping for the user-requested full commit sweep: theme and visual baseline changes.
+
+Rationale:
+This bundle replaces the removed/legacy vim-dark scheme with a new naysayer scheme while keeping theme-related config in one place for traceability. The commit also includes settings/plugin adjustments that directly affect render output (font, termguicolors, transparency behavior, lualine theme mode), plus lockfile refresh and an optional mfd theme spec so the plugin set recorded in lazy-lock stays consistent.
+
+Alternatives considered:
+- Splitting lockfile updates into a separate commit: rejected because lock entry delta is tightly coupled to this visual/plugin baseline snapshot.
+- Keeping old vim-dark file around: rejected since the active direction is an explicit replacement with naysayer.
+
+Evidence:
+- colors/vim-dark.vim removed and colors/naysayer.lua added.
+- settings + vscode/lualine specs adjusted for the new visual baseline.
+- lazy-lock includes new mfd entry and updated plugin revisions.
