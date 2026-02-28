@@ -1,10 +1,10 @@
 -- scripts.lua
+
 if vim.g.vscode then
     return
 end
 
 -- Module boiler-plate
-
 -- TODO: Don't we want to avoid globals for performance?
 
 ---@type table<string,any>
@@ -26,7 +26,7 @@ end
 
 -------------------------------------------------------------------------------
 
-get_mod("c_return_types")
+-- get_mod("c_return_types")
 -- function M:show_c_return_types()
 --     local mod = get_c_return_module()
 --     if not mod then
@@ -62,7 +62,7 @@ function M:custom_diagnostics_formatter()
     end
 end
 
-M:custom_diagnostics_formatter()
+-- M:custom_diagnostics_formatter()
 
 -------------------------------------------------------------------------------
 -- Custom Numberline
@@ -158,29 +158,28 @@ function M:viswrap(...)
 end
 
 -- PAINTBRUSH
-
-local function get_paintbrush_module()
-    local ok, mod = pcall(require, "scripts.paintbrush")
-    if not ok then
-        return nil
-    end
-    return mod
-end
-
-local function run_paintbrush(...)
-    local mod = get_paintbrush_module()
-    if not mod or type(mod.run) ~= "function" then
-        return
-    end
-    return mod.run(...)
-end
-
-function M:paintbrush(...)
-    return run_paintbrush(...)
-end
-
--- Load paintbrush to register commands
-get_paintbrush_module()
+-- local function get_paintbrush_module()
+--     local ok, mod = pcall(require, "scripts.paintbrush")
+--     if not ok then
+--         return nil
+--     end
+--     return mod
+-- end
+--
+-- local function run_paintbrush(...)
+--     local mod = get_paintbrush_module()
+--     if not mod or type(mod.run) ~= "function" then
+--         return
+--     end
+--     return mod.run(...)
+-- end
+--
+-- function M:paintbrush(...)
+--     return run_paintbrush(...)
+-- end
+--
+-- -- Load paintbrush to register commands
+-- get_paintbrush_module()
 
 -- -------------------------------------------------------------------------- --
 

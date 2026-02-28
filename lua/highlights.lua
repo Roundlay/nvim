@@ -12,21 +12,6 @@ local function read_hl(group)
     return hl
 end
 
-local function apply_without_underlines(target_group, source_group)
-    local source_hl = read_hl(source_group)
-    local hl = {}
-    if type(source_hl) == "table" then
-        hl = vim.tbl_extend("force", hl, source_hl)
-    end
-    hl.underline = false
-    hl.undercurl = false
-    hl.underdouble = false
-    hl.underdotted = false
-    hl.underdashed = false
-    hl.sp = nil
-    api.nvim_set_hl(0, target_group, hl)
-end
-
 -- clangd marks inactive #if branches as semantic-token "comment", which can
 -- dim real code. Clearing inactive-token groups lets Treesitter own rendering.
 local lsp_inactive_types = {
@@ -89,6 +74,21 @@ local function apply_custom_diagnostic_overrides()
     end
 
     api.nvim_set_hl(0, "CustomDiagLine", { default = true, link = "DiffDelete" })
+end
+
+local function apply_without_underlines(target_group, source_group)
+    local source_hl = read_hl(source_group)
+    local hl = {}
+    if type(source_hl) == "table" then
+        hl = vim.tbl_extend("force", hl, source_hl)
+    end
+    hl.underline = false
+    hl.undercurl = false
+    hl.underdouble = false
+    hl.underdotted = false
+    hl.underdashed = false
+    hl.sp = nil
+    api.nvim_set_hl(0, target_group, hl)
 end
 
 local function apply_markdown_overrides()

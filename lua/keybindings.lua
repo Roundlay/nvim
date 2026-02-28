@@ -130,7 +130,6 @@ visual('<C-Up>', 'xkP`[V`]', "Move selection up.")
 normal('<C-i>', '<C-e>', "Scroll window down one line.")
 
 -- Yank and put
-
 normal('<leader>y', '"+y', "Yank to system clipboard.")
 normal('<leader>yy', '"+yy', "Yank current line to the system clipboard.")
 normal('<leader>Y', '"+Y', "Yank to end of line to the system clipboard.")
@@ -145,11 +144,9 @@ visual('p', 'pgvy', "Put then re-yank the original selection.")
 -- Window/Tab/Buffer management
 
 -- Buffer Management
-
 normal('<leader>b', ':w<CR>:bd<CR>', "Save and close the current buffer.")
 
 -- Tab Management
-
 normal('<leader>tn', ':tabnew<CR>',    "Open a new tab")
 normal('<leader>tb', ':tab split<CR>', "Open current buffer in new tab")
 normal('<leader>tq', ':tabclose<CR>', "Close the current tab")
