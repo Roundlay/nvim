@@ -1,0 +1,9 @@
+[CODEX] session 2026-02-28:
+Context:
+Follow-up bookkeeping commit after the implementation commit to keep TODO tracking in sync with actual migration work.
+
+Rationale:
+Project instructions require TODO maintenance across work chunks. I marked the surround v4 migration and Telescope help-flow mitigation as completed under the lazy-nvim-surround section so future sessions do not re-open already resolved root causes.
+
+Evidence:
+TODOS.md now includes two [X] entries dated 2026-02-28 for the migration and help-tag loading path updates.
