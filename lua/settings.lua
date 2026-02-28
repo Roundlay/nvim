@@ -7,7 +7,7 @@ vim.g.markdown_plain_mode = true
 
 if vim.g.neovide then
     -- See: https://neovide.dev/configuration.html
-    vim.o.guifont = "SF Mono:h14"
+    vim.o.guifont = "Berkeley Mono"
     vim.o.linespace = 1
     vim.g.neovide_cursor_animation_length = 0.01
     vim.g.neovide_cursor_trail_size = 0.02
@@ -39,6 +39,7 @@ vim.o.mouse = 'a'
 vim.o.timeoutlen = 500
 vim.o.ttimeoutlen = 0
 vim.o.termsync = true
+vim.o.termguicolors = true
 vim.o.redrawtime = 500
 
 -- @TODO: Consider using XDG_CONFIG_HOME and XDG_DATA_HOME? What about Windows though? Look into this.
@@ -61,6 +62,7 @@ vim.o.cursorline = false
 vim.o.signcolumn = 'no'
 vim.o.fillchars = 'eob: ,vert:│'
 vim.cmd('hi! link WinSeparator Normal')
+-- vim.o.winborder = "solid"
 
 vim.o.linebreak = true
 vim.o.breakindent = true
@@ -103,11 +105,3 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 vim.o.clipboard = "" -- "Do not tie `""` to either the `"+` or the `"*` registers."
 vim.o.shortmess = vim.o.shortmess .. "I" -- Don't show the intro message when starting Neovim.
-
--- Make background transparent.
-vim.cmd [[
-    highlight Normal guibg=NONE ctermbg=NONE
-    highlight NonText guibg=NONE ctermbg=NONE
-    highlight SignColumn guibg=NONE ctermbg=NONE
-    highlight EndOfBuffer guibg=NONE ctermbg=NONE
-]]

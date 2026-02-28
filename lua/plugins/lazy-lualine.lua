@@ -130,7 +130,6 @@ end
 
 return {
     "nvim-lualine/lualine.nvim",
-    enabled = true,
     lazy = true,
     event = "VimEnter",
     opts = {
@@ -140,7 +139,7 @@ return {
             section_separators = { left = "", right = "" },
             globalstatus = false,
             icons_enabled = false,
-            theme = "vscode",
+            theme = "auto",
             refresh = {
               statusline = 1000,
               tabline = 1000,
@@ -171,12 +170,4 @@ return {
             lualine_z = {},
         },
     },
-    config = function(_, opts)
-        local lualine_ok, lualine = pcall(require, "lualine")
-        if not lualine_ok then
-            vim.notify(vim.inspect(lualine), vim.log.levels.ERROR)
-            return
-        end
-        lualine.setup(opts)
-    end,
 }
