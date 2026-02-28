@@ -1,0 +1,15 @@
+[CODEX] session 2026-02-28:
+Context:
+User asked for highlights.lua to move back toward the older inline style and specifically requested removal of helper-heavy structure (read_hl/set_* and end-of-file orchestration pattern).
+
+Rationale:
+Rewrote highlights.lua so the override logic is expressed as direct inline nvim_set_hl calls. Kept data tables (inactive token list and markdown no-underline target/source pairs) but removed named helper functions used for plumbing. This intentionally trades duplication for explicitness and local readability, matching the requested style direction.
+
+Behavioral parity:
+- LSP inactive semantic token clears preserved.
+- CustomDiagText/CustomDiagLine fallback logic preserved (VirtualLinesError -> VirtualTextError.bg -> DiffDelete).
+- Markdown link/list no-underline overrides preserved.
+- ColorScheme autocmd still reapplies all overrides.
+
+Evidence:
+Headless validation succeeded with require('highlights'), and highlight existence checks for CustomDiagText, CustomDiagLine, and @markup.link.label.markdown_inline passed before/after colorscheme switch.
