@@ -1,0 +1,14 @@
+[CODEX] session 2026-02-28:
+Context:
+User requested committing all outstanding workspace changes in logical groups. This first group covers broad plugin spec cleanup that shared one intent and touched many plugin files.
+
+Rationale:
+Most plugin specs repeated the same defensive pcall + notify boilerplate and explicit enabled flags that were effectively defaults or duplicated Lazy's own loading behavior. Consolidating to direct require/setup paths and opts-driven setup keeps behavior equivalent while reducing branchy startup code and maintenance overhead.
+
+Alternatives considered:
+- Splitting each plugin cleanup into many tiny commits: rejected as high-noise history with low epistemic value.
+- Keeping pcall wrappers only for selected plugins: rejected because no clear reliability boundary was documented and the pattern was inconsistent.
+
+Evidence:
+- 19 plugin spec files updated in one cohesive cleanup commit.
+- Net deletion significantly larger than insertion, indicating simplification rather than feature expansion.
