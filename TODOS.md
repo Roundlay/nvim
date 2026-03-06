@@ -1,5 +1,11 @@
 # TODOs
 
+## iAWriter Focus Mode (2026-03-06)
+
+- [X] Add `lua/scripts/focus_mode.lua` with per-window focus highlighting, sentence/paragraph modes, and a `:FocusMode` command.
+- [X] Register the new script through `lua/scripts.lua` so the command becomes available during normal startup.
+- [~] Partial-line sentence emphasis restores `Normal` rather than per-token syntax colours; that trade-off keeps the redraw path per-window and avoids split-window state bleed.
+
 ## Treesitter Auto-Install CLI Guard (2026-01-06)
 
 - [X] Skip auto-install for parsers that require grammar generation when `tree-sitter` or `node` is missing.
