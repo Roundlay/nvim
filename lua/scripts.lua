@@ -71,6 +71,19 @@ function M:numberline()
     require("scripts.numberline").setup()
 end
 
+get_mod("focus_mode")
+
+function M:focus_mode(mode)
+    local ok, mod = pcall(require, "scripts.focus_mode")
+    if not ok or type(mod) ~= "table" then
+        return
+    end
+    if mode == "sentence" or mode == "paragraph" then
+        return mod.set_mode(mode)
+    end
+    return mod.toggle()
+end
+
 -- -------------------------------------------------------------------------- --
 
 -- WRAPPIN'
