@@ -1,0 +1,11 @@
+[CODEX]<019cc1bb-c776-7231-b7d1-7ae9d07ddfb3>
+Context:
+User asked for an iA Writer style focus mode implemented as a data-oriented Lua script for this Neovim config, and pointed specifically at lua/scripts.lua plus lua/scripts/numberline.lua as structure references. The repo already used focus.nvim for autoresize, so the new work had to avoid name collisions and respect the existing vim.b.focus_disable escape hatch used by sidebar buffers.
+
+Rationale:
+Implemented the feature as a self-owned lua/scripts/focus_mode.lua module instead of adding more logic to scripts.lua. The module builds a dimmed highlight namespace from the active colorscheme once, tracks only per-window cursor/buffer/range state, and uses a decoration provider so shared buffers in splits do not leak one window's active sentence or paragraph into another. Full active lines are restored with nvim_set_hl_ns_fast(0); partial sentence spans use a focused extmark overlay, which intentionally restores Normal rather than reconstructing per-token syntax because that keeps the redraw path bounded and avoids brittle highlight introspection.
+
+Evidence:
+- nvim --headless -u NONE with dofile() loaded the module without Lua errors.
+- XDG_CONFIG_HOME pointed at this repo: requiring scripts.focus_mode registered :FocusMode successfully (exists() returned 2).
+- Enabling paragraph mode changed the window highlight namespace from -1 to a non-default namespace, and disabling returned it to -1, confirming the runtime swap the provider relies on.
