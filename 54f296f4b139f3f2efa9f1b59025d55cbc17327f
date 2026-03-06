@@ -1,0 +1,10 @@
+[CODEX]<019cc1bb-c776-7231-b7d1-7ae9d07ddfb3>
+Context:
+The repo instructions require TODO maintenance as a separate checkpoint when a work chunk lands. After the feature commit, the TODO ledger still needed the new focus mode entries captured under the tracked uppercase TODOS.md path.
+
+Rationale:
+Recorded the feature as completed and preserved the one deliberate trade-off that matters for future refinement: partial-line sentence emphasis currently restores Normal instead of the exact original syntax colours. Keeping that note in TODOS.md makes the boundary visible without re-reading the implementation details or rediscovering why the simpler redraw path was chosen.
+
+Evidence:
+- TODOS.md now includes a dated iAWriter Focus Mode section with two completed entries and one design note.
+- The follow-up stayed isolated as a documentation-only commit rather than amending the implementation checkpoint.
