@@ -1,0 +1,14 @@
+[CODEX]<019d0490-142c-7051-be56-cc3957c65563>
+Context:
+User reported straight underlines appearing in C buffers and suspected LSP settings. Static config review showed diagnostics were already configured with underline=false in lua/scripts/custom_diagnostics.lua, so the likely source shifted from diagnostics to semantic highlight groups on the active colorscheme path.
+
+Rationale:
+The active theme is vscode.nvim, not the repository's custom naysayer theme, and lua/highlights.lua is the shared post-theme override layer. The fix keeps clangd enabled and preserves semantic colours by cloning each resolved generic @lsp.mod.* and @lsp.typemod.*.* group into C/CPP/ObjC-specific overrides, then clearing only underline/undercurl-style attributes. This avoids the blunt alternative of disabling semantic tokens entirely for C-family files.
+
+Evidence:
+- Headless runtime checks showed @lsp.typemod.type.defaultLibrary.c and @lsp.typemod.variable.readonly.c retained their foreground colours after the override.
+- @lsp.mod.deprecated.c retained strikethrough after the override, confirming the change strips underline attributes only.
+- Reapplying :colorscheme vscode preserved the no-underline C-family overrides.
+
+Open hypothesis:
+I was not able to capture a live semantic token stack that visibly showed the underline in headless mode; Neovim's visible-window semantic repaint path is harder to interrogate there. The fix therefore targets the highest-confidence underline producer boundary: C-family semantic modifier overlays supplied by the theme/fallback highlight chain, not clangd server configuration.
