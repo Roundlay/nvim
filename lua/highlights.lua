@@ -36,6 +36,21 @@ local markdown_no_underline_groups = {
     { "@markup.list.checked.markdown", "@markup.list.checked" },
 }
 
+local c_family_lsp_filetypes = {
+    "c",
+    "cpp",
+    "objc",
+}
+
+local function clear_underline_attributes(hl)
+    hl.underline = false
+    hl.undercurl = false
+    hl.underdouble = false
+    hl.underdotted = false
+    hl.underdashed = false
+    hl.sp = nil
+end
+
 -- clangd marks inactive #if branches as semantic-token "comment", which can
 -- dim real code. Clearing inactive-token groups lets Treesitter own rendering.
 api.nvim_set_hl(0, "@lsp.type.comment.c", {})
@@ -81,13 +96,30 @@ for i = 1, #markdown_no_underline_groups do
     if ok_source and type(source_hl) == "table" then
         hl = vim.tbl_extend("force", hl, source_hl)
     end
-    hl.underline = false
-    hl.undercurl = false
-    hl.underdouble = false
-    hl.underdotted = false
-    hl.underdashed = false
-    hl.sp = nil
+    clear_underline_attributes(hl)
     api.nvim_set_hl(0, target_group, hl)
+end
+
+-- Themes can use straight underline on semantic modifier groups (for example
+-- declarations or default-library tokens). In C-family buffers this is visual
+-- noise, so keep the resolved colours but zero only the underline attributes.
+do
+    local lsp_highlight_groups = vim.fn.getcompletion("@lsp", "highlight")
+    for i = 1, #lsp_highlight_groups do
+        local source_group = lsp_highlight_groups[i]
+        if source_group:match("^@lsp%.mod%.[^.]+$") or source_group:match("^@lsp%.typemod%.[^.]+%.[^.]+$") then
+            for j = 1, #c_family_lsp_filetypes do
+                local target_group = source_group .. "." .. c_family_lsp_filetypes[j]
+                local ok_target, target_hl = pcall(api.nvim_get_hl, 0, { name = target_group, link = false })
+                local hl = {}
+                if ok_target and type(target_hl) == "table" then
+                    hl = vim.tbl_extend("force", hl, target_hl)
+                end
+                clear_underline_attributes(hl)
+                api.nvim_set_hl(0, target_group, hl)
+            end
+        end
+    end
 end
 
 local highlight_override_group = api.nvim_create_augroup("HighlightOverrides", { clear = true })
@@ -136,13 +168,27 @@ api.nvim_create_autocmd("ColorScheme", {
             if ok_source and type(source_hl) == "table" then
                 hl = vim.tbl_extend("force", hl, source_hl)
             end
-            hl.underline = false
-            hl.undercurl = false
-            hl.underdouble = false
-            hl.underdotted = false
-            hl.underdashed = false
-            hl.sp = nil
+            clear_underline_attributes(hl)
             api.nvim_set_hl(0, target_group, hl)
+        end
+
+        do
+            local lsp_highlight_groups = vim.fn.getcompletion("@lsp", "highlight")
+            for i = 1, #lsp_highlight_groups do
+                local source_group = lsp_highlight_groups[i]
+                if source_group:match("^@lsp%.mod%.[^.]+$") or source_group:match("^@lsp%.typemod%.[^.]+%.[^.]+$") then
+                    for j = 1, #c_family_lsp_filetypes do
+                        local target_group = source_group .. "." .. c_family_lsp_filetypes[j]
+                        local ok_target, target_hl = pcall(api.nvim_get_hl, 0, { name = target_group, link = false })
+                        local hl = {}
+                        if ok_target and type(target_hl) == "table" then
+                            hl = vim.tbl_extend("force", hl, target_hl)
+                        end
+                        clear_underline_attributes(hl)
+                        api.nvim_set_hl(0, target_group, hl)
+                    end
+                end
+            end
         end
     end,
 })

@@ -1,5 +1,10 @@
 # TODOs
 
+## C Semantic Underline Cleanup (2026-03-19)
+
+- [X] Strip straight underline attributes from C-family LSP semantic modifier groups without disabling the rest of the semantic colour path.
+- [~] The active theme path is `vscode`, so the underline fix belongs in `lua/highlights.lua` rather than in clangd server settings.
+
 ## iAWriter Focus Mode (2026-03-06)
 
 - [X] Add `lua/scripts/focus_mode.lua` with per-window focus highlighting, sentence/paragraph modes, and a `:FocusMode` command.
