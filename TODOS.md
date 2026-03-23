@@ -1,5 +1,11 @@
 # TODOs
 
+## Roundlay Theme Activation (2026-03-23)
+
+- [X] Install colors/roundlay.vim as the active local black-field colourscheme.
+- [X] Switch lua/settings.lua to colorscheme roundlay so the theme wins before later highlight overrides.
+- [X] Point Alacritty at roundlay.toml so terminal ANSI colours match the Neovim palette.
+
 ## C Semantic Underline Cleanup (2026-03-19)
 
 - [X] Strip straight underline attributes from C-family LSP semantic modifier groups without disabling the rest of the semantic colour path.
