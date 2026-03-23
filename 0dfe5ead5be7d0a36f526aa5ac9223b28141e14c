@@ -1,0 +1,15 @@
+[Codex]<no-chat-log>
+Context:
+User asked to install and activate a local Neovim theme paired with an Alacritty theme, then refined the palette to match a screenshot with a mostly monochrome look. The repo already had unrelated unstaged edits, including a separate TODO line change, so this checkpoint had to isolate only the Roundlay theme work.
+
+Rationale:
+The first pass used a wider smoked palette; the follow-up intentionally collapsed most hue channels toward warm greys and reserved one amber accent family for the few places that still need a signal. In the Neovim theme, syntax now reads mostly by value and weight instead of hue, while diff add/remove keep their muted green/red separation and diff-change moves onto amber to stay inside the screenshot's color vocabulary. settings.lua applies colorscheme roundlay early so later highlight overrides derive from the intended palette.
+
+Problem solving and evidence:
+- Installed colors/roundlay.vim as a classic runtime colorscheme and staged only that file plus settings.lua and the new Roundlay TODO section.
+- Avoided committing unrelated working-tree edits in TODOS.md by writing the desired staged blob directly into the index from HEAD plus the new Roundlay section.
+- Parsed /mnt/c/Users/Christopher/AppData/Roaming/alacritty/roundlay.toml and alacritty.toml successfully with Python's tomllib after the screenshot-driven monochrome adjustment.
+- Could not run a live Neovim load test in this container because nvim is not installed here; the Vim colorscheme was therefore validated by direct file inspection and staged diff review only.
+
+Open boundary:
+The paired Alacritty files live outside the Neovim git repo, so they were updated in place but are not represented in this git commit.
