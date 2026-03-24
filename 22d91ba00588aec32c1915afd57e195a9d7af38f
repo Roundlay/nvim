@@ -1,0 +1,14 @@
+[Codex]<UNKNOWN>
+Context:
+User explicitly asked for the Neovim theme to go even dimmer after the previous contrast-reduction pass. The intent remained the same: keep the structure, remove light output.
+
+Rationale:
+This pass applies another coherent luminance compression step rather than reassigning highlight groups. Surfaces moved from #1A1A19/#1E1B19/#262524/#33312F down to #151514/#191614/#1F1E1E/#2A2827. The text ladder moved from #5D5B57/#6D7073 down to #4A4946/#55575A, with gutter and low-contrast rails reduced in parallel. State colors were dimmed proportionally so add/delete cues remain present but do not flash.
+
+Evidence:
+- roundlay.vim core palette lines are the only staged changes.
+- diff --cached --check passed before commit.
+- New palette spine: fg #4A4946, fg_high #55575A, fg_low #302E2D, fg_gutter #201F1E.
+
+Validation boundary:
+Could not run a live Neovim render test in this container because nvim is not installed here.
