@@ -18,7 +18,7 @@ local HL_NORMAL = "LineNr"
 
 -- Format string parts (pre-computed, immutable)
 local FMT_PREFIX = "%#LineNrPrefix#"
-local FMT_SUFFIX = " %*"
+local FMT_SUFFIX = "%#LineNr# %*"
 
 local function get_hl(name)
     local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
