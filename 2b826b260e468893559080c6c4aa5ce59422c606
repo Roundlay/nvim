@@ -1,0 +1,15 @@
+[Codex]<UNKNOWN>
+Context:
+User liked the near-monochrome direction but reported that the Neovim theme still felt too contrasty in real use. The goal on this pass was not to change the theme's structure again, but to dim the whole palette uniformly so the editor recedes further.
+
+Rationale:
+I treated this as luminance compression at the palette source. Background variants were pulled closer to black, the main text ramp was darkened from #716F6A/#888C90 to #5D5B57/#6D7073, gutter/comment greys were reduced further, and the shared accent was demoted from the high grey to the base text grey. This preserves the same group topology while reducing the number of places that visually pop.
+
+Evidence:
+- Core surfaces changed from #212120/#272220/#31302E/#494744 down to #1A1A19/#1E1B19/#262524/#33312F.
+- Core text changed from #716F6A/#888C90 to #5D5B57/#6D7073.
+- State colors were dimmed in parallel: red #6F514A, green #5F735C.
+- Only colors/roundlay.vim was staged and committed; unrelated working-tree edits remain untouched.
+
+Validation boundary:
+Could not run a live Neovim render test in this container because nvim is not installed here.
