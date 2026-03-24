@@ -11,7 +11,7 @@ endif
 let g:colors_name = 'roundlay'
 
 " Core palette.
-let s:bg = '#0C0C0C'
+let s:bg = '#000000'
 let s:bg_alt = '#212120'
 let s:bg_subtle = '#1F221E'
 let s:bg_visual = '#272220'
@@ -34,7 +34,7 @@ let s:blue = '#888C90'
 let s:magenta = '#716F6A'
 let s:cyan = '#888C90'
 let s:white = '#888C90'
-let s:accent = '#8B655C'
+let s:accent = s:fg_high
 
 let s:bright_red = '#8B655C'
 let s:bright_green = '#779073'
