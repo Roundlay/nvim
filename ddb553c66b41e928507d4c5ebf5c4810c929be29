@@ -1,0 +1,14 @@
+[Codex]<UNKNOWN>
+Context:
+User wants to test whether the gap between Codex-app aesthetics and Neovim aesthetics is due to the theme assumptions rather than just luminance. Instead of continuing to push Roundlay darker, the request shifted to building a fresh comparison theme called Waverace from the Wave Race 64 cover art.
+
+Rationale:
+I treated the art direction literally: cobalt sky and ocean as the background hierarchy, foam white for primary text, sunlit yellow for keywords/search/title accents, cartridge red for errors/deletes, lime green for positive state and types, cyan for function/special highlights, and a small amount of arcade magenta for preprocessor lanes. The file keeps the same broad highlight coverage and numberline-safe CursorLineNr behavior as the custom local themes, but activation is left manual so it can be compared against Roundlay with :colorscheme waverace rather than silently becoming the new default.
+
+Evidence:
+- Added colors/waverace.vim as a complete runtime colorscheme with terminal colors and core UI/syntax/diagnostic groups.
+- Added a small TODO checkpoint section for the new theme while leaving unrelated TODO working-tree edits out of the commit.
+- diff --cached --check passed before commit.
+
+Validation boundary:
+Could not run a live Neovim render test in this container because nvim is not installed here.
