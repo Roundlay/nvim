@@ -1,0 +1,14 @@
+[Codex]<UNKNOWN>
+Context:
+User liked the Waverace direction but asked to go much harder on saturation. The goal on this pass was not subtlety; it was to exaggerate the arcade-poster qualities already present in the cover art.
+
+Rationale:
+The palette was re-pushed around a more chromatic cobalt base and louder primaries. Background blues moved from the calmer #24366F/#2E4690 band to #1738A8/#2556D6 with a brighter interactive blue at #2E74FF. Yellow was pushed to a cleaner electric cartridge tone, red to a hotter orange-red, green to an acid lime, cyan to near-neon, and magenta to a stronger synthetic pink. The highlight topology was left unchanged so comparisons stay about palette, not structure.
+
+Evidence:
+- colors/waverace.vim core palette lines are the only staged changes.
+- diff --cached --check passed before commit.
+- Key saturation jumps: bg #1738A8, accent/search #FFD21A, red #FF4A2A, green #A8F500, cyan #41F2FF, magenta #FF7AF6.
+
+Validation boundary:
+Could not run a live Neovim render test in this container because nvim is not installed here.
