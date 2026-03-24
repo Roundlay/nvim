@@ -11,39 +11,39 @@ endif
 let g:colors_name = 'roundlay'
 
 " Core palette.
-let s:bg = '#000000'
-let s:bg_alt = '#050505'
-let s:bg_subtle = '#0C0A09'
-let s:bg_visual = '#12100E'
-let s:bg_search = '#2B241D'
-let s:bg_search_focus = '#4A3422'
-let s:bg_diff_add = '#09100B'
-let s:bg_diff_change = '#100B08'
-let s:bg_diff_delete = '#120A09'
-let s:bg_diff_text = '#17110B'
+let s:bg = '#0C0C0C'
+let s:bg_alt = '#212120'
+let s:bg_subtle = '#1F221E'
+let s:bg_visual = '#272220'
+let s:bg_search = '#31302E'
+let s:bg_search_focus = '#494744'
+let s:bg_diff_add = '#1F221E'
+let s:bg_diff_change = '#31302E'
+let s:bg_diff_delete = '#272220'
+let s:bg_diff_text = '#494744'
 
-let s:fg = '#67625D'
-let s:fg_high = '#938B82'
-let s:fg_low = '#4E4944'
-let s:fg_gutter = '#2F2B28'
+let s:fg = '#716F6A'
+let s:fg_high = '#888C90'
+let s:fg_low = '#494744'
+let s:fg_gutter = '#31302E'
 
-let s:red = '#8A645F'
-let s:green = '#6D7A6E'
-let s:yellow = '#9A7151'
-let s:blue = '#6E6761'
-let s:magenta = '#746B63'
-let s:cyan = '#70706A'
-let s:white = '#B0A79D'
-let s:amber = '#D07A34'
+let s:red = '#8B655C'
+let s:green = '#779073'
+let s:yellow = '#716F6A'
+let s:blue = '#888C90'
+let s:magenta = '#716F6A'
+let s:cyan = '#888C90'
+let s:white = '#888C90'
+let s:accent = '#8B655C'
 
-let s:bright_red = '#B07B72'
-let s:bright_green = '#82907F'
-let s:bright_yellow = '#E18A3D'
-let s:bright_blue = '#8A8179'
-let s:bright_magenta = '#8D8177'
-let s:bright_cyan = '#85857D'
+let s:bright_red = '#8B655C'
+let s:bright_green = '#779073'
+let s:bright_yellow = '#888C90'
+let s:bright_blue = '#888C90'
+let s:bright_magenta = '#716F6A'
+let s:bright_cyan = '#888C90'
 
-let g:terminal_color_0 = '#000000'
+let g:terminal_color_0 = s:bg
 let g:terminal_color_1 = s:red
 let g:terminal_color_2 = s:green
 let g:terminal_color_3 = s:yellow
@@ -51,7 +51,7 @@ let g:terminal_color_4 = s:blue
 let g:terminal_color_5 = s:magenta
 let g:terminal_color_6 = s:cyan
 let g:terminal_color_7 = s:fg
-let g:terminal_color_8 = '#3E3934'
+let g:terminal_color_8 = s:fg_low
 let g:terminal_color_9 = s:bright_red
 let g:terminal_color_10 = s:bright_green
 let g:terminal_color_11 = s:bright_yellow
@@ -104,11 +104,11 @@ call s:hi('Pmenu', s:fg, s:bg_alt, '', '')
 call s:hi('PmenuSel', s:fg_high, s:bg_visual, '', '')
 call s:hi('PmenuSbar', '', s:bg_subtle, '', '')
 call s:hi('PmenuThumb', '', s:fg_low, '', '')
-call s:hi('Question', s:amber, s:bg, '', '')
+call s:hi('Question', s:fg_high, s:bg, '', '')
 call s:hi('QuickFixLine', s:fg_high, s:bg_visual, '', '')
 call s:hi('Search', s:white, s:bg_search, '', '')
-call s:hi('CurSearch', '#F2E7DB', s:bg_search_focus, 'bold', '')
-call s:hi('IncSearch', '#F2E7DB', s:bg_search_focus, 'bold', '')
+call s:hi('CurSearch', s:white, s:bg_search_focus, 'bold', '')
+call s:hi('IncSearch', s:white, s:bg_search_focus, 'bold', '')
 call s:hi('SignColumn', s:fg_low, s:bg, '', '')
 call s:hi('SpecialKey', s:fg_low, s:bg, '', '')
 call s:hi('StatusLine', s:fg_high, s:bg_alt, '', '')
@@ -116,30 +116,30 @@ call s:hi('StatusLineNC', s:fg_low, s:bg_alt, '', '')
 call s:hi('TabLine', s:fg_low, s:bg_alt, '', '')
 call s:hi('TabLineFill', s:fg_low, s:bg_alt, '', '')
 call s:hi('TabLineSel', s:fg_high, s:bg_visual, '', '')
-call s:hi('Title', s:amber, s:bg, 'bold', '')
+call s:hi('Title', s:accent, s:bg, 'bold', '')
 call s:hi('VertSplit', s:bg_subtle, s:bg, '', '')
 call s:hi('Visual', '', s:bg_visual, '', '')
-call s:hi('WarningMsg', s:amber, s:bg, '', '')
+call s:hi('WarningMsg', s:accent, s:bg, '', '')
 call s:hi('Whitespace', s:fg_gutter, s:bg, '', '')
 call s:hi('WinSeparator', s:bg_subtle, s:bg, '', '')
 
 " Syntax.
 call s:hi('Comment', s:fg_low, s:bg, 'italic', '')
-call s:hi('Constant', s:fg_high, s:bg, '', '')
-call s:hi('String', s:fg_high, s:bg, '', '')
-call s:hi('Character', s:fg_high, s:bg, '', '')
-call s:hi('Number', s:fg_high, s:bg, '', '')
-call s:hi('Boolean', s:fg_high, s:bg, '', '')
-call s:hi('Float', s:fg_high, s:bg, '', '')
+call s:hi('Constant', s:fg, s:bg, '', '')
+call s:hi('String', s:fg, s:bg, '', '')
+call s:hi('Character', s:fg, s:bg, '', '')
+call s:hi('Number', s:fg, s:bg, '', '')
+call s:hi('Boolean', s:fg, s:bg, '', '')
+call s:hi('Float', s:fg, s:bg, '', '')
 call s:hi('Identifier', s:fg, s:bg, '', '')
 call s:hi('Function', s:fg_high, s:bg, '', '')
-call s:hi('Statement', s:amber, s:bg, '', '')
-call s:hi('Conditional', s:amber, s:bg, '', '')
-call s:hi('Repeat', s:amber, s:bg, '', '')
-call s:hi('Label', s:amber, s:bg, '', '')
+call s:hi('Statement', s:accent, s:bg, '', '')
+call s:hi('Conditional', s:accent, s:bg, '', '')
+call s:hi('Repeat', s:accent, s:bg, '', '')
+call s:hi('Label', s:accent, s:bg, '', '')
 call s:hi('Operator', s:fg, s:bg, '', '')
-call s:hi('Keyword', s:amber, s:bg, '', '')
-call s:hi('Exception', s:amber, s:bg, '', '')
+call s:hi('Keyword', s:accent, s:bg, '', '')
+call s:hi('Exception', s:accent, s:bg, '', '')
 call s:hi('PreProc', s:fg_high, s:bg, '', '')
 call s:hi('Include', s:fg_high, s:bg, '', '')
 call s:hi('Define', s:fg_high, s:bg, '', '')
@@ -155,42 +155,42 @@ call s:hi('Tag', s:fg_high, s:bg, '', '')
 call s:hi('Delimiter', s:fg_low, s:bg, '', '')
 call s:hi('SpecialComment', s:fg_low, s:bg, 'italic', '')
 call s:hi('Debug', s:red, s:bg, '', '')
-call s:hi('Underlined', s:amber, s:bg, 'underline', '')
+call s:hi('Underlined', s:fg_high, s:bg, 'underline', '')
 call s:hi('Ignore', s:fg_gutter, s:bg, '', '')
 call s:hi('Error', s:bright_red, s:bg, 'bold', '')
 call s:hi('Todo', s:fg_high, s:bg_visual, 'bold', '')
 
 " Diff and diagnostics.
 call s:hi('DiffAdd', s:green, s:bg_diff_add, '', '')
-call s:hi('DiffChange', s:amber, s:bg_diff_change, '', '')
+call s:hi('DiffChange', s:fg_high, s:bg_diff_change, '', '')
 call s:hi('DiffDelete', s:red, s:bg_diff_delete, '', '')
 call s:hi('DiffText', s:white, s:bg_diff_text, 'bold', '')
 
 call s:hi('DiagnosticError', s:red, s:bg, '', '')
-call s:hi('DiagnosticWarn', s:amber, s:bg, '', '')
+call s:hi('DiagnosticWarn', s:accent, s:bg, '', '')
 call s:hi('DiagnosticInfo', s:fg_high, s:bg, '', '')
 call s:hi('DiagnosticHint', s:fg, s:bg, '', '')
 call s:hi('DiagnosticOk', s:green, s:bg, '', '')
 
 call s:hi('DiagnosticVirtualTextError', s:red, s:bg, '', '')
-call s:hi('DiagnosticVirtualTextWarn', s:amber, s:bg, '', '')
+call s:hi('DiagnosticVirtualTextWarn', s:accent, s:bg, '', '')
 call s:hi('DiagnosticVirtualTextInfo', s:fg_high, s:bg, '', '')
 call s:hi('DiagnosticVirtualTextHint', s:fg, s:bg, '', '')
 call s:hi('DiagnosticVirtualTextOk', s:green, s:bg, '', '')
 
 call s:hi('DiagnosticUnderlineError', '', '', 'undercurl', s:red)
-call s:hi('DiagnosticUnderlineWarn', '', '', 'undercurl', s:amber)
+call s:hi('DiagnosticUnderlineWarn', '', '', 'undercurl', s:accent)
 call s:hi('DiagnosticUnderlineInfo', '', '', 'undercurl', s:fg_high)
 call s:hi('DiagnosticUnderlineHint', '', '', 'undercurl', s:fg)
 call s:hi('DiagnosticUnderlineOk', '', '', 'undercurl', s:green)
 
 call s:hi('ErrorMsg', s:bright_red, s:bg, 'bold', '')
 call s:hi('ModeMsg', s:fg_high, s:bg, '', '')
-call s:hi('MoreMsg', s:amber, s:bg, '', '')
+call s:hi('MoreMsg', s:fg_high, s:bg, '', '')
 call s:hi('SpellBad', '', '', 'undercurl', s:red)
 call s:hi('SpellCap', '', '', 'undercurl', s:fg_high)
 call s:hi('SpellLocal', '', '', 'undercurl', s:fg)
-call s:hi('SpellRare', '', '', 'undercurl', s:amber)
+call s:hi('SpellRare', '', '', 'undercurl', s:accent)
 
 " Treesitter and LSP semantic links.
 hi! link @comment Comment
