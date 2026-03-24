@@ -1,5 +1,10 @@
 # TODOs
 
+## Waverace Theme (2026-03-24)
+
+- [X] Add colors/waverace.vim as a new high-saturation blue/yellow/red test theme based on the Wave Race 64 cover art.
+- [~] Leave activation manual for now so `:colorscheme waverace` can be compared directly against Roundlay without changing startup defaults.
+
 ## Roundlay Theme Activation (2026-03-23)
 
 - [X] Install colors/roundlay.vim as the active local black-field colourscheme.
@@ -15,7 +20,7 @@
 
 - [X] Add `lua/scripts/focus_mode.lua` with per-window focus highlighting, sentence/paragraph modes, and a `:FocusMode` command.
 - [X] Register the new script through `lua/scripts.lua` so the command becomes available during normal startup.
-- [~] Partial-line sentence emphasis restores `Normal` rather than per-token syntax colours; that trade-off keeps the redraw path per-window and avoids split-window state bleed.
+- [~] FocusMode now dims only buffer text; inactive spans use a single derived dim colour instead of reconstructing every syntax token, which keeps the effect split-safe and leaves UI chrome alone.
 
 ## Treesitter Auto-Install CLI Guard (2026-01-06)
 
