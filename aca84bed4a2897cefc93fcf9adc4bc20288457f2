@@ -1,0 +1,11 @@
+[Codex]<UNKNOWN>
+Context:
+User reported that the live Roundlay theme still showed too many orange-like colors in code. Inspection showed the scheme still routed the shared accent variable into Statement, Conditional, Repeat, Label, Keyword, Exception, WarningMsg, and diagnostic-warn groups, so common control-flow syntax stayed brown.
+
+Rationale:
+Rather than rewriting many highlight lines, the cleanest fix is to redefine the accent itself. Setting s:accent to s:fg_high preserves the scheme's structure while collapsing all accent-driven syntax classes back into the near-monochrome range. This keeps the rarer red/green state colors for delete/add semantics, but removes brown from the hot path of everyday code reading.
+
+Evidence and boundary:
+- Staged diff is one line: let s:accent = s:fg_high.
+- The working tree also contains a separate uncommitted background change in colors/roundlay.vim (s:bg = '#000000'); that was intentionally left out of the commit because it was not part of this specific orange-reduction fix.
+- Could not run a live Neovim render test in this container because nvim is not installed here.
