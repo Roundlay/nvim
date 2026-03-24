@@ -1,0 +1,14 @@
+[Codex]<UNKNOWN>
+Context:
+User provided an extracted palette image (colours.png) and asked for the live Neovim theme to be pushed much closer to those swatches. The target image is almost monochrome: near-black background, several warm/cool greys, one muted brown, and one muted green.
+
+Rationale:
+The previous Roundlay revision still used a broader accent vocabulary than the image justified. This change collapses the palette to the sampled chips themselves: bg/bg-alt/search/diff surfaces come directly from the dark greys in the image, main text is the mid grey, strong text is the light grey, the only warm accent is the muted brown, and the only positive-state chroma is the muted green. Keyword/statement emphasis keeps the brown accent, while most syntax groups now stay grey so the theme can be edited by value without hue noise.
+
+Evidence:
+- Sampled contiguous color runs from /mnt/c/Users/Christopher/Projects/colours/colours.png and derived the palette from those hex values: #779073, #8B655C, #1F221E, #272220, #888C90, #716F6A, #494744, #31302E, #212120, #0C0C0C.
+- Staged and committed only colors/roundlay.vim to avoid mixing in the unrelated working-tree edits already present in the repo.
+- diff --cached --check passed before commit.
+
+Open boundary:
+This commit does not update the Alacritty palette; user only asked for the Neovim profile on this pass.
