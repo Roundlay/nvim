@@ -1,0 +1,14 @@
+[Codex]<UNKNOWN>
+Context:
+User reported that with the current Roundlay theme the active line was highlighting the last numberline digit and adjacent columns incorrectly. The screenshot showed a small rectangular background block in the number column area, which pointed to an interaction between the theme's CursorLineNr background and the custom statuscolumn formatter.
+
+Rationale:
+The custom numberline code assumed the active-number highlight would not carry a distinct background into padding. That assumption held in the older naysayer theme, where CursorLineNr used the normal background, but Roundlay changed CursorLineNr to bg_alt and exposed the formatter's implicit coupling. The fix hardens both sides: Roundlay now keeps CursorLineNr on the base background with bold foreground emphasis only, and the formatter explicitly switches the trailing pad back to LineNr before emitting the space.
+
+Evidence:
+- roundlay.vim changed CursorLineNr from bg_alt to bg with bold styling, aligning it with the previous theme contract.
+- lua/scripts/numberline.lua changed FMT_SUFFIX from " %*" to "%#LineNr# %*", so the trailing pad no longer inherits CursorLineNr.
+- Staged diff review matches the screenshot symptom directly: only the active numeral should remain emphasized, without a background spill into the following columns.
+
+Validation boundary:
+Could not run a live Neovim render test in this container because nvim is not installed here; the fix is based on direct code inspection and the existing theme/script behavior.
