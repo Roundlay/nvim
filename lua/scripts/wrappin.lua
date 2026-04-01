@@ -58,6 +58,20 @@ local function exit_visual_mode()
     end
 end
 
+local function restore_cursor(cursor_line, cursor_col)
+    if type(cursor_line) ~= "number" then
+        return
+    end
+
+    local line_count = vim.api.nvim_buf_line_count(0)
+    local target_line = math.min(math.max(cursor_line, 1), line_count)
+    local line = vim.api.nvim_buf_get_lines(0, target_line - 1, target_line, false)[1] or ""
+    local max_col = math.max(#line - 1, 0)
+    local target_col = math.min(math.max(cursor_col or 0, 0), max_col)
+
+    vim.api.nvim_win_set_cursor(0, { target_line, target_col })
+end
+
 local function strip_prefix(line, comment_prefix)
     if comment_prefix ~= "" and line:match("^%s*" .. vim.pesc(comment_prefix)) then
         return line:gsub("^%s*" .. vim.pesc(comment_prefix), "", 1)
@@ -171,6 +185,7 @@ local function run(opts)
 
     local new_lines = transform_lines(lines, max_width)
     vim.api.nvim_buf_set_lines(0, start_line, end_line + 1, false, new_lines)
+    restore_cursor(opts.cursor_line, opts.cursor_col)
 end
 
 function M.run(opts)
@@ -186,6 +201,8 @@ function M.run_visual_selection(opts)
     local scheduled_opts = vim.tbl_extend("force", opts or {}, {
         start_line = start_line,
         end_line = end_line,
+        cursor_line = start_line + 1,
+        cursor_col = 0,
     })
 
     exit_visual_mode()

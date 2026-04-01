@@ -10,6 +10,13 @@ local function assert_lines(expected, label)
     end
 end
 
+local function assert_cursor(expected_line, expected_col, label)
+    local actual = vim.api.nvim_win_get_cursor(0)
+    if actual[1] ~= expected_line or actual[2] ~= expected_col then
+        error(label .. "\nexpected: " .. vim.inspect({ expected_line, expected_col }) .. "\nactual:   " .. vim.inspect(actual))
+    end
+end
+
 local function with_buffer(lines, fn)
     vim.cmd("enew!")
     vim.bo.bufhidden = "wipe"
@@ -81,6 +88,42 @@ local function test_visual_selection_works_on_first_invocation()
             "alpha beta gamma",
             "delta",
         }, "wrappin.run_visual_selection should use the live visual range")
+        assert_cursor(1, 0, "wrappin.run_visual_selection should restore the cursor to the transformed block")
+    end)
+end
+
+local function test_visual_multiline_selection_restores_cursor_to_wrapped_block()
+    with_buffer({
+        "-- Lazy has some issues with the 'name' parameter. Custom names often result in",
+        "-- duplicate entries in the Lazy dashboard when that plugin is listed by another",
+        "-- plugin as a dependency. This is presumably because you can only use the full",
+        "-- git path as the dependency name, which ends up listed on the dashboard.",
+        "",
+        "if vim.g.vscode then",
+        "    return",
+        "end",
+    }, function()
+        vim.cmd("delmarks < >")
+        vim.cmd.normal({ args = { "ggV3j" }, bang = true })
+
+        wrappin.run_visual_selection()
+
+        local ok = vim.wait(1000, function()
+            return vim.api.nvim_buf_line_count(0) == 5
+        end)
+
+        if not ok then
+            error("wrappin.run_visual_selection did not rewrite the multi-line block")
+        end
+
+        assert_lines({
+            "-- Lazy has some issues with the 'name' parameter. Custom names often result in duplicate entries in the Lazy dashboard when that plugin is listed by another plugin as a dependency. This is presumably because you can only use the full git path as the dependency name, which ends up listed on the dashboard.",
+            "",
+            "if vim.g.vscode then",
+            "    return",
+            "end",
+        }, "wrappin.run_visual_selection should keep the cursor on the transformed comment block")
+        assert_cursor(1, 0, "wrappin.run_visual_selection should not slide the cursor into following code after collapsing a multi-line selection")
     end)
 end
 
@@ -88,6 +131,7 @@ local function run_all()
     test_wraps_single_long_line()
     test_preserves_multi_line_paragraph_content()
     test_visual_selection_works_on_first_invocation()
+    test_visual_multiline_selection_restores_cursor_to_wrapped_block()
 end
 
 run_all()
