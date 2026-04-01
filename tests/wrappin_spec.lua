@@ -72,6 +72,11 @@ local function test_visual_selection_works_on_first_invocation()
             error("wrappin.run_visual_selection did not apply on the first visual invocation")
         end
 
+        local mode = vim.api.nvim_get_mode().mode
+        if mode == "v" or mode == "V" or mode == "\22" then
+            error("wrappin.run_visual_selection should leave visual mode after applying the transform")
+        end
+
         assert_lines({
             "alpha beta gamma",
             "delta",

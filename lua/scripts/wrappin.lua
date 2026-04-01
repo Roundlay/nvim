@@ -51,6 +51,13 @@ local function get_live_visual_range()
     return normalize_range(cursor_line - 1, visual_line - 1)
 end
 
+local function exit_visual_mode()
+    local mode = vim.api.nvim_get_mode().mode
+    if mode == "v" or mode == "V" or mode == "\22" then
+        vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "nx", false)
+    end
+end
+
 local function strip_prefix(line, comment_prefix)
     if comment_prefix ~= "" and line:match("^%s*" .. vim.pesc(comment_prefix)) then
         return line:gsub("^%s*" .. vim.pesc(comment_prefix), "", 1)
@@ -180,6 +187,8 @@ function M.run_visual_selection(opts)
         start_line = start_line,
         end_line = end_line,
     })
+
+    exit_visual_mode()
 
     vim.schedule(function()
         run(scheduled_opts)
