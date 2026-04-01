@@ -1,0 +1,6 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Checkpoint after terminal-layer clipboard probe.
+
+The key local finding is that Alacritty middle-click was configured to use PasteSelection rather than Paste, which makes Windows-side clipboard tests misleading because PasteSelection targets the selection buffer rather than the system clipboard path. I updated the external Alacritty config at /mnt/c/Users/Christopher/AppData/Roaming/alacritty/alacritty.toml to use Paste for middle-click so future tests exercise the real clipboard path.
+
+Separate from that config fix, stock Alacritty still does not expose a documented programmable paste filter. Bindings can paste the clipboard, emit fixed chars, or launch a command, but not transform clipboard text and feed the transformed result into the PTY. This keeps the broader CRLF->LF normalization problem unsolved at the pure terminal layer.
