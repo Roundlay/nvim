@@ -1,0 +1,14 @@
+[CODEX]019d4882-6a02-7481-99d2-535c8051b03b
+Context:
+After the previous Wrappin fix, the user reported that running F2 on a visual selection still left a visible highlighted region that had shifted onto text outside the original selection after the rewrite.
+
+Rationale:
+The transform itself was correct, but Wrappin was scheduling the buffer edit while visual mode was still active. Neovim then kept the live selection state and reinterpreted it against the rewritten buffer. The smallest honest fix is to capture the live range first, explicitly send <Esc> to leave visual mode, and only then run the scheduled buffer rewrite.
+
+Evidence:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/tests/wrappin_spec.lua')" -c 'qall!' passed.
+- The regression spec now asserts both that the first visual invocation applies and that Neovim is no longer in v/V/^V mode afterward.
+- git diff --check over lua/scripts/wrappin.lua, tests/wrappin_spec.lua, and TODOS.md passed before commit.
+
+Open edges:
+- Markdown header prefix handling is still the next known Wrappin bug.
