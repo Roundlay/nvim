@@ -1,5 +1,10 @@
 # TODOs
 
+## Terminal Clipboard Investigation (2026-04-02)
+
+- [X] Confirm Alacritty middle-click was bound to `PasteSelection`, not normal clipboard paste.
+- [~] Stock Alacritty exposes plain paste actions and command spawning, but not a programmable paste filter that can rewrite clipboard text before it reaches the PTY.
+
 ## Waverace Theme (2026-03-24)
 
 - [X] Add colors/waverace.vim as a new high-saturation blue/yellow/red test theme based on the Wave Race 64 cover art.
