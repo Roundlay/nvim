@@ -228,6 +228,9 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [ ] ./lua/scripts/custom_diagnostics.lua:10 Rename the `custom_diagnostics` namespace to follow conventions.
 
 ### ./lua/scripts/wrappin.lua
+- [X] 2026-04-01 Capture the live visual selection for Wrappin so the first visual invocation works without a second reselect.
+- [X] 2026-04-01 Fix Wrappin's paragraph path to transform the full selected line range instead of deleting trailing selected lines.
+- [X] 2026-04-01 Add headless Wrappin regression tests for first-run visual invocation and multi-line paragraph preservation.
 - [!] ./lua/scripts/wrappin.lua:11 Wrappin strips Markdown header prefixes; strengthen prefix handling so headings survive wrapping.
 - [ ] ./lua/scripts/wrappin.lua:16 Support partially wrapped selections by only reflowing overflowing lines.
 - [ ] ./lua/scripts/wrappin.lua:20 Store the original layout (scratchpad) so users can revert after edits.
