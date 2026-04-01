@@ -1,0 +1,17 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Context:
+This checkpoint records the design direction for the next Wrappin rewrite after investigating list-handling and reversibility failures. The current implementation can only preserve a first-line comment-style prefix and treats any multi-line selection as an unwrap-to-one-line operation, which breaks bullets, numbered lists, hanging indents, and repeat invocations.
+
+Rationale:
+We explicitly rejected command-history-based reversibility even though Neovim exposes histadd()/histget() and can persist command-line history through ShaDa. That route is global, user-visible, optionally file-backed, and weak at tracking the identity of a transformed region after later edits. The stronger design is a small explicit pipeline over parsed line/block data: capture selection, scan limited context, classify line roles, segment logical blocks, emit wrapped text, and track Wrappin-owned regions with buffer-local extmarks.
+
+Implementation direction:
+- Rebuild Wrappin around parsed line rows and block rows, not ad hoc prefix stripping.
+- Separate first-prefix from continuation-prefix so list items produce hanging indents instead of repeated bullets or numbers.
+- Use extmark-backed in-memory snapshots for exact restore, but only when the current region still matches the stored wrapped snapshot and schema/hash.
+- When that validity check fails because the user edited the region or surrounding structure changed, skip exact restore and fall back to semantic reflow.
+- Switch wrap accounting to display width rather than raw byte counts.
+
+Open edges:
+- Need to decide the exact row layout and whether to keep the rewrite in one file or split parse/emit/tracking into a few tight modules.
+- Need tests for list inheritance from surrounding context, exact restore after untouched round-trip, and invalidation after user edits.
