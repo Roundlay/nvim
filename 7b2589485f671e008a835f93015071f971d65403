@@ -1,0 +1,16 @@
+[CODEX]019d4882-6a02-7481-99d2-535c8051b03b
+Context:
+User reported two Wrappin regressions in the Neovim config: the first F2 invocation on a visual selection was a no-op, and selecting an already wrapped paragraph could delete every selected line after the first because the transform only consumed lines[1].
+
+Rationale:
+- Added a live visual-selection entrypoint in lua/scripts/wrappin.lua that captures line('.') and line('v') while the selection is still active, then defers the buffer edit with vim.schedule so the first invocation no longer depends on stale '< and '> marks.
+- Reworked the paragraph transform to consume the full selected line range. Multi-line selections now unwrap by joining every selected line, while single-line selections still wrap to width with the existing indent/prefix and inline // comment behavior preserved.
+- Updated the F2 mapping to dispatch through the live-selection helper and added a focused headless regression spec instead of relying on manual repros.
+
+Evidence:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/tests/wrappin_spec.lua')" -c 'qall!' passed.
+- git diff --check over lua/scripts/wrappin.lua, lua/keybindings.lua, tests/wrappin_spec.lua, and TODOS.md passed before commit.
+
+Open edges:
+- Wrappin still has the tracked markdown-header/prefix bug in TODOS.
+- Partial reflow for mixed wrapped/unwrapped selections remains a separate follow-up; the current toggle model treats any multi-line selection as the wrapped form.
