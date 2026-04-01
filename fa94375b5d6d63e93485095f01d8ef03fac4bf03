@@ -1,0 +1,14 @@
+[CODEX]019d4882-6a02-7481-99d2-535c8051b03b
+Context:
+After fixing Wrappin's range capture and visual-exit behavior, the user found that the cursor still landed in following code after collapsing a multi-line selection. The reported repro was a four-line comment block above an `if vim.g.vscode then` block, where the cursor consistently ended on the `return` line after F2.
+
+Rationale:
+Neovim was preserving the old absolute cursor row across `nvim_buf_set_lines`, which is correct from the editor's perspective but wrong for this transform because a multi-line block can collapse to a single line. The direct fix is to restore the cursor explicitly after the rewrite. For visual Wrappin runs, the right stable anchor is the first line of the transformed block.
+
+Evidence:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/tests/wrappin_spec.lua')" -c 'qall!' passed.
+- Added regression coverage for the exact multi-line comment-block shape and for cursor restoration in the single-line visual case.
+- git diff --check over lua/scripts/wrappin.lua, tests/wrappin_spec.lua, and TODOS.md passed before commit.
+
+Open edges:
+- Markdown header prefix handling remains the next known Wrappin bug.
