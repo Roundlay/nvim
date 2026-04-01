@@ -1,0 +1,19 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Context:
+This commit is the first full rewrite of Wrappin after deciding to abandon the old first-line-prefix toggle model. The goal was to make list handling non-lossy in the common reflow path, preserve markdown heading markers, and split semantic reflow from exact reversal of prior Wrappin output.
+
+Rationale:
+The previous implementation only derived one prefix from the first selected line and treated any multi-line selection as an unwrap operation. That broke hanging indents, merged numbered items, and stripped heading markers. The new shape is an explicit pipeline over selection data: capture range, parse rows, segment logical blocks, emit wrapped lines, and optionally track exact wrapped output with extmark-backed snapshots. Exact restore is allowed only when the selected tracked region still matches the stored wrapped text; if the user edits the region, the snapshot is invalidated and Wrappin falls back to semantic reflow.
+
+Evidence:
+- Replaced lua/scripts/wrappin.lua with a block-aware reflow engine covering plain text, repeated-prefix comments, bullets, ordered lists, and markdown headings.
+- Added context inheritance so selections starting on continuation lines can pick up the surrounding list/comment schema.
+- Added extmark-backed in-memory snapshots for exact restore of untouched wrapped regions.
+- Expanded tests/wrappin_spec.lua to cover hanging indents, numbered-item separation, context inheritance, heading preservation, exact restore, invalidation after edits, and first-run visual mode behavior.
+- Verified with: nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/tests/wrappin_spec.lua')" -c 'qall!'
+- Verified with: git diff --check -- lua/scripts/wrappin.lua tests/wrappin_spec.lua TODOS.md
+
+Open edges:
+- Partial-line reflow remains intentionally deferred; the current model reflows explicit logical blocks instead of trying to mutate only overflowing physical lines.
+- Hash-prefixed shell comments are still not specially distinguished from markdown-style headings. If that matters later, detection should likely be filetype-aware instead of broadening prefix heuristics again.
+- Context inheritance currently looks upward only; extend with evidence if downward context becomes necessary in real use.
