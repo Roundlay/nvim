@@ -233,17 +233,18 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [X] 2026-04-01 Add headless Wrappin regression tests for first-run visual invocation and multi-line paragraph preservation.
 - [X] 2026-04-01 Force Wrappin to leave visual mode before rewriting the buffer so the selection highlight does not jump onto transformed text.
 - [X] 2026-04-01 Restore the cursor to the transformed Wrappin block after collapsing a visual selection so it does not slide into following code.
-- [!] ./lua/scripts/wrappin.lua:11 Wrappin strips Markdown header prefixes; strengthen prefix handling so headings survive wrapping.
-- [ ] ./lua/scripts/wrappin.lua:16 Support partially wrapped selections by only reflowing overflowing lines.
-- [ ] ./lua/scripts/wrappin.lua:20 Store the original layout (scratchpad) so users can revert after edits.
-- [~] 2026-04-02 Replace the current line-toggle model with an explicit Wrappin pipeline: capture -> context scan -> classify -> segment -> emit -> track.
-- [~] 2026-04-02 Exact reversibility will be buffer-local and in-memory only. Drop command-history ideas entirely.
-- [ ] 2026-04-02 Rewrite Wrappin around parsed line rows and block rows instead of first-line prefix stripping.
-- [ ] 2026-04-02 Parse list items into separate first-prefix and continuation-prefix columns so bullets and numbered items reflow with hanging indents.
-- [ ] 2026-04-02 Add a small upward/downward context scan so selections starting on continuation lines can inherit surrounding list/comment schema.
-- [ ] 2026-04-02 Add extmark-backed snapshot tracking for Wrappin-generated regions with exact-restore only when the current text still matches the stored wrapped snapshot.
-- [ ] 2026-04-02 Treat restore validity as a data check, not a guess: compare region text plus schema/hash, invalidate on divergence, then fall back to semantic reflow.
-- [ ] 2026-04-02 Switch wrapping decisions to display-cell width accounting so tabs and multibyte text do not use byte-count heuristics.
+- [X] 2026-04-02 Preserve Markdown heading prefixes during Wrappin reflow.
+- [>] 2026-04-02 Revisit selective partial-line reflow only if the new whole-block pipeline proves too blunt in real use.
+    - [~] Wrappin now reflows explicit logical blocks instead of trying to mutate only overflowing physical lines.
+- [X] 2026-04-02 Store Wrappin restore snapshots in buffer-local in-memory state so untouched wrapped regions can round-trip exactly.
+- [X] 2026-04-02 Replace the old line-toggle model with an explicit Wrappin pipeline: capture -> context scan -> classify -> segment -> emit -> track.
+- [X] 2026-04-02 Keep exact reversibility buffer-local and in-memory only. Command history is explicitly out.
+- [X] 2026-04-02 Rewrite Wrappin around parsed line rows and block rows instead of first-line prefix stripping.
+- [X] 2026-04-02 Parse list items into separate first-prefix and continuation-prefix columns so bullets and numbered items reflow with hanging indents.
+- [X] 2026-04-02 Add a small context scan so selections starting on continuation lines can inherit surrounding list/comment schema.
+- [X] 2026-04-02 Add extmark-backed snapshot tracking for Wrappin-generated regions with exact-restore only when the current text still matches the stored wrapped snapshot.
+- [X] 2026-04-02 Treat restore validity as a data check, not a guess: compare region text against the stored wrapped snapshot and invalidate on divergence before falling back to semantic reflow.
+- [X] 2026-04-02 Switch wrapping decisions to display-cell width accounting so tabs and multibyte text do not use byte-count heuristics.
 
 ### ./lua/plugins/lazy-blink-cmp.lua
 - [ ] ./lua/plugins/lazy-blink-cmp.lua:3 Configure Blink sources (buffers, docs, etc.) instead of relying on defaults.
