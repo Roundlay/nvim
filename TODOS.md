@@ -236,6 +236,14 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [!] ./lua/scripts/wrappin.lua:11 Wrappin strips Markdown header prefixes; strengthen prefix handling so headings survive wrapping.
 - [ ] ./lua/scripts/wrappin.lua:16 Support partially wrapped selections by only reflowing overflowing lines.
 - [ ] ./lua/scripts/wrappin.lua:20 Store the original layout (scratchpad) so users can revert after edits.
+- [~] 2026-04-02 Replace the current line-toggle model with an explicit Wrappin pipeline: capture -> context scan -> classify -> segment -> emit -> track.
+- [~] 2026-04-02 Exact reversibility will be buffer-local and in-memory only. Drop command-history ideas entirely.
+- [ ] 2026-04-02 Rewrite Wrappin around parsed line rows and block rows instead of first-line prefix stripping.
+- [ ] 2026-04-02 Parse list items into separate first-prefix and continuation-prefix columns so bullets and numbered items reflow with hanging indents.
+- [ ] 2026-04-02 Add a small upward/downward context scan so selections starting on continuation lines can inherit surrounding list/comment schema.
+- [ ] 2026-04-02 Add extmark-backed snapshot tracking for Wrappin-generated regions with exact-restore only when the current text still matches the stored wrapped snapshot.
+- [ ] 2026-04-02 Treat restore validity as a data check, not a guess: compare region text plus schema/hash, invalidate on divergence, then fall back to semantic reflow.
+- [ ] 2026-04-02 Switch wrapping decisions to display-cell width accounting so tabs and multibyte text do not use byte-count heuristics.
 
 ### ./lua/plugins/lazy-blink-cmp.lua
 - [ ] ./lua/plugins/lazy-blink-cmp.lua:3 Configure Blink sources (buffers, docs, etc.) instead of relying on defaults.
