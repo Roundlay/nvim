@@ -4,6 +4,8 @@
 
 - [X] Confirm Alacritty middle-click was bound to `PasteSelection`, not normal clipboard paste.
 - [~] Stock Alacritty exposes plain paste actions and command spawning, but not a programmable paste filter that can rewrite clipboard text before it reaches the PTY.
+- [X] Add a tmux-native shared-clipboard paste path at `prefix+p` via `bin/tmux-paste-windows-clipboard`.
+- [~] Version one narrows scope to tmux paste from the Windows clipboard; plain WSL and copy-direction unification remain separate follow-up work.
 
 ## Waverace Theme (2026-03-24)
 
