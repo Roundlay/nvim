@@ -131,6 +131,52 @@ local function build_prefixed_row(raw, kind, indent_text, marker_text, marker_sp
     }
 end
 
+local function build_text_profile(text)
+    local profile = {
+        word_count = 0,
+        punctuation_count = 0,
+        starts_with_closer = false,
+        starts_with_word = false,
+        has_brace = false,
+        has_semicolon = false,
+        has_assignment = false,
+        has_compare = false,
+        has_logic = false,
+        has_member_access = false,
+    }
+
+    if text == nil or text == "" then
+        return profile
+    end
+
+    for _ in text:gmatch("%S+") do
+        profile.word_count = profile.word_count + 1
+    end
+
+    profile.punctuation_count = select(2, text:gsub("[{}%[%]%(%)%;,]", ""))
+    profile.starts_with_closer = text:match("^%s*[%]%}%)]") ~= nil
+    profile.starts_with_word = text:match("^%s*[\"'`%a_]") ~= nil
+    profile.has_brace = text:find("[{}]") ~= nil
+    profile.has_semicolon = text:find(";", 1, true) ~= nil
+    profile.has_assignment = text:find(" = ", 1, true) ~= nil
+        or text:find("+=", 1, true) ~= nil
+        or text:find("-=", 1, true) ~= nil
+        or text:find("*=", 1, true) ~= nil
+        or text:find("/=", 1, true) ~= nil
+        or text:find("%=", 1, true) ~= nil
+    profile.has_compare = text:find("==", 1, true) ~= nil
+        or text:find("!=", 1, true) ~= nil
+        or text:find("<=", 1, true) ~= nil
+        or text:find(">=", 1, true) ~= nil
+    profile.has_logic = text:find("&&", 1, true) ~= nil
+        or text:find("||", 1, true) ~= nil
+    profile.has_member_access = text:find("->", 1, true) ~= nil
+        or text:find("::", 1, true) ~= nil
+        or text:match("[%w_%)%]]+%.%a[%w_]*") ~= nil
+
+    return profile
+end
+
 local function parse_row(raw)
     local indent_text = raw:match("^(%s*)") or ""
     local rest = raw:sub(#indent_text + 1)
@@ -141,6 +187,7 @@ local function parse_row(raw)
             kind = BLOCK_BLANK,
             indent_text = indent_text,
             body_text = "",
+            text_profile = build_text_profile(""),
         }
     end
 
@@ -148,32 +195,44 @@ local function parse_row(raw)
 
     marker_text, marker_spacing, body_text = rest:match("^(#+)(%s+)(.*)$")
     if marker_text ~= nil then
-        return build_prefixed_row(raw, BLOCK_HEADING, indent_text, marker_text, marker_spacing, body_text)
+        local row = build_prefixed_row(raw, BLOCK_HEADING, indent_text, marker_text, marker_spacing, body_text)
+        row.text_profile = build_text_profile(body_text)
+        return row
     end
 
     marker_text, marker_spacing, body_text = rest:match("^(%d+[.)])(%s+)(.*)$")
     if marker_text ~= nil then
-        return build_prefixed_row(raw, BLOCK_ORDERED, indent_text, marker_text, marker_spacing, body_text)
+        local row = build_prefixed_row(raw, BLOCK_ORDERED, indent_text, marker_text, marker_spacing, body_text)
+        row.text_profile = build_text_profile(body_text)
+        return row
     end
 
     marker_text, marker_spacing, body_text = rest:match("^([%-%+%*])(%s+)(.*)$")
     if marker_text ~= nil then
-        return build_prefixed_row(raw, BLOCK_BULLET, indent_text, marker_text, marker_spacing, body_text)
+        local row = build_prefixed_row(raw, BLOCK_BULLET, indent_text, marker_text, marker_spacing, body_text)
+        row.text_profile = build_text_profile(body_text)
+        return row
     end
 
     marker_text, marker_spacing, body_text = rest:match("^(//+)(%s*)(.*)$")
     if marker_text ~= nil then
-        return build_prefixed_row(raw, BLOCK_COMMENT, indent_text, marker_text, marker_spacing, body_text)
+        local row = build_prefixed_row(raw, BLOCK_COMMENT, indent_text, marker_text, marker_spacing, body_text)
+        row.text_profile = build_text_profile(body_text)
+        return row
     end
 
     marker_text, marker_spacing, body_text = rest:match("^(%-%-+)(%s*)(.*)$")
     if marker_text ~= nil then
-        return build_prefixed_row(raw, BLOCK_COMMENT, indent_text, marker_text, marker_spacing, body_text)
+        local row = build_prefixed_row(raw, BLOCK_COMMENT, indent_text, marker_text, marker_spacing, body_text)
+        row.text_profile = build_text_profile(body_text)
+        return row
     end
 
     marker_text, marker_spacing, body_text = rest:match("^(;+)(%s*)(.*)$")
     if marker_text ~= nil then
-        return build_prefixed_row(raw, BLOCK_COMMENT, indent_text, marker_text, marker_spacing, body_text)
+        local row = build_prefixed_row(raw, BLOCK_COMMENT, indent_text, marker_text, marker_spacing, body_text)
+        row.text_profile = build_text_profile(body_text)
+        return row
     end
 
     return {
@@ -183,7 +242,18 @@ local function parse_row(raw)
         body_text = rest,
         first_prefix = indent_text,
         continuation_prefix = indent_text,
+        text_profile = build_text_profile(rest),
     }
+end
+
+local function parse_lines(lines)
+    local rows = {}
+
+    for i = 1, #lines do
+        rows[i] = parse_row(lines[i])
+    end
+
+    return rows
 end
 
 local function append_words(words, text)
@@ -221,9 +291,9 @@ local function flush_block(segments, block)
     end
 end
 
-local function derive_inherited_schema(before_lines)
-    for i = #before_lines, 1, -1 do
-        local row = parse_row(before_lines[i])
+local function derive_inherited_schema(before_rows)
+    for i = #before_rows, 1, -1 do
+        local row = before_rows[i]
 
         if row.kind == BLOCK_BLANK then
             return nil
@@ -241,63 +311,134 @@ local function derive_inherited_schema(before_lines)
     return nil
 end
 
-local function looks_like_code_text(text)
-    if text == nil or text == "" then
-        return false
+local function score_code_profile(profile)
+    local score = 0
+
+    if profile.starts_with_closer then
+        score = score + 4
+    end
+    if profile.has_brace then
+        score = score + 4
+    end
+    if profile.has_semicolon then
+        score = score + 4
+    end
+    if profile.has_member_access then
+        score = score + 3
+    end
+    if profile.has_assignment then
+        score = score + 3
+    end
+    if profile.has_compare then
+        score = score + 3
+    end
+    if profile.has_logic then
+        score = score + 2
+    end
+    if profile.punctuation_count >= 3 then
+        score = score + 1
     end
 
-    if text:match("^%s*[%]%}%)]") ~= nil then
-        return true
-    end
-
-    if text:find("[{};]") ~= nil then
-        return true
-    end
-
-    local code_markers = {
-        "->",
-        "::",
-        "==",
-        "!=",
-        "<=",
-        ">=",
-        "&&",
-        "||",
-        "+=",
-        "-=",
-        "*=",
-        "/=",
-        "%=",
-        " = ",
-    }
-
-    for i = 1, #code_markers do
-        if text:find(code_markers[i], 1, true) ~= nil then
-            return true
-        end
-    end
-
-    return false
+    return score
 end
 
-local function should_inherit_schema(row, inherited_schema)
+local function score_continuation_profile(profile)
+    local score = 0
+
+    if profile.word_count >= 4 then
+        score = score + 4
+    elseif profile.word_count >= 2 then
+        score = score + 2
+    elseif profile.word_count == 1 then
+        score = score + 1
+    end
+
+    if profile.starts_with_word then
+        score = score + 1
+    end
+
+    if not profile.starts_with_closer
+        and not profile.has_brace
+        and not profile.has_semicolon
+        and not profile.has_assignment
+        and not profile.has_compare
+        and not profile.has_logic
+        and not profile.has_member_access
+    then
+        score = score + 3
+    end
+
+    if profile.punctuation_count <= 1 then
+        score = score + 1
+    end
+
+    return score
+end
+
+local function score_neighbor_row(next_row, inherited_schema)
+    if next_row == nil or next_row.kind == BLOCK_BLANK then
+        return 0, 0
+    end
+
+    if next_row.kind == inherited_schema.kind then
+        return 4, 0
+    end
+
+    if next_row.kind ~= BLOCK_TEXT then
+        return 0, 1
+    end
+
+    local next_profile = next_row.text_profile
+    local continuation_score = 0
+    local code_score = 0
+
+    local next_code_score = score_code_profile(next_profile)
+    if next_code_score >= 4 then
+        code_score = code_score + 2
+    end
+
+    if score_continuation_profile(next_profile) >= 4 then
+        continuation_score = continuation_score + 1
+    end
+
+    return continuation_score, code_score
+end
+
+local function should_inherit_schema(row, inherited_schema, next_row)
     if inherited_schema == nil or row.kind ~= BLOCK_TEXT then
         return false
     end
 
-    if looks_like_code_text(row.body_text) then
-        return false
+    local profile = row.text_profile
+    local continuation_score = score_continuation_profile(profile)
+    local code_score = score_code_profile(profile)
+    local neighbor_continuation, neighbor_code = score_neighbor_row(next_row, inherited_schema)
+    continuation_score = continuation_score + neighbor_continuation
+    code_score = code_score + neighbor_code
+
+    if inherited_schema.kind == BLOCK_COMMENT then
+        return continuation_score >= 4 and continuation_score >= code_score + 2
     end
 
-    return true
+    return continuation_score >= 2 and continuation_score >= code_score
 end
 
-local function segment_selection(lines, inherited_schema)
+local function first_nonblank_row(rows, start_index)
+    for i = start_index, #rows do
+        if rows[i].kind ~= BLOCK_BLANK then
+            return rows[i]
+        end
+    end
+
+    return nil
+end
+
+local function segment_selection(rows, inherited_schema, next_row)
     local segments = {}
     local current_block
 
-    for index = 1, #lines do
-        local row = parse_row(lines[index])
+    for index = 1, #rows do
+        local row = rows[index]
 
         if row.kind == BLOCK_BLANK then
             flush_block(segments, current_block)
@@ -309,7 +450,7 @@ local function segment_selection(lines, inherited_schema)
             append_words(current_block.words, row.body_text)
         else
             if current_block == nil then
-                if index == 1 and should_inherit_schema(row, inherited_schema) then
+                if index == 1 and should_inherit_schema(row, inherited_schema, next_row) then
                     current_block = build_block(
                         inherited_schema.kind,
                         inherited_schema.first_prefix,
@@ -384,11 +525,13 @@ end
 
 local function collect_context(bufnr, start_line, end_line)
     local before_start = math.max(start_line - CONTEXT_SCAN_LIMIT, 0)
+    local after_end = math.min(end_line + CONTEXT_SCAN_LIMIT + 1, api.nvim_buf_line_count(bufnr))
 
     local before_lines = api.nvim_buf_get_lines(bufnr, before_start, start_line, false)
     local selected_lines = api.nvim_buf_get_lines(bufnr, start_line, end_line + 1, false)
+    local after_lines = api.nvim_buf_get_lines(bufnr, end_line + 1, after_end, false)
 
-    return before_lines, selected_lines
+    return before_lines, selected_lines, after_lines
 end
 
 local function get_snapshot_bucket(bufnr)
@@ -526,9 +669,13 @@ local function find_restorable_snapshot(bufnr, start_line, end_line)
 end
 
 local function build_reflow_lines(bufnr, start_line, end_line, max_width)
-    local before_lines, selected_lines = collect_context(bufnr, start_line, end_line)
-    local inherited_schema = derive_inherited_schema(before_lines)
-    local segments = segment_selection(selected_lines, inherited_schema)
+    local before_lines, selected_lines, after_lines = collect_context(bufnr, start_line, end_line)
+    local before_rows = parse_lines(before_lines)
+    local selected_rows = parse_lines(selected_lines)
+    local after_rows = parse_lines(after_lines)
+    local inherited_schema = derive_inherited_schema(before_rows)
+    local next_row = first_nonblank_row(selected_rows, 2) or first_nonblank_row(after_rows, 1)
+    local segments = segment_selection(selected_rows, inherited_schema, next_row)
 
     return emit_segments(segments, max_width)
 end

@@ -245,6 +245,7 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [X] 2026-04-01 Restore the cursor to the transformed Wrappin block after collapsing a visual selection so it does not slide into following code.
 - [X] 2026-04-02 Preserve Markdown heading prefixes during Wrappin reflow.
 - [X] 2026-04-02 Stop Wrappin from inheriting nearby comment schema onto selected code lines.
+- [X] 2026-04-02 Refine Wrappin schema inheritance with a local lexical classifier and a small neighbor window instead of a single hard-coded code-token check.
 - [>] 2026-04-02 Revisit selective partial-line reflow only if the new whole-block pipeline proves too blunt in real use.
     - [~] Wrappin now reflows explicit logical blocks instead of trying to mutate only overflowing physical lines.
 - [X] 2026-04-02 Store Wrappin restore snapshots in buffer-local in-memory state so untouched wrapped regions can round-trip exactly.
