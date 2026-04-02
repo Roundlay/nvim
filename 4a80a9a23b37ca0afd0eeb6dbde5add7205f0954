@@ -1,0 +1,9 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+The inline+conceal preview fixed layout/occlusion, but the preview text itself was still rendered as plain VisrepText, which made scoped preview look like it had lost syntax colour. This follow-up samples the syntax highlight group at each match start with synID/synIDtrans/synIDattr and stacks that group on top of VisrepText in the preview chunk. In practice that should preserve the local foreground colour while keeping the preview visually marked.
+
+Validation:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/lua/scripts/visrep_spec.lua')" -c 'qall!'
+- git diff --check -- lua/scripts/visrep.lua lua/scripts/visrep_spec.lua TODOS.md
+
+Caveat:
+- The sampled syntax group is taken from the match start, so replacements that span multiple syntax regions still compress to one representative group. That is a deliberate tradeoff for a cheap, stable preview path.
