@@ -1,0 +1,17 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Visrep had grown into a large interactive run loop with all of its real invariants trapped inside nested helpers, which made it hard to harden without either brittle terminal-puppetry tests or no tests at all. This pass pulls the stable data transforms to file scope: selection normalization, literal/pattern building, regex scanning, scope filtering, line replacement, separator selection, and selection-only replacement fallback. The interactive behavior is left in run(), but the logic now has direct seams for adjacent specs.
+
+Coverage added in lua/scripts/visrep_spec.lua:
+- marks_to_range normalizes reversed marks and computes UTF-8 exclusive ends
+- build_literal_core and build_patterns encode Unicode and separate boundary vs anywhere behavior
+- build_match_index scans matches against real buffer lines
+- filter_by_scope covers charwise and block scope rules
+- build_replaced_line / apply_replacements_by_line / replace_selected_region cover the replacement machinery
+- run() integration covers default boundary mode, Tab toggle to anywhere mode, UTF-8 replacement without byte artifacts, and the multiline input path
+
+Validation:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/lua/scripts/visrep_spec.lua')" -c 'qall!'
+- git diff --check -- lua/scripts/visrep.lua lua/scripts/visrep_spec.lua TODOS.md
+
+Residual risk:
+- The manual scoped-selection UI itself is only covered through the pure scope-filter helpers, not a full Shift-Tab interactive end-to-end path. That is deliberate for now because the scheduled/keymap dance is much more brittle than the underlying scope semantics, which are now tested directly.
