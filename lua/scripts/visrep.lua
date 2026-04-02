@@ -281,6 +281,93 @@ local function replace_selected_region(bufnr, sel, new_string)
     return true
 end
 
+local function display_width(text)
+    return vim.fn.strdisplaywidth(text or "")
+end
+
+local function truncate_display_head(text, max_width)
+    text = text or ""
+    if max_width <= 0 then
+        return ""
+    end
+    if display_width(text) <= max_width then
+        return text
+    end
+    if max_width == 1 then
+        return "…"
+    end
+
+    local target_width = max_width - 1
+    local char_count = vim.fn.strchars(text)
+    local lo = 0
+    local hi = char_count
+    while lo < hi do
+        local mid = math.floor((lo + hi + 1) / 2)
+        local chunk = vim.fn.strcharpart(text, 0, mid)
+        if display_width(chunk) <= target_width then
+            lo = mid
+        else
+            hi = mid - 1
+        end
+    end
+
+    return vim.fn.strcharpart(text, 0, lo) .. "…"
+end
+
+local function truncate_display_tail(text, max_width)
+    text = text or ""
+    if max_width <= 0 then
+        return ""
+    end
+    if display_width(text) <= max_width then
+        return text
+    end
+    if max_width == 1 then
+        return "…"
+    end
+
+    local target_width = max_width - 1
+    local char_count = vim.fn.strchars(text)
+    local lo = 0
+    local hi = char_count
+    while lo < hi do
+        local mid = math.floor((lo + hi) / 2)
+        local chunk = vim.fn.strcharpart(text, mid)
+        if display_width(chunk) <= target_width then
+            hi = mid
+        else
+            lo = mid + 1
+        end
+    end
+
+    return "…" .. vim.fn.strcharpart(text, lo)
+end
+
+local function build_prompt_text(idx, cnt_total, literal, mode, scoped_enabled, repl, columns)
+    local label = (mode == 'boundary') and 'boundary' or 'anywhere'
+    local scope_tag = scoped_enabled and ' [scoped]' or ''
+    local max_columns = math.max(20, columns or vim.o.columns or 80)
+    local prefix_template = string.format('[%d/%d] Replace "%%s" %s%s with: ', idx, cnt_total, label, scope_tag)
+
+    local literal_budget = math.min(77, math.max(8, math.floor(max_columns * 0.35)))
+    local shown_literal = truncate_display_head(literal, literal_budget)
+    local prefix = string.format(prefix_template, shown_literal)
+
+    local remaining = max_columns - display_width(prefix)
+    while remaining < 0 and literal_budget > 0 do
+        literal_budget = literal_budget - 1
+        shown_literal = truncate_display_head(literal, literal_budget)
+        prefix = string.format(prefix_template, shown_literal)
+        remaining = max_columns - display_width(prefix)
+    end
+    if remaining < 0 then
+        return truncate_display_head(prefix, max_columns)
+    end
+
+    local shown_repl = truncate_display_tail(repl or "", math.max(0, remaining))
+    return prefix .. shown_repl
+end
+
 local function get_preview_hl(lnum, col0)
     local ok, syn_id = pcall(vim.fn.synID, lnum + 1, col0 + 1, 1)
     if not ok or not syn_id or syn_id == 0 then
@@ -475,15 +562,7 @@ local function run()
     local function update_prompt(repl)
         local cnt_total = #nav_targets
         local idx = cur_idx or 0
-        local label = (mode == 'boundary') and 'boundary' or 'anywhere'
-        local scope_tag = scoped_enabled and ' [scoped]' or ''
-        local shown = literal
-        local max_len = 77
-        local shown_len = vim.fn.strchars(shown)
-        if shown_len > max_len then
-            shown = vim.fn.strcharpart(shown, 0, max_len) .. '…'
-        end
-        local prompt = string.format('[%d/%d] Replace "%s" %s%s with: %s', idx, cnt_total, shown, label, scope_tag, repl or '')
+        local prompt = build_prompt_text(idx, cnt_total, literal, mode, scoped_enabled, repl or "", vim.o.columns)
         vim.api.nvim_echo({{prompt, 'Normal'}}, false, {})
         vim.cmd('redraw')
     end
@@ -496,6 +575,44 @@ local function run()
         pcall(vim.keymap.del, { 'n', 'v' }, '<CR>', { buffer = bufnr })
         pcall(vim.keymap.del, { 'n', 'v' }, '<Esc>', { buffer = bufnr })
         scope_maps_active = false
+    end
+
+    local function abort_session(restore_cursor)
+        clear_scope_maps()
+        clear_ns(bufnr)
+        restore_preview_conceal(session)
+        force_normal()
+        if restore_cursor then
+            pcall(vim.api.nvim_win_set_cursor, 0, cursor_pos)
+        end
+        session.active = false
+        M._visrep_session = nil
+    end
+
+    local function run_input_session()
+        local ok, action = xpcall(session.input_loop, debug.traceback)
+        if not ok then
+            local message = tostring(action)
+            abort_session(true)
+            if message:find("Keyboard interrupt", 1, true) then
+                return "cancel"
+            end
+            error(action)
+        end
+
+        if action == "apply" then
+            local ok_finalize, finalize_err = xpcall(session.finalize, debug.traceback)
+            if not ok_finalize then
+                abort_session(true)
+                error(finalize_err)
+            end
+            session.active = false
+            M._visrep_session = nil
+        elseif action == "cancel" then
+            abort_session(true)
+        end
+
+        return action
     end
 
     local function finish_scope_selection(picked)
@@ -515,15 +632,7 @@ local function run()
             if not session.active then
                 return
             end
-            local action = session.input_loop()
-            if action == "apply" then
-                session.finalize()
-                session.active = false
-                M._visrep_session = nil
-            elseif action == "cancel" then
-                session.active = false
-                M._visrep_session = nil
-            end
+            run_input_session()
         end)
     end
 
@@ -632,6 +741,7 @@ local function run()
 
     local function finalize()
         force_normal()
+        clear_ns(bufnr)
         restore_preview_conceal(session)
         if is_single_line then
             if not nav_targets or #nav_targets == 0 then
@@ -797,13 +907,14 @@ local function run()
         session.active = true
         M._visrep_session = session
 
-        local action = input_loop()
+        local action = run_input_session()
         if action == "defer" then
             return
         end
         if action == "cancel" then
-            session.active = false
-            M._visrep_session = nil
+            return
+        end
+        if action == "apply" then
             return
         end
     else
@@ -840,6 +951,7 @@ M._test = {
     replace_selected_region = replace_selected_region,
     get_preview_hl = get_preview_hl,
     build_preview_marks = build_preview_marks,
+    build_prompt_text = build_prompt_text,
     enable_preview_conceal = enable_preview_conceal,
     restore_preview_conceal = restore_preview_conceal,
 }

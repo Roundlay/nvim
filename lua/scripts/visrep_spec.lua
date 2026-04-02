@@ -22,6 +22,12 @@ local function assert_true(value, label)
     end
 end
 
+local function assert_lte(actual, expected, label)
+    if actual > expected then
+        error(label .. "\nexpected <= " .. tostring(expected) .. "\nactual:   " .. tostring(actual))
+    end
+end
+
 local function with_patched_fn(name, replacement, fn)
     local original = vim.fn[name]
     vim.fn[name] = replacement
@@ -272,6 +278,86 @@ local function test_preview_conceal_state_restores_window_options()
     end)
 end
 
+local function test_build_prompt_text_clamps_to_screen_width_and_keeps_typed_suffix()
+    local visrep = fresh_visrep()
+    local narrow_prompt = visrep._test.build_prompt_text(
+        3,
+        12,
+        "vim.g.colors_name",
+        "boundary",
+        true,
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        40
+    )
+
+    assert_lte(
+        vim.fn.strdisplaywidth(narrow_prompt),
+        40,
+        "build_prompt_text should clamp the rendered prompt to the available command width"
+    )
+
+    local wide_prompt = visrep._test.build_prompt_text(
+        3,
+        12,
+        "vim.g.colors_name",
+        "boundary",
+        true,
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        80
+    )
+
+    assert_true(
+        wide_prompt:sub(-4) == "WXYZ",
+        "build_prompt_text should keep the replacement suffix visible while typing long text"
+    )
+    assert_true(
+        wide_prompt:find("…", 1, true) ~= nil,
+        "build_prompt_text should mark truncation explicitly"
+    )
+end
+
+local function test_run_keyboard_interrupt_cleans_preview_state()
+    local visrep = fresh_visrep()
+
+    with_buffer({ "vim.g colors_name vim.g" }, function()
+        vim.api.nvim_set_option_value("conceallevel", 0, { win = 0 })
+        vim.api.nvim_set_option_value("concealcursor", "", { win = 0 })
+        set_visual_marks(1, 0, 1, 4)
+
+        with_suppressed_echo(function()
+            with_patched_fn("getchar", function()
+                error("Keyboard interrupt")
+            end, function()
+                visrep.run()
+            end)
+        end)
+
+        local preview_ns = vim.api.nvim_get_namespaces().VisrepPreview
+        assert_true(preview_ns ~= nil, "VisrepPreview namespace should exist after running visrep")
+        assert_eq(
+            vim.api.nvim_buf_get_extmarks(0, preview_ns, 0, -1, {}),
+            {},
+            "run should clear preview extmarks when getchar is interrupted"
+        )
+        assert_eq(
+            vim.api.nvim_get_option_value("conceallevel", { win = 0 }),
+            0,
+            "run should restore conceallevel after a keyboard interrupt"
+        )
+        assert_eq(
+            vim.api.nvim_get_option_value("concealcursor", { win = 0 }),
+            "",
+            "run should restore concealcursor after a keyboard interrupt"
+        )
+        assert_eq(visrep._visrep_session, nil, "run should clear the active session after a keyboard interrupt")
+        assert_eq(
+            vim.api.nvim_buf_get_lines(0, 0, -1, false),
+            { "vim.g colors_name vim.g" },
+            "run should leave the buffer unchanged after a keyboard interrupt"
+        )
+    end)
+end
+
 local function test_run_replaces_whole_words_by_default()
     local visrep = fresh_visrep()
 
@@ -371,6 +457,8 @@ local function run_all()
     test_choose_separator_skips_pattern_and_replacement_bytes()
     test_build_preview_marks_use_inline_text_and_conceal()
     test_preview_conceal_state_restores_window_options()
+    test_build_prompt_text_clamps_to_screen_width_and_keeps_typed_suffix()
+    test_run_keyboard_interrupt_cleans_preview_state()
     test_run_replaces_whole_words_by_default()
     test_run_tab_toggles_to_anywhere_mode()
     test_run_replaces_utf8_selections_without_byte_artifacts()
