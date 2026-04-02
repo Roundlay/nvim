@@ -1,0 +1,16 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Implement the first tmux-native safe paste slice.
+
+The user backed away from a universal invisible clipboard bridge because it would require too many adapters and too much per-surface management. The chosen thin slice is a tmux-first paste path: prefix+p reads the Windows clipboard, normalizes CRLF/CR to LF, loads a named tmux buffer, and pastes with tmux paste-buffer -p -r so bracketed paste is used when the target application requests it.
+
+Implementation details:
+- Added bin/tmux-paste-windows-clipboard with three modes: paste, read, normalize.
+- Prefer win32yank.exe -o --lf when available because it already gives UTF-8 text with LF newlines.
+- Fall back to powershell.exe Get-Clipboard -Raw with UTF-8 stdout and explicit CRLF/CR normalization.
+- Added focused tests that verify newline normalization while preserving tabs and spaces.
+- Updated /home/christopher/.tmux.conf outside the repo to bind prefix+p to the helper script and reloaded tmux so the binding is live.
+
+Open edges deliberately left out of this slice:
+- No attempt to unify copy yet.
+- No attempt to fix raw Ctrl-Shift-V globally outside tmux.
+- No plain WSL solution yet; this is intentionally tmux-first.
