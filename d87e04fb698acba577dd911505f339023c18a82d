@@ -1,0 +1,11 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Two separate failure modes showed up under very long interactive replacements. First, the prompt path appended the raw replacement text to nvim_echo on every keystroke, so once the string grew large enough the command area effectively stopped being a usable status surface. That is now width-capped against the current screen columns, with the selected literal truncated from the head and the typed replacement truncated from the tail so the newest characters stay visible.
+
+Second, the interactive loop called getchar() directly. If Neovim raised a keyboard interrupt while preview extmarks and temporary conceal were active, the exception escaped before any teardown ran, leaving concealed preview text stranded in the buffer until the app was restarted. The session now funnels input-loop execution through a single abort path that clears the namespace, restores conceallevel/concealcursor, returns the cursor, and drops the active session before treating Keyboard interrupt as a cancel.
+
+Validation:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/lua/scripts/visrep_spec.lua')" -c 'qall!'
+- git diff --check -- lua/scripts/visrep.lua lua/scripts/visrep_spec.lua TODOS.md
+
+Open edge:
+- prompt truncation is column-budgeted for plain text only; it does not try to be clever about preserving both the literal and replacement equally under extremely narrow widths.
