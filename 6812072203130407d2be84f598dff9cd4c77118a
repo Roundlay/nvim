@@ -1,0 +1,11 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+The local lexical classifier improved Wrappin's inheritance policy, but the first pass still allowed a particularly bad comment case: selecting code directly under descriptive comment headers could sometimes inherit `--` because declaration/control rows like `local function ...` and `if ... then` still looked continuation-like enough to clear the score threshold. This follow-up closes that hole in two ways. First, the upward scan now refuses to tunnel through BLOCK_TEXT rows unless they themselves look like safe continuation text. Second, comment inheritance has explicit hard guards for declaration/control-shaped first rows and immediate following rows.
+
+This keeps the desirable behavior for prose/comment continuations and multi-line list continuations, but it biases even harder toward plain wrapping whenever Lua/C-like structure is nearby. The added regression coverage uses both the user's partial-function selection and whole-function selection examples so future tweaks cannot silently reintroduce comment bleed through code barriers.
+
+Validation:
+- headless Wrappin spec passed
+- diff check for wrappin.lua, wrappin_spec.lua, and TODOS.md passed
+
+Open edge:
+- the guard set is still lexical. If a non-code prose line ever starts with a code-like keyword and really should inherit comment schema, we should add that concrete example and tune the signals, not broaden inheritance globally.
