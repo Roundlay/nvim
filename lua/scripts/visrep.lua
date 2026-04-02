@@ -9,6 +9,278 @@ local M = {}
 
 -- Scoped mode: <S-Tab> toggles manual scope selection.
 
+local function clamp_col(line, col)
+    local len = #line
+    if col < 0 then return 0 end
+    if col > len then return len end
+    return col
+end
+
+local function next_byte(line, col)
+    local char_idx = select(1, vim.str_utfindex(line, col))
+    local last_idx = select(1, vim.str_utfindex(line, #line))
+    if char_idx >= last_idx then
+        return #line
+    end
+    local nb = vim.str_byteindex(line, char_idx + 1)
+    if nb < 0 then nb = #line end
+    return nb
+end
+
+local function marks_to_range(bufnr, smark, emark)
+    if smark[1] == 0 or emark[1] == 0 then
+        return nil
+    end
+
+    local srow = smark[1] - 1
+    local scol = smark[2]
+    local erow = emark[1] - 1
+    local ecol = emark[2]
+    if srow > erow or (srow == erow and scol > ecol) then
+        srow, erow = erow, srow
+        scol, ecol = ecol, scol
+    end
+
+    local sline = vim.api.nvim_buf_get_lines(bufnr, srow, srow + 1, false)[1] or ""
+    local eline = vim.api.nvim_buf_get_lines(bufnr, erow, erow + 1, false)[1] or ""
+    scol = clamp_col(sline, scol)
+    ecol = clamp_col(eline, ecol)
+
+    return {
+        srow = srow,
+        scol = scol,
+        erow = erow,
+        ecol = next_byte(eline, ecol),
+    }
+end
+
+local function build_literal_core(text)
+    local core = {}
+    local chars = vim.fn.strchars(text)
+    for ci = 0, chars - 1 do
+        local ch = vim.fn.strcharpart(text, ci, 1)
+        local cp = vim.fn.char2nr(ch, 1)
+        if cp <= 0xFFFF then
+            core[#core + 1] = string.format("\\%%u%04X", cp)
+        else
+            core[#core + 1] = string.format("\\%%U%08X", cp)
+        end
+    end
+    return table.concat(core)
+end
+
+local function build_patterns(text)
+    local is_single_line = not text:find("\n", 1, true)
+    local literal_core = build_literal_core(text)
+    local pattern_any = "\\V" .. literal_core
+    local pattern_word = nil
+    local defaults_to_boundary = is_single_line and (text:match("^[%w_]+$") ~= nil)
+
+    if is_single_line then
+        local b_char = "[^0-9A-Za-z_]"
+        pattern_word = "\\m\\%(" .. "^\\|" .. b_char .. "\\)\\@<=" .. literal_core .. "\\%(" .. "$\\|" .. b_char .. "\\)\\@="
+    end
+
+    return {
+        is_single_line = is_single_line,
+        literal_core = literal_core,
+        pattern_any = pattern_any,
+        pattern_word = pattern_word,
+        defaults_to_boundary = defaults_to_boundary,
+    }
+end
+
+local function push_merged(list, col0, col1)
+    local n = #list
+    if n == 0 or col0 > list[n].col1 then
+        list[n + 1] = { col0 = col0, col1 = col1 }
+    elseif col1 > list[n].col1 then
+        list[n].col1 = col1
+    end
+end
+
+local function scan_regex_matches(bufnr, lnum, line, re, by_line, nav)
+    if not re then return end
+    local line_len = #line
+    if line_len == 0 then return end
+
+    local start = 0
+    local list = nil
+    while start <= line_len do
+        local s, e = re:match_line(bufnr, lnum, start)
+        if not s then break end
+
+        local abs_s = start + s
+        local abs_e = start + e
+        if abs_e < abs_s then
+            break
+        end
+
+        if abs_e == abs_s then
+            start = abs_e + 1
+        else
+            list = list or {}
+            push_merged(list, abs_s, abs_e)
+            nav[#nav + 1] = { lnum = lnum, col0 = abs_s, col1 = abs_e }
+            start = abs_e
+        end
+    end
+
+    if list then
+        by_line[lnum] = list
+    end
+end
+
+local function build_match_index(bufnr, lines, re_any, re_bnd)
+    local by_any = {}
+    local by_bnd = {}
+    local nav_any = {}
+    local nav_bnd = {}
+
+    if not re_any or not lines then
+        return by_any, by_bnd, nav_any, nav_bnd
+    end
+
+    for lnum = 0, #lines - 1 do
+        local line = lines[lnum + 1] or ""
+        scan_regex_matches(bufnr, lnum, line, re_any, by_any, nav_any)
+        if re_bnd then
+            scan_regex_matches(bufnr, lnum, line, re_bnd, by_bnd, nav_bnd)
+        end
+    end
+
+    if not re_bnd then
+        by_bnd = by_any
+        nav_bnd = nav_any
+    end
+
+    return by_any, by_bnd, nav_any, nav_bnd
+end
+
+local function match_in_scope(m, scope)
+    if not scope then return true end
+    local lnum = m.lnum
+    if scope.block then
+        if lnum < scope.srow or lnum > scope.erow then return false end
+        return m.col0 >= scope.scol and m.col1 <= scope.ecol
+    end
+    if lnum < scope.srow or lnum > scope.erow then return false end
+    if scope.srow == scope.erow then
+        return m.col0 >= scope.scol and m.col1 <= scope.ecol
+    end
+    if lnum == scope.srow then
+        return m.col0 >= scope.scol
+    end
+    if lnum == scope.erow then
+        return m.col1 <= scope.ecol
+    end
+    return true
+end
+
+local function filter_by_scope(by_line, nav, scope)
+    if not scope then return by_line, nav end
+
+    local scoped_by_line = {}
+    local scoped_nav = {}
+    for i = 1, #nav do
+        local m = nav[i]
+        if match_in_scope(m, scope) then
+            local list = scoped_by_line[m.lnum]
+            if not list then
+                list = {}
+                scoped_by_line[m.lnum] = list
+            end
+            list[#list + 1] = m
+            scoped_nav[#scoped_nav + 1] = m
+        end
+    end
+
+    return scoped_by_line, scoped_nav
+end
+
+local function build_replaced_line(line, matches, repl)
+    if not matches or #matches == 0 then return line end
+
+    local parts = {}
+    local prev_end = 0
+    for _, mm in ipairs(matches) do
+        if mm.col0 > prev_end then
+            parts[#parts + 1] = line:sub(prev_end + 1, mm.col0)
+        end
+        if repl ~= "" then
+            parts[#parts + 1] = repl
+        end
+        prev_end = mm.col1
+    end
+    parts[#parts + 1] = line:sub(prev_end + 1)
+    return table.concat(parts)
+end
+
+local function apply_replacements_by_line(bufnr, by_line, repl)
+    local line_nums = {}
+    for lnum, _ in pairs(by_line) do
+        line_nums[#line_nums + 1] = lnum
+    end
+    table.sort(line_nums)
+
+    for i = 1, #line_nums do
+        local lnum = line_nums[i]
+        local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ""
+        local new_line = build_replaced_line(line, by_line[lnum], repl)
+        if new_line ~= line then
+            vim.api.nvim_buf_set_lines(bufnr, lnum, lnum + 1, false, { new_line })
+        end
+    end
+end
+
+local function choose_separator(pattern, new_string)
+    local separators = { "/", "#", "%", "!", "@", "$", "^", "&", "*", "+", "=", "?", "|", "~" }
+    for _, s in ipairs(separators) do
+        if not pattern:find(s, 1, true) and not new_string:find(s, 1, true) then
+            return s
+        end
+    end
+    return nil
+end
+
+local function replace_selected_region(bufnr, sel, new_string)
+    local srow = sel.srow
+    local erow = sel.erow
+
+    local lines = vim.api.nvim_buf_get_lines(bufnr, srow, erow + 1, false)
+    if #lines == 0 then
+        return false
+    end
+
+    local first_line = lines[1]
+    local last_line = lines[#lines]
+    local start_col1 = sel.scol + 1
+    local end_col1 = sel.ecol_excl
+
+    local max_end_col = (erow == srow) and #first_line or #last_line
+    if end_col1 > max_end_col then
+        end_col1 = max_end_col
+    end
+
+    local prefix = first_line:sub(1, start_col1 - 1)
+    local suffix = last_line:sub(end_col1 + 1)
+    local rep_lines = vim.split(new_string, "\n", true)
+
+    local new_lines
+    if #rep_lines <= 1 then
+        new_lines = { prefix .. new_string .. suffix }
+    else
+        new_lines = { prefix .. rep_lines[1] }
+        for i = 2, #rep_lines - 1 do
+            new_lines[#new_lines + 1] = rep_lines[i]
+        end
+        new_lines[#new_lines + 1] = rep_lines[#rep_lines] .. suffix
+    end
+
+    vim.api.nvim_buf_set_lines(bufnr, srow, erow + 1, false, new_lines)
+    return true
+end
+
 local function run()
     local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line (1-based), col (0-based bytes)}
     local bufnr = vim.api.nvim_get_current_buf()
@@ -34,49 +306,10 @@ local function run()
     local start_line = vim.api.nvim_buf_get_lines(bufnr, srow, srow + 1, false)[1] or ''
     local end_line   = vim.api.nvim_buf_get_lines(bufnr, erow, erow + 1, false)[1] or ''
 
-    local function clamp_col(line, col)
-        local len = #line
-        if col < 0 then return 0 end
-        if col > len then return len end
-        return col
-    end
     scol = clamp_col(start_line, scol)
     ecol = clamp_col(end_line, ecol)
 
-    -- Convert end column (byte start of last char) to an exclusive byte index.
-    local function next_byte(line, col)
-        local char_idx = select(1, vim.str_utfindex(line, col))
-        local last_idx = select(1, vim.str_utfindex(line, #line))
-        if char_idx >= last_idx then
-            return #line
-        end
-        local nb = vim.str_byteindex(line, char_idx + 1)
-        if nb < 0 then nb = #line end
-        return nb
-    end
     local end_excl = next_byte(end_line, ecol)
-
-    local function marks_to_range(bufnr, smark, emark)
-        if smark[1] == 0 or emark[1] == 0 then
-            return nil
-        end
-        local srow = smark[1] - 1
-        local scol = smark[2]
-        local erow = emark[1] - 1
-        local ecol = emark[2]
-        if srow > erow or (srow == erow and scol > ecol) then
-            srow, erow = erow, srow
-            scol, ecol = ecol, scol
-        end
-
-        local sline = vim.api.nvim_buf_get_lines(bufnr, srow, srow + 1, false)[1] or ''
-        local eline = vim.api.nvim_buf_get_lines(bufnr, erow, erow + 1, false)[1] or ''
-        scol = clamp_col(sline, scol)
-        ecol = clamp_col(eline, ecol)
-        local ecol_excl = next_byte(eline, ecol)
-
-        return { srow = srow, scol = scol, erow = erow, ecol = ecol_excl }
-    end
 
     local selection_lines = vim.api.nvim_buf_get_text(bufnr, srow, scol, erow, end_excl, {})
     local pattern = table.concat(selection_lines, '\n')
@@ -86,100 +319,14 @@ local function run()
     -- Interactive input + preview (single-line selections only). For multi-line
     -- selections we fall back to a simple input prompt later.
     
-    -- Decide whether to enforce word boundaries.
-    local is_single_line = not pattern:find('\n', 1, true)
-    -- Default to boundary mode only if it looks like a standard keyword.
-    local defaults_to_boundary = is_single_line and (pattern:match('^[%w_]+$') ~= nil)
-    
-    -- Build literal core as sequence of codepoint escapes for Vim regex.
-    local function build_literal_core(text)
-        local core = {}
-        local chars = vim.fn.strchars(text)
-        for ci = 0, chars - 1 do
-            local ch = vim.fn.strcharpart(text, ci, 1)
-            local cp = vim.fn.char2nr(ch, 1) -- UTF-8 codepoint
-            if cp <= 0xFFFF then
-                core[#core + 1] = string.format('\\%%u%04X', cp)
-            else
-                core[#core + 1] = string.format('\\%%U%08X', cp)
-            end
-        end
-        return table.concat(core)
-    end
-    local literal_core = build_literal_core(pattern)
-    
-    local pattern_any   = '\\V' .. literal_core
-    
-    -- Construct boundary pattern manually to support symbols (e.g. "foo-bar").
-    -- Logic: (BOL or non-word) + literal + (EOL or non-word).
-    local pattern_word = nil
-    if is_single_line then
-        local b_char = '[^0-9A-Za-z_]'
-        pattern_word = '\\m\\%(' .. '^\\|' .. b_char .. '\\)\\@<=' .. literal_core .. '\\%(' .. '$\\|' .. b_char .. '\\)\\@='
-    end
+    local patterns = build_patterns(pattern)
+    local is_single_line = patterns.is_single_line
+    local pattern_any = patterns.pattern_any
+    local pattern_word = patterns.pattern_word
     
     -- Interactive preview: highlight matches and overlay the replacement as
     -- you type. Toggle boundary/anywhere with <Tab>, apply on <Enter>, cancel on <Esc>.
-    local mode = (defaults_to_boundary and 'boundary') or 'anywhere'
-    
-    local function push_merged(list, col0, col1)
-        local n = #list
-        if n == 0 or col0 > list[n].col1 then
-            list[n + 1] = { col0 = col0, col1 = col1 }
-        else
-            if col1 > list[n].col1 then list[n].col1 = col1 end
-        end
-    end
-    
-    local function scan_regex_matches(bufnr, lnum, line, re, by_line, nav)
-        if not re then return end
-        local line_len = #line
-        if line_len == 0 then return end
-        local start = 0
-        local list = nil
-        while start <= line_len do
-            local s, e = re:match_line(bufnr, lnum, start)
-            if not s then break end
-            local abs_s = start + s
-            local abs_e = start + e
-            if abs_e < abs_s then
-                break
-            end
-            if abs_e == abs_s then
-                start = abs_e + 1
-            else
-                list = list or {}
-                push_merged(list, abs_s, abs_e)
-                nav[#nav + 1] = { lnum = lnum, col0 = abs_s, col1 = abs_e }
-                start = abs_e
-            end
-        end
-        if list then
-            by_line[lnum] = list
-        end
-    end
-
-    local function build_match_index(bufnr, lines, re_any, re_bnd)
-        local by_any = {}
-        local by_bnd = {}
-        local nav_any = {}
-        local nav_bnd = {}
-        if not re_any or not lines then
-            return by_any, by_bnd, nav_any, nav_bnd
-        end
-        for lnum = 0, #lines - 1 do
-            local line = lines[lnum + 1] or ''
-            scan_regex_matches(bufnr, lnum, line, re_any, by_any, nav_any)
-            if re_bnd then
-                scan_regex_matches(bufnr, lnum, line, re_bnd, by_bnd, nav_bnd)
-            end
-        end
-        if not re_bnd then
-            by_bnd = by_any
-            nav_bnd = nav_any
-        end
-        return by_any, by_bnd, nav_any, nav_bnd
-    end
+    local mode = (patterns.defaults_to_boundary and 'boundary') or 'anywhere'
 
     local ns = vim.api.nvim_create_namespace('VisrepPreview')
     local function clear_ns(bufnr)
@@ -214,45 +361,6 @@ local function run()
         pcall(vim.api.nvim_feedkeys, esc, 'n', false)
         pcall(vim.cmd, 'stopinsert')
         pcall(vim.cmd, 'normal! \\<Esc>')
-    end
-
-    local function match_in_scope(m, scope)
-        if not scope then return true end
-        local lnum = m.lnum
-        if scope.block then
-            if lnum < scope.srow or lnum > scope.erow then return false end
-            return m.col0 >= scope.scol and m.col1 <= scope.ecol
-        end
-        if lnum < scope.srow or lnum > scope.erow then return false end
-        if scope.srow == scope.erow then
-            return m.col0 >= scope.scol and m.col1 <= scope.ecol
-        end
-        if lnum == scope.srow then
-            return m.col0 >= scope.scol
-        end
-        if lnum == scope.erow then
-            return m.col1 <= scope.ecol
-        end
-        return true
-    end
-
-    local function filter_by_scope(by_line, nav, scope)
-        if not scope then return by_line, nav end
-        local scoped_by_line = {}
-        local scoped_nav = {}
-        for i = 1, #nav do
-            local m = nav[i]
-            if match_in_scope(m, scope) then
-                local list = scoped_by_line[m.lnum]
-                if not list then
-                    list = {}
-                    scoped_by_line[m.lnum] = list
-                end
-                list[#list + 1] = m
-                scoped_nav[#scoped_nav + 1] = m
-            end
-        end
-        return scoped_by_line, scoped_nav
     end
 
     local function render_scope_dim(bufnr, scope)
@@ -523,40 +631,6 @@ local function run()
         update_prompt(repl)
     end
 
-    local function build_replaced_line(line, matches, repl)
-        if not matches or #matches == 0 then return line end
-        local parts = {}
-        local prev_end = 0
-        for _, mm in ipairs(matches) do
-            if mm.col0 > prev_end then
-                parts[#parts + 1] = line:sub(prev_end + 1, mm.col0)
-            end
-            if repl ~= '' then
-                parts[#parts + 1] = repl
-            end
-            prev_end = mm.col1
-        end
-        parts[#parts + 1] = line:sub(prev_end + 1)
-        return table.concat(parts)
-    end
-
-    local function apply_replacements_by_line(bufnr, by_line, repl)
-        local line_nums = {}
-        for lnum, _ in pairs(by_line) do
-            line_nums[#line_nums + 1] = lnum
-        end
-        table.sort(line_nums)
-
-        for i = 1, #line_nums do
-            local lnum = line_nums[i]
-            local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
-            local new_line = build_replaced_line(line, by_line[lnum], repl)
-            if new_line ~= line then
-                vim.api.nvim_buf_set_lines(bufnr, lnum, lnum + 1, false, { new_line })
-            end
-        end
-    end
-
     local function finalize()
         force_normal()
         if is_single_line then
@@ -578,14 +652,7 @@ local function run()
         end
 
         -- Pick a separator that is not in pattern or new_string
-        local separators = { '/', '#', '%', '!', '@', '$', '^', '&', '*', '+', '=', '?', '|', '~' }
-        local sep = nil
-        for _, s in ipairs(separators) do
-            if not pattern:find(s, 1, true) and not new_string:find(s, 1, true) then
-                sep = s
-                break
-            end
-        end
+        local sep = choose_separator(pattern, new_string)
         if not sep then
             print('Visrep: could not find a suitable separator.')
             force_normal()
@@ -607,58 +674,13 @@ local function run()
         local after_tick = vim.api.nvim_buf_get_changedtick(bufnr)
         if after_tick == before_tick then
             -- No global matches: replace the originally selected region only.
-            local srow = sel.srow
-            local erow = sel.erow
-
-            local lines = vim.api.nvim_buf_get_lines(bufnr, srow, erow + 1, false)
-            if #lines == 0 then
+            if not replace_selected_region(bufnr, sel, new_string) then
                 force_normal()
                 vim.api.nvim_win_set_cursor(0, cursor_pos)
                 session.active = false
                 M._visrep_session = nil
                 return
             end
-
-            local first_line = lines[1]
-            local last_line  = lines[#lines]
-
-            local start_col1 = sel.scol + 1          -- 1-based inclusive
-            local end_col1   = sel.ecol_excl         -- 1-based inclusive (end_excl0 == end_incl1)
-
-            -- Clamp end column for safety
-            if erow == srow then
-                if end_col1 > #first_line then end_col1 = #first_line end
-            else
-                if end_col1 > #last_line then end_col1 = #last_line end
-            end
-
-            local prefix = first_line:sub(1, start_col1 - 1)
-            local suffix = last_line:sub(end_col1 + 1)
-
-            local rep_lines = vim.split(new_string, "\n", true)
-
-            local new_lines
-            if srow == erow then
-                if #rep_lines <= 1 then
-                    new_lines = { prefix .. new_string .. suffix }
-                else
-                    new_lines = {}
-                    new_lines[1] = prefix .. rep_lines[1]
-                    for i = 2, #rep_lines - 1 do new_lines[#new_lines + 1] = rep_lines[i] end
-                    new_lines[#new_lines + 1] = rep_lines[#rep_lines] .. suffix
-                end
-            else
-                if #rep_lines <= 1 then
-                    new_lines = { prefix .. new_string .. suffix }
-                else
-                    new_lines = {}
-                    new_lines[1] = prefix .. rep_lines[1]
-                    for i = 2, #rep_lines - 1 do new_lines[#new_lines + 1] = rep_lines[i] end
-                    new_lines[#new_lines + 1] = rep_lines[#rep_lines] .. suffix
-                end
-            end
-
-            vim.api.nvim_buf_set_lines(bufnr, srow, erow + 1, false, new_lines)
         end
 
         -- Restore the cursor position
@@ -792,5 +814,26 @@ end
 function M.run()
     return run()
 end
+
+function M._reset_for_tests()
+    M._visrep_session = nil
+end
+
+M._test = {
+    clamp_col = clamp_col,
+    next_byte = next_byte,
+    marks_to_range = marks_to_range,
+    build_literal_core = build_literal_core,
+    build_patterns = build_patterns,
+    push_merged = push_merged,
+    scan_regex_matches = scan_regex_matches,
+    build_match_index = build_match_index,
+    match_in_scope = match_in_scope,
+    filter_by_scope = filter_by_scope,
+    build_replaced_line = build_replaced_line,
+    apply_replacements_by_line = apply_replacements_by_line,
+    choose_separator = choose_separator,
+    replace_selected_region = replace_selected_region,
+}
 
 return M
