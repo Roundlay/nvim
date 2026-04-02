@@ -1,0 +1,11 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+The upward context scan in Wrappin is still useful, but it was too permissive: if the first selected row was plain text and the row above was a comment/list marker, Wrappin would inherit that schema unconditionally. In real code this meant a selected branch line below `// BRANCH` could be reflowed as repeated `//` comment lines. The fix is intentionally narrow. We keep inherited schema for genuine continuation rows, but refuse inheritance when the first selected row looks code-like (closing delimiters, braces/semicolons, or common operator sequences).
+
+That keeps the existing list-continuation feature alive for prose while blocking the most damaging misclassification path. The adjacent spec uses the reported C-like branch example shape so future refactors cannot regress back into commenting out code just because a nearby marker exists.
+
+Validation:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/lua/scripts/wrappin_spec.lua')" -c 'qall!'
+- git diff --check -- lua/scripts/wrappin.lua lua/scripts/wrappin_spec.lua TODOS.md
+
+Open edge:
+- the continuation guard is heuristic, not filetype-aware parsing. If a future real-world prose case is falsely classified as code, we should refine the signal set with examples rather than broadening inheritance again.
