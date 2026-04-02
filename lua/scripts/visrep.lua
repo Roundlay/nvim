@@ -281,7 +281,22 @@ local function replace_selected_region(bufnr, sel, new_string)
     return true
 end
 
-local function build_preview_marks(matches, repl)
+local function get_preview_hl(lnum, col0)
+    local ok, syn_id = pcall(vim.fn.synID, lnum + 1, col0 + 1, 1)
+    if not ok or not syn_id or syn_id == 0 then
+        return "VisrepText"
+    end
+
+    local trans_id = vim.fn.synIDtrans(syn_id)
+    local name = vim.fn.synIDattr(trans_id, "name")
+    if name and name ~= "" then
+        return { "VisrepText", name }
+    end
+
+    return "VisrepText"
+end
+
+local function build_preview_marks(lnum, matches, repl)
     local marks = {}
     local use_inline = repl ~= ""
     for i = 1, #matches do
@@ -292,7 +307,7 @@ local function build_preview_marks(matches, repl)
             priority = 210,
         }
         if use_inline then
-            opts.virt_text = { { repl, "VisrepText" } }
+            opts.virt_text = { { repl, get_preview_hl(lnum, mm.col0) } }
             opts.virt_text_pos = "inline"
         end
         marks[i] = { col = mm.col0, opts = opts }
@@ -579,7 +594,7 @@ local function run()
         if next(active_by_line) then
             enable_preview_conceal(winid, session)
             for lnum, list in pairs(active_by_line) do
-                local marks = build_preview_marks(list, repl_txt)
+                local marks = build_preview_marks(lnum, list, repl_txt)
                 for i = 1, #marks do
                     local mark = marks[i]
                     vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, mark.col, mark.opts)
@@ -823,6 +838,7 @@ M._test = {
     apply_replacements_by_line = apply_replacements_by_line,
     choose_separator = choose_separator,
     replace_selected_region = replace_selected_region,
+    get_preview_hl = get_preview_hl,
     build_preview_marks = build_preview_marks,
     enable_preview_conceal = enable_preview_conceal,
     restore_preview_conceal = restore_preview_conceal,

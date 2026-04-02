@@ -32,6 +32,24 @@ local function with_patched_fn(name, replacement, fn)
     end
 end
 
+local function with_patched_fns(patches, fn)
+    local originals = {}
+    for name, replacement in pairs(patches) do
+        originals[name] = vim.fn[name]
+        vim.fn[name] = replacement
+    end
+
+    local ok, err = xpcall(fn, debug.traceback)
+
+    for name, original in pairs(originals) do
+        vim.fn[name] = original
+    end
+
+    if not ok then
+        error(err)
+    end
+end
+
 local function with_suppressed_echo(fn)
     local original = vim.api.nvim_echo
     vim.api.nvim_echo = function() end
@@ -202,19 +220,33 @@ end
 
 local function test_build_preview_marks_use_inline_text_and_conceal()
     local visrep = fresh_visrep()
-    local marks = visrep._test.build_preview_marks({
-        { col0 = 2, col1 = 5 },
-        { col0 = 8, col1 = 11 },
-    }, "LONG")
+    with_patched_fns({
+        synID = function() return 17 end,
+        synIDtrans = function(id) return id end,
+        synIDattr = function(id, what)
+            assert_eq(id, 17, "build_preview_marks should pass through the syntax id")
+            assert_eq(what, "name", "build_preview_marks should request the syntax group name")
+            return "Identifier"
+        end,
+    }, function()
+        local marks = visrep._test.build_preview_marks(3, {
+            { col0 = 2, col1 = 5 },
+            { col0 = 8, col1 = 11 },
+        }, "LONG")
 
-    assert_eq(#marks, 2, "build_preview_marks should emit one extmark per match")
-    assert_eq(marks[1].col, 2, "build_preview_marks should anchor marks at the match start")
-    assert_eq(marks[1].opts.end_col, 5, "build_preview_marks should conceal the matched byte range")
-    assert_eq(marks[1].opts.conceal, "", "build_preview_marks should hide the underlying match bytes")
-    assert_eq(marks[1].opts.virt_text_pos, "inline", "build_preview_marks should use inline virtual text so surrounding text shifts")
-    assert_eq(marks[1].opts.virt_text, { { "LONG", "VisrepText" } }, "build_preview_marks should highlight the replacement text")
+        assert_eq(#marks, 2, "build_preview_marks should emit one extmark per match")
+        assert_eq(marks[1].col, 2, "build_preview_marks should anchor marks at the match start")
+        assert_eq(marks[1].opts.end_col, 5, "build_preview_marks should conceal the matched byte range")
+        assert_eq(marks[1].opts.conceal, "", "build_preview_marks should hide the underlying match bytes")
+        assert_eq(marks[1].opts.virt_text_pos, "inline", "build_preview_marks should use inline virtual text so surrounding text shifts")
+        assert_eq(
+            marks[1].opts.virt_text,
+            { { "LONG", { "VisrepText", "Identifier" } } },
+            "build_preview_marks should stack the preview highlight with the local syntax group"
+        )
+    end)
 
-    local delete_marks = visrep._test.build_preview_marks({
+    local delete_marks = visrep._test.build_preview_marks(0, {
         { col0 = 1, col1 = 3 },
     }, "")
     assert_eq(delete_marks[1].opts.virt_text, nil, "build_preview_marks should omit inline text for deletion previews")
