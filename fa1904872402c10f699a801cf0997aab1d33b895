@@ -1,0 +1,14 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+The old Visrep preview used overlay virtual text. That works when the replacement is no wider than the matched text, but once the preview grows wider the downstream text stays in its original layout and gets painted over. The fix here is a rendering-model change, not more overlay bookkeeping: preview marks now conceal the matched buffer range and insert the replacement with inline virtual text so the surrounding text reflows around the preview.
+
+Implementation details:
+- add build_preview_marks() to emit per-match extmarks with end_col, conceal="", and virt_text_pos="inline"
+- temporarily force conceallevel=2 and concealcursor=nv in the active window while preview extmarks are live, then restore the original window options on scope-selection defer, apply, cancel, and finalize
+- remove the old split draw_line_full/draw_line_matches overlay logic; wrapped and non-wrapped lines now use the same per-match inline preview path
+
+Validation:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/lua/scripts/visrep_spec.lua')" -c 'qall!'
+- git diff --check -- lua/scripts/visrep.lua lua/scripts/visrep_spec.lua TODOS.md
+
+Residual risk:
+- This is logically covered and option restore is tested, but it still deserves a real interactive smoke test in a wrapped buffer because headless specs cannot assert what the screen actually looks like.
