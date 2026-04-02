@@ -1,0 +1,10 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Rename the tmux paste helper to the shorter canonical name wslpaste.
+
+The user preferred a tighter name, so the helper became bin/wslpaste and the focused spec became tests/wslpaste-spec.sh. The tmux binding in /home/christopher/.tmux.conf was updated and reloaded to point at the renamed helper.
+
+One repo hygiene wrinkle came from the rename flow: Git initially saw the new paths as adds while the old names remained tracked. Rather than amend, I followed up with a second commit that removes the superseded names so the repository now contains only the canonical paths.
+
+Validation after the rename:
+- tests/wslpaste-spec.sh passes
+- tmux list-keys shows prefix+p running /mnt/c/Users/Christopher/AppData/Local/nvim/bin/wslpaste paste
