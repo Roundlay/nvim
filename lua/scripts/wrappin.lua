@@ -241,6 +241,57 @@ local function derive_inherited_schema(before_lines)
     return nil
 end
 
+local function looks_like_code_text(text)
+    if text == nil or text == "" then
+        return false
+    end
+
+    if text:match("^%s*[%]%}%)]") ~= nil then
+        return true
+    end
+
+    if text:find("[{};]") ~= nil then
+        return true
+    end
+
+    local code_markers = {
+        "->",
+        "::",
+        "==",
+        "!=",
+        "<=",
+        ">=",
+        "&&",
+        "||",
+        "+=",
+        "-=",
+        "*=",
+        "/=",
+        "%=",
+        " = ",
+    }
+
+    for i = 1, #code_markers do
+        if text:find(code_markers[i], 1, true) ~= nil then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function should_inherit_schema(row, inherited_schema)
+    if inherited_schema == nil or row.kind ~= BLOCK_TEXT then
+        return false
+    end
+
+    if looks_like_code_text(row.body_text) then
+        return false
+    end
+
+    return true
+end
+
 local function segment_selection(lines, inherited_schema)
     local segments = {}
     local current_block
@@ -258,7 +309,7 @@ local function segment_selection(lines, inherited_schema)
             append_words(current_block.words, row.body_text)
         else
             if current_block == nil then
-                if index == 1 and inherited_schema ~= nil then
+                if index == 1 and should_inherit_schema(row, inherited_schema) then
                     current_block = build_block(
                         inherited_schema.kind,
                         inherited_schema.first_prefix,

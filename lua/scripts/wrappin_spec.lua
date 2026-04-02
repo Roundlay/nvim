@@ -133,6 +133,31 @@ local function test_inherits_list_schema_from_context()
     end)
 end
 
+local function test_does_not_inherit_comment_schema_onto_code()
+    with_buffer({
+        "                // BRANCH",
+        "                } else if (demand->entries[j].priority_class == key_entry.priority_class && demand->entries[j].priority_sort_key > key_entry.priority_sort_key) {",
+        "                    swap = 1;",
+        "                }",
+    }, function()
+        wrappin.run({
+            start_line = 1,
+            end_line = 1,
+            max_width = 72,
+        })
+
+        assert_lines({
+            "                // BRANCH",
+            "                } else if (demand->entries[j].priority_class ==",
+            "                key_entry.priority_class &&",
+            "                demand->entries[j].priority_sort_key >",
+            "                key_entry.priority_sort_key) {",
+            "                    swap = 1;",
+            "                }",
+        }, "wrappin.run should not borrow a surrounding comment schema for selected code")
+    end)
+end
+
 local function test_preserves_markdown_heading_prefix()
     with_buffer({
         "### alpha beta gamma delta epsilon",
@@ -216,6 +241,7 @@ local function run_all()
     test_reflows_bullet_with_hanging_indent()
     test_keeps_numbered_items_separate()
     test_inherits_list_schema_from_context()
+    test_does_not_inherit_comment_schema_onto_code()
     test_preserves_markdown_heading_prefix()
     test_invalidates_exact_restore_after_edits()
     test_visual_selection_works_on_first_invocation()
