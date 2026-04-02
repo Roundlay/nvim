@@ -200,6 +200,46 @@ local function test_choose_separator_skips_pattern_and_replacement_bytes()
     )
 end
 
+local function test_build_preview_marks_use_inline_text_and_conceal()
+    local visrep = fresh_visrep()
+    local marks = visrep._test.build_preview_marks({
+        { col0 = 2, col1 = 5 },
+        { col0 = 8, col1 = 11 },
+    }, "LONG")
+
+    assert_eq(#marks, 2, "build_preview_marks should emit one extmark per match")
+    assert_eq(marks[1].col, 2, "build_preview_marks should anchor marks at the match start")
+    assert_eq(marks[1].opts.end_col, 5, "build_preview_marks should conceal the matched byte range")
+    assert_eq(marks[1].opts.conceal, "", "build_preview_marks should hide the underlying match bytes")
+    assert_eq(marks[1].opts.virt_text_pos, "inline", "build_preview_marks should use inline virtual text so surrounding text shifts")
+    assert_eq(marks[1].opts.virt_text, { { "LONG", "VisrepText" } }, "build_preview_marks should highlight the replacement text")
+
+    local delete_marks = visrep._test.build_preview_marks({
+        { col0 = 1, col1 = 3 },
+    }, "")
+    assert_eq(delete_marks[1].opts.virt_text, nil, "build_preview_marks should omit inline text for deletion previews")
+end
+
+local function test_preview_conceal_state_restores_window_options()
+    local visrep = fresh_visrep()
+
+    with_buffer({ "alpha" }, function()
+        vim.api.nvim_set_option_value("conceallevel", 0, { win = 0 })
+        vim.api.nvim_set_option_value("concealcursor", "", { win = 0 })
+
+        local session = {}
+        visrep._test.enable_preview_conceal(0, session)
+
+        assert_eq(vim.api.nvim_get_option_value("conceallevel", { win = 0 }), 2, "enable_preview_conceal should force conceallevel 2 during preview")
+        assert_eq(vim.api.nvim_get_option_value("concealcursor", { win = 0 }), "nv", "enable_preview_conceal should show conceal in normal/visual modes")
+
+        visrep._test.restore_preview_conceal(session)
+
+        assert_eq(vim.api.nvim_get_option_value("conceallevel", { win = 0 }), 0, "restore_preview_conceal should restore the prior conceallevel")
+        assert_eq(vim.api.nvim_get_option_value("concealcursor", { win = 0 }), "", "restore_preview_conceal should restore the prior concealcursor")
+    end)
+end
+
 local function test_run_replaces_whole_words_by_default()
     local visrep = fresh_visrep()
 
@@ -297,6 +337,8 @@ local function run_all()
     test_build_replaced_line_and_apply_replacements()
     test_replace_selected_region_handles_multiline_replacement()
     test_choose_separator_skips_pattern_and_replacement_bytes()
+    test_build_preview_marks_use_inline_text_and_conceal()
+    test_preview_conceal_state_restores_window_options()
     test_run_replaces_whole_words_by_default()
     test_run_tab_toggles_to_anywhere_mode()
     test_run_replaces_utf8_selections_without_byte_artifacts()

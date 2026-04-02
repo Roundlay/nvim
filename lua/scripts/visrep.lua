@@ -281,9 +281,59 @@ local function replace_selected_region(bufnr, sel, new_string)
     return true
 end
 
+local function build_preview_marks(matches, repl)
+    local marks = {}
+    local use_inline = repl ~= ""
+    for i = 1, #matches do
+        local mm = matches[i]
+        local opts = {
+            end_col = mm.col1,
+            conceal = "",
+            priority = 210,
+        }
+        if use_inline then
+            opts.virt_text = { { repl, "VisrepText" } }
+            opts.virt_text_pos = "inline"
+        end
+        marks[i] = { col = mm.col0, opts = opts }
+    end
+    return marks
+end
+
+local function enable_preview_conceal(winid, session)
+    if session.preview_conceal_on then
+        return
+    end
+
+    session.preview_conceal_on = true
+    session.preview_winid = winid
+    session.preview_restore_conceallevel = vim.api.nvim_get_option_value("conceallevel", { win = winid })
+    session.preview_restore_concealcursor = vim.api.nvim_get_option_value("concealcursor", { win = winid })
+    vim.api.nvim_set_option_value("conceallevel", 2, { win = winid })
+    vim.api.nvim_set_option_value("concealcursor", "nv", { win = winid })
+end
+
+local function restore_preview_conceal(session)
+    if not session.preview_conceal_on then
+        return
+    end
+
+    local winid = session.preview_winid
+    if winid and vim.api.nvim_win_is_valid(winid) then
+        vim.api.nvim_set_option_value("conceallevel", session.preview_restore_conceallevel or 0, { win = winid })
+        vim.api.nvim_set_option_value("concealcursor", session.preview_restore_concealcursor or "", { win = winid })
+    end
+
+    session.preview_conceal_on = false
+    session.preview_winid = nil
+    session.preview_restore_conceallevel = nil
+    session.preview_restore_concealcursor = nil
+end
+
 local function run()
     local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line (1-based), col (0-based bytes)}
     local bufnr = vim.api.nvim_get_current_buf()
+    local winid = vim.api.nvim_get_current_win()
 
     -- Visual selection bounds (byte-aware)
     local start_mark = vim.api.nvim_buf_get_mark(bufnr, '<') -- {line, col}
@@ -464,6 +514,7 @@ local function run()
 
     local function begin_scope_selection()
         clear_ns(bufnr)
+        restore_preview_conceal(session)
         vim.api.nvim_echo({{ "Visrep: select scope and press <Enter> (or <Esc> to cancel)", "ModeMsg" }}, false, {})
         vim.cmd('redraw')
 
@@ -524,85 +575,18 @@ local function run()
         end
 
         local repl_txt = repl or ''
-        local wrap_active = vim.wo.wrap
 
-        local function draw_line_full(lnum, line, matches)
-            -- Build a preview string for the whole line so downstream text shifts to
-            -- reflect the replacement width instead of being overdrawn.
-            local chunks = {}
-            local prev_end = 0
-            for _, mm in ipairs(matches) do
-                if mm.col0 > prev_end then
-                    local before = line:sub(prev_end + 1, mm.col0)
-                    if before ~= '' then
-                        chunks[#chunks + 1] = { before, nil }
-                    end
-                end
-
-                if repl_txt ~= '' then
-                    chunks[#chunks + 1] = { repl_txt, 'VisrepText' }
-                end
-
-                prev_end = mm.col1
-            end
-
-            local tail = line:sub(prev_end + 1)
-            if tail ~= '' then
-                chunks[#chunks + 1] = { tail, nil }
-            end
-
-            -- Pad to the original display width so any leftover characters are masked.
-            local preview_w = 0
-            for i = 1, #chunks do
-                preview_w = preview_w + vim.fn.strdisplaywidth(chunks[i][1])
-            end
-            local base_w = vim.fn.strdisplaywidth(line)
-            if preview_w < base_w then
-                chunks[#chunks + 1] = { string.rep(' ', base_w - preview_w), nil }
-            end
-
-            vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, 0, {
-                virt_text = chunks,
-                virt_text_pos = 'overlay',
-                priority = 210,
-            })
-        end
-
-        local function draw_line_matches(lnum, line, matches)
-            for _, mm in ipairs(matches) do
-                local orig = line:sub(mm.col0 + 1, mm.col1)
-                local orig_w = vim.fn.strdisplaywidth(orig)
-                local chunks = {}
-                local repl_w = 0
-                if repl_txt ~= '' then
-                    chunks[#chunks + 1] = { repl_txt, 'VisrepText' }
-                    repl_w = vim.fn.strdisplaywidth(repl_txt)
-                end
-                local pad = orig_w - repl_w
-                if pad > 0 then
-                    chunks[#chunks + 1] = { string.rep(' ', pad), nil }
-                elseif repl_txt == '' and orig_w > 0 then
-                    chunks[#chunks + 1] = { string.rep(' ', orig_w), nil }
-                end
-                if #chunks > 0 then
-                    vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, mm.col0, {
-                        virt_text = chunks,
-                        virt_text_pos = 'overlay',
-                        priority = 210,
-                    })
+        if next(active_by_line) then
+            enable_preview_conceal(winid, session)
+            for lnum, list in pairs(active_by_line) do
+                local marks = build_preview_marks(list, repl_txt)
+                for i = 1, #marks do
+                    local mark = marks[i]
+                    vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, mark.col, mark.opts)
                 end
             end
-        end
-
-        -- Draw per-line overlay for nowrap (accurate spacing). For wrapped lines,
-        -- fall back to per-match overlays so later wrap segments still preview.
-        for lnum, list in pairs(active_by_line) do
-            local line = (lines_cache and lines_cache[lnum + 1]) or vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
-            if wrap_active then
-                draw_line_matches(lnum, line, list)
-            else
-                draw_line_full(lnum, line, list)
-            end
+        else
+            restore_preview_conceal(session)
         end
 
         sel_is_valid = false
@@ -633,6 +617,7 @@ local function run()
 
     local function finalize()
         force_normal()
+        restore_preview_conceal(session)
         if is_single_line then
             if not nav_targets or #nav_targets == 0 then
                 force_normal()
@@ -716,10 +701,12 @@ local function run()
                         rerender(input)
                     elseif key == 13 or trans_num_l == '<cr>' then -- Enter
                         clear_ns(bufnr)
+                        restore_preview_conceal(session)
                         new_string = input
                         return "apply"
                     elseif key == 27 or trans_num_l == '<esc>' then -- Esc
                         clear_ns(bufnr)
+                        restore_preview_conceal(session)
                         vim.api.nvim_win_set_cursor(0, cursor_pos)
                         return "cancel"
                     elseif key == 8 or key == 127 or trans_num_l == '<bs>' or trans_num_l == '<c-h>' then -- Backspace
@@ -762,10 +749,12 @@ local function run()
                         rerender(input)
                     elseif tl == '<cr>' then
                         clear_ns(bufnr)
+                        restore_preview_conceal(session)
                         new_string = input
                         return "apply"
                     elseif tl == '<esc>' then
                         clear_ns(bufnr)
+                        restore_preview_conceal(session)
                         vim.api.nvim_win_set_cursor(0, cursor_pos)
                         return "cancel"
                     elseif tl == '<bs>' or tl == '<c-h>' then
@@ -834,6 +823,9 @@ M._test = {
     apply_replacements_by_line = apply_replacements_by_line,
     choose_separator = choose_separator,
     replace_selected_region = replace_selected_region,
+    build_preview_marks = build_preview_marks,
+    enable_preview_conceal = enable_preview_conceal,
+    restore_preview_conceal = restore_preview_conceal,
 }
 
 return M

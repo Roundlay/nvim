@@ -214,7 +214,7 @@ The ~3.5/5 hitching present even with `--clean -u NONE` is environmental (WSL2 d
 - [X] 2026-01-06 Add manual scoped selection (Shift-Tab) for Visrep with dimmed out-of-scope regions.
 - [X] 2026-01-11 Align preview matching with Vim regex and handle wrapped lines so dotted paths preview correctly.
 - [X] 2026-04-02 Add adjacent Visrep specs for regex building, scope filtering, replacement splicing, UTF-8 selections, and single-line/multi-line run flows.
-- [~] 2026-01-11 Preview switches to per-match overlays when `wrap` is enabled to avoid truncation on wrapped segments.
+- [X] 2026-04-02 Switch Visrep preview to inline virtual text plus temporary conceal so surrounding text shifts with longer replacements instead of being occluded.
 - [ ] ./lua/scripts/visrep.lua:12 Ensure the `[N/N]` navigator starts at the original match rather than the literal first.
 - [ ] ./lua/scripts/visrep.lua:13 Provide standard plugin configuration hooks for Visrep.
 - [ ] ./lua/scripts/visrep.lua:14 Add `vim.g.visrep_default_mode = 'boundary'|'anywhere'` to control the initial boundary mode.
