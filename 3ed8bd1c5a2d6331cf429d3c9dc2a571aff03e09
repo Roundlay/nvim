@@ -1,0 +1,8 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+Co-locate specs with their scripts before touching numberline.
+
+The user explicitly preferred specs to live beside the scripts they exercise instead of under a top-level tests directory. I moved wrappin_spec.lua next to lua/scripts/wrappin.lua and wslpaste-spec.sh next to bin/wslpaste, updated the clipboard TODO note to the current helper name, and removed the now-empty tests directory from active use.
+
+Validation:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/lua/scripts/wrappin_spec.lua')" -c 'qall!'
+- /mnt/c/Users/Christopher/AppData/Local/nvim/bin/wslpaste-spec.sh
