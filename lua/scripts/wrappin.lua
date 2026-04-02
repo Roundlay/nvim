@@ -137,12 +137,15 @@ local function build_text_profile(text)
         punctuation_count = 0,
         starts_with_closer = false,
         starts_with_word = false,
+        starts_with_code_keyword = false,
+        ends_with_clause_keyword = false,
         has_brace = false,
         has_semicolon = false,
         has_assignment = false,
         has_compare = false,
         has_logic = false,
         has_member_access = false,
+        has_call_parens = false,
     }
 
     if text == nil or text == "" then
@@ -156,6 +159,8 @@ local function build_text_profile(text)
     profile.punctuation_count = select(2, text:gsub("[{}%[%]%(%)%;,]", ""))
     profile.starts_with_closer = text:match("^%s*[%]%}%)]") ~= nil
     profile.starts_with_word = text:match("^%s*[\"'`%a_]") ~= nil
+    profile.starts_with_code_keyword = text:match("^%s*(local%s+function|local|function|if|elseif|else|for|while|repeat|until|return|end)%f[%W]") ~= nil
+    profile.ends_with_clause_keyword = text:match("%f[%w](then|do|end)%s*$") ~= nil
     profile.has_brace = text:find("[{}]") ~= nil
     profile.has_semicolon = text:find(";", 1, true) ~= nil
     profile.has_assignment = text:find(" = ", 1, true) ~= nil
@@ -173,6 +178,7 @@ local function build_text_profile(text)
     profile.has_member_access = text:find("->", 1, true) ~= nil
         or text:find("::", 1, true) ~= nil
         or text:match("[%w_%)%]]+%.%a[%w_]*") ~= nil
+    profile.has_call_parens = text:match("[%a_][%w_%.:]*%b()") ~= nil
 
     return profile
 end
@@ -291,7 +297,11 @@ local function flush_block(segments, block)
     end
 end
 
+local is_context_passthrough_row
+
 local function derive_inherited_schema(before_rows)
+    local required_prefix
+
     for i = #before_rows, 1, -1 do
         local row = before_rows[i]
 
@@ -299,7 +309,21 @@ local function derive_inherited_schema(before_rows)
             return nil
         end
 
-        if row.kind ~= BLOCK_TEXT then
+        if row.kind == BLOCK_TEXT then
+            if required_prefix == nil then
+                required_prefix = row.first_prefix
+            elseif row.first_prefix ~= required_prefix then
+                return nil
+            end
+
+            if not is_context_passthrough_row(row) then
+                return nil
+            end
+        else
+            if required_prefix ~= nil and row.continuation_prefix ~= required_prefix then
+                return nil
+            end
+
             return {
                 kind = row.kind,
                 first_prefix = row.continuation_prefix,
@@ -314,6 +338,12 @@ end
 local function score_code_profile(profile)
     local score = 0
 
+    if profile.starts_with_code_keyword then
+        score = score + 4
+    end
+    if profile.ends_with_clause_keyword then
+        score = score + 3
+    end
     if profile.starts_with_closer then
         score = score + 4
     end
@@ -333,6 +363,9 @@ local function score_code_profile(profile)
         score = score + 3
     end
     if profile.has_logic then
+        score = score + 2
+    end
+    if profile.has_call_parens then
         score = score + 2
     end
     if profile.punctuation_count >= 3 then
@@ -358,12 +391,15 @@ local function score_continuation_profile(profile)
     end
 
     if not profile.starts_with_closer
+        and not profile.starts_with_code_keyword
+        and not profile.ends_with_clause_keyword
         and not profile.has_brace
         and not profile.has_semicolon
         and not profile.has_assignment
         and not profile.has_compare
         and not profile.has_logic
         and not profile.has_member_access
+        and not profile.has_call_parens
     then
         score = score + 3
     end
@@ -404,6 +440,17 @@ local function score_neighbor_row(next_row, inherited_schema)
     return continuation_score, code_score
 end
 
+is_context_passthrough_row = function(row)
+    if row == nil or row.kind ~= BLOCK_TEXT then
+        return false
+    end
+
+    local continuation_score = score_continuation_profile(row.text_profile)
+    local code_score = score_code_profile(row.text_profile)
+
+    return continuation_score >= code_score + 2
+end
+
 local function should_inherit_schema(row, inherited_schema, next_row)
     if inherited_schema == nil or row.kind ~= BLOCK_TEXT then
         return false
@@ -417,6 +464,17 @@ local function should_inherit_schema(row, inherited_schema, next_row)
     code_score = code_score + neighbor_code
 
     if inherited_schema.kind == BLOCK_COMMENT then
+        if profile.starts_with_code_keyword or profile.ends_with_clause_keyword or profile.has_call_parens then
+            return false
+        end
+
+        if next_row ~= nil and next_row.kind == BLOCK_TEXT then
+            local next_profile = next_row.text_profile
+            if next_profile.starts_with_code_keyword or next_profile.ends_with_clause_keyword then
+                return false
+            end
+        end
+
         return continuation_score >= 4 and continuation_score >= code_score + 2
     end
 

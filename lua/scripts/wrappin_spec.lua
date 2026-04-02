@@ -177,6 +177,68 @@ local function test_does_not_inherit_comment_schema_onto_code()
     end)
 end
 
+local function test_does_not_inherit_comment_schema_through_code_barrier()
+    with_buffer({
+        "-- WSL detection",
+        "-- TODO: Document this.",
+        "local function is_wsl()",
+        "    local proc_version = '/proc/version'",
+        "    if vim.fn.filereadable(proc_version) == 1 then",
+        "        local content = vim.fn.readfile(proc_version, '', 1)",
+        "        return content[1] and content[1]:lower():match('microsoft') ~= nil",
+        "    end",
+        "    return false",
+        "end",
+    }, function()
+        wrappin.run({
+            start_line = 3,
+            end_line = 4,
+            max_width = 60,
+        })
+
+        assert_lines({
+            "-- WSL detection",
+            "-- TODO: Document this.",
+            "local function is_wsl()",
+            "    local proc_version = '/proc/version' if",
+            "    vim.fn.filereadable(proc_version) == 1 then",
+            "        local content = vim.fn.readfile(proc_version, '', 1)",
+            "        return content[1] and content[1]:lower():match('microsoft') ~= nil",
+            "    end",
+            "    return false",
+            "end",
+        }, "wrappin.run should not tunnel through code rows to inherit older comment schema")
+    end)
+end
+
+local function test_does_not_inherit_comment_schema_for_entire_function()
+    with_buffer({
+        "-- WSL detection",
+        "-- TODO: Document this.",
+        "local function is_wsl()",
+        "    local proc_version = '/proc/version'",
+        "    if vim.fn.filereadable(proc_version) == 1 then",
+        "        local content = vim.fn.readfile(proc_version, '', 1)",
+        "        return content[1] and content[1]:lower():match('microsoft') ~= nil",
+        "    end",
+        "    return false",
+        "end",
+    }, function()
+        wrappin.run({
+            start_line = 2,
+            end_line = 9,
+            max_width = 60,
+        })
+
+        local actual = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        for i = 3, #actual do
+            if actual[i]:match("^%s*%-%-") then
+                error("wrappin.run should not comment out a selected function body")
+            end
+        end
+    end)
+end
+
 local function test_preserves_markdown_heading_prefix()
     with_buffer({
         "### alpha beta gamma delta epsilon",
@@ -262,6 +324,8 @@ local function run_all()
     test_inherits_list_schema_from_context()
     test_inherits_comment_schema_for_prose_continuation()
     test_does_not_inherit_comment_schema_onto_code()
+    test_does_not_inherit_comment_schema_through_code_barrier()
+    test_does_not_inherit_comment_schema_for_entire_function()
     test_preserves_markdown_heading_prefix()
     test_invalidates_exact_restore_after_edits()
     test_visual_selection_works_on_first_invocation()
