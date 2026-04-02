@@ -1,0 +1,12 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+This pass kept the correctness work from the in-progress rewrite, but replaced the slower warmed-cache formatter with a simpler split-cache layout: hot formatter tables are now normal_line_cache[width][num] and cursor_line_cache[width][num]. That removes the old per-number boolean subtable choice, avoids the warmed-line bookkeeping, and lets the render path collapse to one cache selection plus one fallback build.
+
+Common widths 1..5 are seeded eagerly because they cover the typical <= 99,999 line case. Wider widths still work via on-demand cache creation, and rare large line numbers still memoize lazily. The update path keeps the more important behavioral fixes from the rewrite: clear stale statuscolumn values on excluded/invalid windows, iterate buffer windows through nvim_list_wins(), and store cursorline backup state on the target window instead of leaking through vim.w/current-window state.
+
+Validation:
+- nvim --headless -u NONE -c "lua dofile('/mnt/c/Users/Christopher/AppData/Local/nvim/lua/scripts/numberline_spec.lua')" -c 'qall!'
+- git diff --check -- lua/scripts/numberline.lua lua/scripts/numberline_spec.lua TODOS.md
+- microbench (headless nvim, render_line loop): old 1.46ms, current 0.52ms, sink 18144000
+
+Open hypothesis:
+- The old popup/help/LspInfo corruption likely came from two causes together: writing cursorline state through vim.w against the current window, and leaving excluded windows with stale statuscolumn text. TODOs now tracks a manual retest instead of leaving the old ambiguous note in place.
