@@ -1,0 +1,4 @@
+[CODEX]019d4ac3-83cf-7a60-a9ee-83553cde94de
+The repo still tracked the old top-level script specs even after the colocated copies existed. This follow-up removes the superseded tests/wrappin_spec.lua and tests/wslpaste-spec.sh paths so discovery is unambiguous and the tree matches the user's preference for specs beside the scripts they exercise.
+
+This is intentionally just cleanup. No behavioral code changed.
