@@ -1,0 +1,9 @@
+[CODEX]019d513e-1e9a-7492-8198-942044f8dccf
+This small follow-up commit exists because the repository tracks the scratchpad as TODOS.md while the filesystem presents TODOs.md on the Windows-backed path. The earlier migration commit staged the runtime/config changes correctly but missed this note update due to the case-sensitive pathspec mismatch.
+
+The content change is intentional and should stay with the wrappin migration record:
+- mark the external standalone repo split as complete
+- mark removal of the in-tree duplicate as complete
+- record the Lazy pkg-cache detail that matters when iterating on lazy.lua locally
+
+No runtime behavior changed in this commit.
