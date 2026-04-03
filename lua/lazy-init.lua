@@ -49,6 +49,12 @@ require("lazy").setup(specs, {
     -- as `:Lazy restore` uses this file to restore/update plugins to the
     -- versions specified within it.
     lockfile = vim.fn.stdpath("config") .. "/lua/" .. "lazy-lock.json",
+    dev = {
+        path = "/mnt/c/Users/Christopher/Projects",
+        patterns = {
+            "Roundlay",
+        },
+    },
     defaults = {
         lazy = false
     },
