@@ -1,0 +1,24 @@
+[CODEX]019d513e-1e9a-7492-8198-942044f8dccf
+This refactor promotes wrappin from a private config script into an actual Neovim plugin shape without forcing an immediate repo split. The real implementation had already outgrown the old lua/projects/wrappin/wrappin.lua prototype, so that stale copy was removed rather than being preserved as another lane of truth. The compatibility goal here was narrow and deliberate: keep local call sites working during the transition by leaving lua/scripts/wrappin.lua as a shim that simply returns require('wrappin').
+
+The public surface is now intentionally small and plugin-like:
+- plugin/wrappin.lua defines :Wrappin and <Plug>(Wrappin)
+- lua/wrappin/init.lua owns the public API, command parsing, width resolution, and formatexpr bridge
+- lua/wrappin/config.lua holds user-facing defaults and setup state
+- lua/wrappin/state.lua holds extmark snapshot bookkeeping and restore logic
+- tests/minimal_init.lua + tests/wrappin_spec.lua + bin/wrappin-spec.sh form the first plugin-oriented harness
+
+Important design choices and rationale:
+- The command is uppercase because Neovim requires user commands to begin with uppercase. I re-verified this locally before coding.
+- The plugin does not hard-code normal user keymaps. Instead it exposes <Plug>(Wrappin), which is the more Neovim-native contract for a reusable plugin. Local config can still bind keys however it likes.
+- Width resolution now allows a more native path: explicit width first, then buffer textwidth when enabled, then the configured fallback width.
+- I split snapshot state out first because it is the highest-value boundary with the least behavioral risk. The pure reflow engine is still in init.lua for now; that remains a follow-up if we want a tighter core module later.
+
+Validation evidence:
+- bin/wrappin-spec.sh passed under headless Neovim using tests/minimal_init.lua
+- :Wrappin existence was verified in a minimal runtimepath bootstrap
+- require('scripts.wrappin').run and require('wrappin').wrap both resolved successfully after the shim landed
+
+Lazy/local-plugin takeaway that motivated the structure:
+- There is no canonical Neovim plugin development directory. Neovim only cares that the plugin is on runtimepath.
+- Lazy's dev.path / dir support is a convenience for pointing runtimepath at a local plugin checkout. That means this in-tree refactor is compatible with a later extraction to ~/projects/wrappin.nvim without another structural rewrite.
