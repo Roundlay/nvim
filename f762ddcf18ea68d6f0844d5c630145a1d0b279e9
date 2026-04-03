@@ -1,0 +1,11 @@
+[CODEX]019d513e-1e9a-7492-8198-942044f8dccf
+This checkpoint captures the initial analysis for turning wrappin into a distributable Neovim plugin rather than leaving it as an in-config script. The important architectural observation is that the real engine already lives in lua/scripts/wrappin.lua and is substantially richer than the old lua/projects/wrappin/wrappin.lua prototype, so the migration should promote the current engine rather than polishing the prototype path.
+
+The external plugin survey pointed toward a thin plugin/ entrypoint plus a smaller public API in lua/<plugin>/, with the heavy logic kept behind that boundary. blink.cmp and conform.nvim are the best shape references here: both expose commands from plugin/, keep setup and API in lua/, and let users wire keymaps from their manager config rather than forcing default maps. gitsigns.nvim shows the opposite extreme (auto-setup from plugin/), which seems less appropriate for wrappin because we likely want explicit setup, user options, and optional integration points like commands or formatexpr.
+
+Most important concrete constraint discovered during analysis: Neovim user commands must begin with an uppercase letter. A native command should therefore be :Wrappin, not :wrappin. If the user ever wants lowercase command-line behavior, that would require a non-standard abbreviation shim and should stay opt-in rather than defining the public command surface around it.
+
+Open design hypothesis:
+- Keep the module split small and data-oriented: public API/init, core reflow engine, and snapshot/state handling are probably enough for the first extraction.
+- Prefer public Lua functions plus <Plug> mappings and an optional formatexpr bridge over hard-coded default keymaps.
+- Current bespoke headless spec style is already viable for a plugin; we do not need to adopt plenary unless the integration surface grows enough to justify the extra dependency.
