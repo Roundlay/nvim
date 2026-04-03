@@ -1,7 +1,4 @@
-local root = vim.fn.getcwd()
-vim.opt.runtimepath:prepend(root)
-
-local wrappin = require("scripts.wrappin")
+local wrappin = require("wrappin")
 
 local function assert_lines(expected, label)
     local actual = vim.api.nvim_buf_get_lines(0, 0, -1, false)
@@ -316,6 +313,21 @@ local function test_visual_selection_works_on_first_invocation()
     end)
 end
 
+local function test_command_wraps_current_line()
+    with_buffer({
+        "alpha beta gamma delta",
+        "epsilon zeta",
+    }, function()
+        vim.cmd("Wrappin 16")
+
+        assert_lines({
+            "alpha beta gamma",
+            "delta",
+            "epsilon zeta",
+        }, ":Wrappin should wrap the current line when no explicit range is given")
+    end)
+end
+
 local function run_all()
     test_wraps_single_long_line()
     test_reflows_comment_block_and_restores_exact_original()
@@ -329,6 +341,7 @@ local function run_all()
     test_preserves_markdown_heading_prefix()
     test_invalidates_exact_restore_after_edits()
     test_visual_selection_works_on_first_invocation()
+    test_command_wraps_current_line()
 end
 
 run_all()

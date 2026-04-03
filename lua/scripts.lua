@@ -89,7 +89,7 @@ end
 -- WRAPPIN'
 
 local function get_wrappin_module()
-    local ok, mod = pcall(require, "scripts.wrappin")
+    local ok, mod = pcall(require, "wrappin")
     if not ok then
         return nil
     end
@@ -98,10 +98,11 @@ end
 
 local function run_wrappin(...)
     local mod = get_wrappin_module()
-    if not mod or type(mod.run) ~= "function" then
+    local runner = mod and (mod.wrap or mod.run)
+    if type(runner) ~= "function" then
         return
     end
-    return mod.run(...)
+    return runner(...)
 end
 
 function M:wrappin(...)

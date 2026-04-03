@@ -225,11 +225,11 @@ vim.keymap.set('n', '<leader>tr', call_script("trim"), { desc = "Trim whitespace
 -- Wrappin' Tests
 
 vim.keymap.set('x', '<F2>', function()
-    local ok, mod = pcall(require, "scripts.wrappin")
+    local ok, mod = pcall(require, "wrappin")
     if not ok then
         return
     end
-    local runner = mod.run_visual_selection or mod.run or mod.Wrappin
+    local runner = mod.wrap_visual or mod.run_visual_selection or mod.wrap or mod.run
     if type(runner) == "function" then
         runner()
     end

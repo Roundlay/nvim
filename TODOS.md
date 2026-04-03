@@ -2,14 +2,16 @@
 
 ## Wrappin Pluginization (2026-04-03)
 
-- [ ] Promote `wrappin` from `lua/scripts/wrappin.lua` into a standalone plugin-style layout with a thin `plugin/` surface and a `lua/wrappin/` public API.
-- [ ] Split the current file into a data-oriented core reflow engine, Neovim buffer/range adapters, and snapshot/restore state so pure behavior can be tested without editor state.
-- [ ] Define the public integration surface: `setup(opts)`, Lua entry points, `:Wrappin` command(s), `<Plug>` mappings, and an optional `formatexpr` bridge for native `gq` workflows.
-- [ ] Replace the current in-config `scripts.wrappin` wiring in `lua/scripts.lua` and `lua/keybindings.lua` with plugin-facing calls once the new API exists.
-- [ ] Formalize `wrappin` tests into a plugin-friendly harness with pure engine tests, headless Neovim integration tests, and CI entry points.
+- [X] Promote `wrappin` from `lua/scripts/wrappin.lua` into a plugin-style layout with `plugin/wrappin.lua` and a `lua/wrappin/` public API.
+- [~] Split the current file into a cleaner public API plus snapshot/config modules.
+    - [>] Revisit the remaining extraction of the pure reflow engine into its own module once the external API settles.
+- [X] Define the public integration surface: `setup(opts)`, Lua entry points, `:Wrappin`, `<Plug>(Wrappin)`, and an optional `formatexpr()` bridge for native `gq` workflows.
+- [X] Replace the current in-config `scripts.wrappin` wiring in `lua/scripts.lua` and `lua/keybindings.lua` with plugin-facing calls, while leaving a compatibility shim at `lua/scripts/wrappin.lua`.
+- [X] Formalize `wrappin` tests into a plugin-friendly harness with `tests/minimal_init.lua`, `tests/wrappin_spec.lua`, and `bin/wrappin-spec.sh`.
 - [ ] Decide extraction timing: either refactor in-tree first and then move to a dedicated `wrappin.nvim` repo, or develop it directly as a separate local plugin consumed via Lazy `dir = ...`.
 - [~] Neovim user commands must start with an uppercase letter, so the native command surface should be `:Wrappin`, not `:wrappin`. A lowercase alias would need a non-standard command-line abbreviation hack.
 - [~] A more Neovim-native interface than hard-coded default keymaps is to expose stable Lua functions and `<Plug>` mappings, then let users or plugin managers bind keys explicitly.
+- [~] Lazy's local-plugin workflow is a convenience layer, not a Neovim standard path: Neovim only cares about `runtimepath`, while Lazy can point at a local plugin with `dir = ...` or `dev = true` plus `config.dev.path`.
 
 ## Terminal Clipboard Investigation (2026-04-02)
 
