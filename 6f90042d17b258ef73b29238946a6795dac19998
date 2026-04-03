@@ -1,0 +1,16 @@
+[CODEX]019d513e-1e9a-7492-8198-942044f8dccf
+This checkpoint finishes the wrappin repo split from the perspective of the main Neovim config. The plugin had already been refactored into a proper runtime layout in-tree, but that was only a staging state. Now that /mnt/c/Users/Christopher/Projects/wrappin exists as the standalone repo, the main config should stop carrying a second copy of the implementation.
+
+What changed and why:
+- Added Lazy dev-path wiring that points Roundlay plugins at /mnt/c/Users/Christopher/Projects. This matches Lazy's intended local-plugin workflow and avoids hard-coding a one-off dir spec per machine-facing experiment.
+- Added a dedicated plugin spec for Roundlay/wrappin with dev=true and opts={}, so the config consumes the standalone checkout like a real managed plugin.
+- Deleted the in-tree wrappin runtime, compatibility shim, and duplicated plugin tests. Keeping them around would create two sources of truth on runtimepath and make debugging ambiguous.
+- Updated TODOs to record that the standalone repo is now canonical and that local Lazy package metadata uses a cache file that the plugin-side harness explicitly clears.
+
+Validation evidence:
+- Headless config startup resolved Config.plugins['wrappin'].dir to /mnt/c/Users/Christopher/Projects/wrappin
+- :Wrappin existed under the real config after Lazy setup
+- require('wrappin') resolved to /mnt/c/Users/Christopher/Projects/wrappin/lua/wrappin/init.lua
+- A command-path smoke test wrapped a sample line through :Wrappin 10 and produced the expected line splits
+
+Important constraint preserved here: unrelated existing worktree changes in .serena/project.yml, lua/lazy-lock.json, lua/plugins/lazy-vscode.lua, lua/scripts/focus_mode.lua, and lua/settings.lua were intentionally left untouched.
