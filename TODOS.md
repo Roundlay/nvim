@@ -1,5 +1,16 @@
 # TODOs
 
+## Wrappin Pluginization (2026-04-03)
+
+- [ ] Promote `wrappin` from `lua/scripts/wrappin.lua` into a standalone plugin-style layout with a thin `plugin/` surface and a `lua/wrappin/` public API.
+- [ ] Split the current file into a data-oriented core reflow engine, Neovim buffer/range adapters, and snapshot/restore state so pure behavior can be tested without editor state.
+- [ ] Define the public integration surface: `setup(opts)`, Lua entry points, `:Wrappin` command(s), `<Plug>` mappings, and an optional `formatexpr` bridge for native `gq` workflows.
+- [ ] Replace the current in-config `scripts.wrappin` wiring in `lua/scripts.lua` and `lua/keybindings.lua` with plugin-facing calls once the new API exists.
+- [ ] Formalize `wrappin` tests into a plugin-friendly harness with pure engine tests, headless Neovim integration tests, and CI entry points.
+- [ ] Decide extraction timing: either refactor in-tree first and then move to a dedicated `wrappin.nvim` repo, or develop it directly as a separate local plugin consumed via Lazy `dir = ...`.
+- [~] Neovim user commands must start with an uppercase letter, so the native command surface should be `:Wrappin`, not `:wrappin`. A lowercase alias would need a non-standard command-line abbreviation hack.
+- [~] A more Neovim-native interface than hard-coded default keymaps is to expose stable Lua functions and `<Plug>` mappings, then let users or plugin managers bind keys explicitly.
+
 ## Terminal Clipboard Investigation (2026-04-02)
 
 - [X] Confirm Alacritty middle-click was bound to `PasteSelection`, not normal clipboard paste.
