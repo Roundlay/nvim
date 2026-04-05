@@ -1,0 +1,21 @@
+[CODEX]019d5b96-5450-7f62-9495-5e2c274b1dcd
+Copilot looked broken in WSL for two separate reasons that overlapped in the UI.
+
+Observed behavior:
+- `:Copilot enable` reported `Client copilot quit with exit code 143`.
+- `:Copilot attach` in a markdown buffer reported `rejected by internal_filetypes[markdown]`.
+
+Diagnosis:
+- The markdown rejection was real: current upstream copilot.lua disables markdown by default unless the config opts back in.
+- The 143 message was misleading noise from restart behavior, not the primary fault. `copilot.command.enable()` calls `copilot.client.setup()`, and setup force-stops existing Copilot LSP clients before rebuilding state. That teardown can surface as a SIGTERM/143 exit message.
+- The shared config also had two fragility points that made cross-runtime behavior worse: a Windows-only extra workspace folder path, and a custom `root_dir` callback that indexed the first `.git` match without a fallback. Non-git buffers could therefore fail or resolve nonsensically.
+
+Fix rationale:
+- Keep a single shared config and adapt at runtime instead of splitting Windows/WSL configs.
+- Translate the extra workspace path into `/mnt/c/...` when running under WSL, and only include it if it exists in the current runtime.
+- Make `root_dir` fall back to the current buffer directory or cwd when `.git` is absent.
+- Explicitly set `filetypes.markdown = true` so manual attach and normal attachment can succeed in markdown buffers.
+
+Validation:
+- Headless WSL run on `README.md`: Copilot attached successfully with filetype `markdown`, root `/mnt/c/Users/Christopher/AppData/Local/nvim`, and workspace folders including the translated Odin examples path.
+- Headless WSL run on a temp markdown file in `/tmp`: Copilot attached successfully with root `/tmp`, confirming the non-git fallback path works.
