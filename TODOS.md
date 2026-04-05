@@ -1,5 +1,12 @@
 # TODOs
 
+## Copilot WSL + Markdown Attach (2026-04-05)
+
+- [X] Opt Copilot back into Markdown so `:Copilot attach` can work in notes/docs buffers.
+- [X] Normalize the extra Copilot workspace folder so the shared config resolves a real path on both Windows and WSL.
+- [X] Harden Copilot `root_dir` fallback so non-git buffers and scratch-style entrypoints do not depend on `.git` always existing.
+- [~] `:Copilot enable` can report client exit code `143` when it restarts an existing Copilot LSP process; that message is noisy, but not by itself proof of a failed startup.
+
 ## Wrappin Pluginization (2026-04-03)
 
 - [X] Promote `wrappin` from `lua/scripts/wrappin.lua` into a plugin-style layout with `plugin/wrappin.lua` and a `lua/wrappin/` public API.
