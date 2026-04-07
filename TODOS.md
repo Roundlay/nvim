@@ -17,6 +17,7 @@
 - [X] Formalize `wrappin` tests into a plugin-friendly harness with `tests/minimal_init.lua`, `tests/wrappin_spec.lua`, and `bin/wrappin-spec.sh`.
 - [X] Extract `wrappin` into `/mnt/c/Users/Christopher/Projects/wrappin`, initialize it as a standalone plugin repo, and consume it from the main config through Lazy's local-dev workflow.
 - [X] Remove the duplicate in-tree `wrappin` runtime/test files once the external repo becomes the only source of truth.
+- [X] Resolve the Roundlay Lazy dev path per platform so native Windows and WSL both find the local `wrappin` checkout.
 - [~] Neovim user commands must start with an uppercase letter, so the native command surface should be `:Wrappin`, not `:wrappin`. A lowercase alias would need a non-standard command-line abbreviation hack.
 - [~] A more Neovim-native interface than hard-coded default keymaps is to expose stable Lua functions and `<Plug>` mappings, then let users or plugin managers bind keys explicitly.
 - [~] Lazy's local-plugin workflow is a convenience layer, not a Neovim standard path: Neovim only cares about `runtimepath`, while Lazy can point at a local plugin with `dir = ...` or `dev = true` plus `config.dev.path`.

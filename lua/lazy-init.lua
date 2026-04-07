@@ -39,6 +39,18 @@ local specs = {
     { import = "plugins" },
 }
 
+local function get_roundlay_dev_path()
+    if vim.g.is_wsl then
+        return "/mnt/c/Users/Christopher/Projects"
+    end
+
+    if vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1 then
+        return "C:/Users/Christopher/Projects"
+    end
+
+    return vim.fn.expand("~/Projects")
+end
+
 require("lazy").setup(specs, {
     -- The directory where Lazy installs plugins.
     root = vim.fn.stdpath("data") .. "/lazy",
@@ -50,10 +62,11 @@ require("lazy").setup(specs, {
     -- versions specified within it.
     lockfile = vim.fn.stdpath("config") .. "/lua/" .. "lazy-lock.json",
     dev = {
-        path = "/mnt/c/Users/Christopher/Projects",
+        path = get_roundlay_dev_path(),
         patterns = {
             "Roundlay",
         },
+        fallback = true,
     },
     defaults = {
         lazy = false
