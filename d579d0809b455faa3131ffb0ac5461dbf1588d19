@@ -1,0 +1,10 @@
+[CODEX]019d6088-bb52-7d43-9da3-4cb8a60b1abe
+This fixes a native Windows startup problem in blink.cmp rather than a general completion issue. The plugin had been allowed to prefer its Rust fuzzy matcher everywhere except for the WSL-specific Linux prebuilt handling. Under native Windows, blink attempted to download or install the Rust DLL into %LOCALAPPDATA%/nvim-data/lazy/blink.cmp/target/release and then failed to rename the temporary DLL into place with EPERM.
+
+The direct fix is to force blink's Lua fuzzy implementation on native Windows while leaving the existing WSL path alone. That avoids the flaky Windows DLL install step entirely and keeps the Linux prebuilt path available where it is already working.
+
+Validation performed:
+- WSL headless startup with `require('lazy').load({plugins={'blink.cmp'}, wait=true})` still succeeds
+- Windows headless startup via `winrun nvim.exe --headless` with the same lazy load now succeeds without the DLL error
+
+Unrelated existing worktree changes in .serena/project.yml, lua/lazy-lock.json, lua/plugins/lazy-vscode.lua, lua/scripts/focus_mode.lua, and lua/settings.lua were intentionally left untouched.
