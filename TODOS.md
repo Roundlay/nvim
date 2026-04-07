@@ -25,7 +25,7 @@
 
 ## Blink Windows Fuzzy Matcher (2026-04-07)
 
-- [X] Force `blink.cmp` to use the Lua fuzzy matcher on native Windows so startup does not depend on downloading or renaming the Rust DLL in `%LOCALAPPDATA%/nvim-data`.
+- [>] Reinvestigate the native Windows Rust fuzzy DLL install path for `blink.cmp`; the temporary Lua fallback was removed so we can retry the real Rust matcher flow.
 
 ## Terminal Clipboard Investigation (2026-04-02)
 
