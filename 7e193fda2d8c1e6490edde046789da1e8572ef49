@@ -1,0 +1,10 @@
+[CODEX]019d6088-bb52-7d43-9da3-4cb8a60b1abe
+This reverts the temporary Windows-only Lua fallback for blink.cmp now that the immediate startup issue is no longer reproducing in the current local state. The user explicitly wanted to keep the Rust matcher path, so the config should return to preferring Rust with warning-based fallback instead of silently pinning Windows to the slower implementation.
+
+I also updated the TODO note to reflect the honest status: the native Windows DLL install path still merits investigation if the rename failure returns, but the Lua workaround should not remain recorded as the intended steady-state fix.
+
+Validation performed after the revert:
+- WSL headless startup with `require('lazy').load({plugins={'blink.cmp'}, wait=true})` succeeds
+- Windows headless startup via `winrun nvim.exe --headless` with the same lazy load also succeeds
+
+Unrelated existing worktree changes in .serena/project.yml, lua/lazy-lock.json, lua/plugins/lazy-vscode.lua, lua/scripts/focus_mode.lua, and lua/settings.lua were intentionally left untouched.
