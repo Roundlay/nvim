@@ -1,0 +1,10 @@
+[CODEX]019d6088-bb52-7d43-9da3-4cb8a60b1abe
+This fixes a cross-platform assumption in the main nvim config rather than anything inside wrappin itself. The config had been taught to resolve Roundlay plugins from the WSL mount path /mnt/c/Users/Christopher/Projects, which works under WSL Neovim but fails under native Windows Neovim. Because the wrappin spec uses dev=true, Lazy treated that missing local path as an installation failure.
+
+The fix is to choose the Roundlay development root per platform: keep the /mnt/c/... path under WSL, use C:/Users/Christopher/Projects under native Windows, and leave a generic ~/Projects fallback for other environments. I also enabled Lazy's dev fallback so a future machine without the local checkout can fall back to the hosted plugin once the repo is pushed.
+
+Validation performed:
+- WSL headless startup still resolves wrappin to /mnt/c/Users/Christopher/Projects/wrappin and exposes :Wrappin
+- Windows headless startup via winrun resolves wrappin to C:/Users/Christopher/Projects/wrappin and exposes :Wrappin
+
+Unrelated existing worktree changes in .serena/project.yml, lua/plugins/lazy-vscode.lua, lua/scripts/focus_mode.lua, and lua/settings.lua were intentionally left untouched.
