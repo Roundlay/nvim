@@ -23,6 +23,10 @@
 - [~] Lazy's local-plugin workflow is a convenience layer, not a Neovim standard path: Neovim only cares about `runtimepath`, while Lazy can point at a local plugin with `dir = ...` or `dev = true` plus `config.dev.path`.
 - [~] Lazy caches plugin package metadata in `pkg-cache.lua`, so the standalone repro/Busted bootstraps clear that specific cache file before loading to keep local package-spec edits deterministic.
 
+## Blink Windows Fuzzy Matcher (2026-04-07)
+
+- [X] Force `blink.cmp` to use the Lua fuzzy matcher on native Windows so startup does not depend on downloading or renaming the Rust DLL in `%LOCALAPPDATA%/nvim-data`.
+
 ## Terminal Clipboard Investigation (2026-04-02)
 
 - [X] Confirm Alacritty middle-click was bound to `PasteSelection`, not normal clipboard paste.

@@ -118,9 +118,14 @@ return {
         local os_info = vim.uv.os_uname()
         local machine = os_info and os_info.machine or ""
         local is_wsl = vim.fn.has("wsl") == 1
+        local is_windows = (vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1) and not is_wsl
 
         opts.fuzzy = opts.fuzzy or {}
-        opts.fuzzy.implementation = opts.fuzzy.implementation or "prefer_rust_with_warning"
+        if is_windows then
+            opts.fuzzy.implementation = "lua"
+        else
+            opts.fuzzy.implementation = opts.fuzzy.implementation or "prefer_rust_with_warning"
+        end
 
         if is_wsl then
             local triple = nil
