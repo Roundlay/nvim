@@ -1,0 +1,17 @@
+[CODEX]019d7f68-75d4-7610-a417-962823c791e2
+Context:
+The user wanted the VS Code 2026 Dark theme ported into the local Neovim config while keeping the existing vscode.nvim plugin path. The repo already had local highlight fixups in lua/highlights.lua, plus unrelated uncommitted edits in several files, so the safest route was to add a late-loading local spec and a dedicated palette module instead of editing the dirty theme spec in place.
+
+Rationale:
+The override module mirrors the effective VS Code theme rather than only the top-level 2026-dark.json deltas. UI colors come from the explicit workbench/editor values, token groups come from the 2026 Dark overrides, and type-family colors intentionally stay near the inherited base VS Code palette where 2026 Dark does not replace them. A separate override spec keeps the upstream plugin upgrade path simple and lets the existing ColorScheme autocmd fixups continue to apply after vscode.nvim loads.
+
+Verification:
+- nvim --headless loaded the config successfully with colors_name=vscode
+- sampled highlight groups matched the intended palette: Normal, Comment, Function, @variable, @property, @type, @tag, DiffAdd, and PmenuSel
+- confirmed vscode.nvim sees transparent=false and the terminal palette picked up the new red/blue values
+
+Related non-repo work:
+- updated C:/Users/Christopher/AppData/Roaming/alacritty/alacritty.toml to import a new 2026-dark.toml theme file
+- validated the Alacritty config by launching the Windows alacritty.exe with that config and a trivial cmd.exe child; exit code was 0
+
+Unrelated existing worktree changes in .serena/project.yml, lua/lazy-lock.json, lua/plugins/lazy-vscode.lua, lua/scripts/focus_mode.lua, and lua/settings.lua were intentionally left untouched.
