@@ -1,5 +1,11 @@
 # TODOs
 
+## 2026 Dark Theme Port (2026-04-12)
+
+- [X] Port VS Code's `2026-dark` palette to the local `vscode.nvim` path without replacing the existing theme plugin.
+- [X] Add a matching `2026-dark` Alacritty palette and point the main config at it.
+- [~] Keep the Neovim side as a local override layer so the existing highlight fixups in `lua/highlights.lua` still apply after `:colorscheme vscode`.
+
 ## Copilot WSL + Markdown Attach (2026-04-05)
 
 - [X] Opt Copilot back into Markdown so `:Copilot attach` can work in notes/docs buffers.
