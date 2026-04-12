@@ -276,6 +276,13 @@ return {
             return type(cmd) == "string" and vim.fn.executable(cmd) == 1
         end
 
+        local function push_unique(list, seen, value)
+            if value and value ~= "" and not seen[value] then
+                seen[value] = true
+                list[#list + 1] = value
+            end
+        end
+
         local function pick_cmd(candidates)
             for i = 1, #candidates do
                 local cmd = candidates[i]
@@ -327,6 +334,109 @@ return {
                 { name = "vendor", path = vendor },
                 { name = "core", path = core },
             }
+        end
+
+        local function collect_mingw_driver_paths()
+            if not is_windows or is_wsl then
+                return {}
+            end
+
+            local drivers = {}
+            local seen = {}
+
+            local function add(path)
+                if type(path) ~= "string" or path == "" then
+                    return
+                end
+
+                local normalized = norm(path)
+                if vim.uv.fs_stat(normalized) then
+                    push_unique(drivers, seen, normalized)
+                end
+            end
+
+            add(vim.fn.exepath("gcc"))
+            add(vim.fn.exepath("g++"))
+            add("C:/Users/Christopher/scoop/apps/mingw-winlibs/current/bin/gcc.exe")
+            add("C:/Users/Christopher/scoop/apps/mingw-winlibs/current/bin/g++.exe")
+            add("C:/Users/Christopher/scoop/apps/mingw/current/bin/gcc.exe")
+            add("C:/Users/Christopher/scoop/apps/mingw/current/bin/g++.exe")
+
+            return drivers
+        end
+
+        local function extract_mingw_fallback_flags(gcc_path)
+            if type(gcc_path) ~= "string" or gcc_path == "" then
+                return nil
+            end
+
+            local target_result = vim.system({ gcc_path, "-dumpmachine" }, { text = true }):wait()
+            if target_result.code ~= 0 then
+                return nil
+            end
+
+            local target = vim.trim(target_result.stdout or "")
+            if target == "" then
+                return nil
+            end
+
+            local probe_result = vim.system(
+                { gcc_path, "-E", "-xc", "-v", "-" },
+                { text = true, stdin = "" }
+            ):wait()
+            local probe_output = (probe_result.stderr or "") .. "\n" .. (probe_result.stdout or "")
+            local probe_lines = vim.split(probe_output, "\n", { plain = true })
+
+            local include_dirs = {}
+            local seen = {}
+            local collect = false
+
+            for i = 1, #probe_lines do
+                local line = probe_lines[i]:gsub("\r$", "")
+                local trimmed = vim.trim(line)
+
+                if trimmed == "#include <...> search starts here:" then
+                    collect = true
+                elseif collect and trimmed == "End of search list." then
+                    break
+                elseif collect and trimmed ~= "" then
+                    push_unique(include_dirs, seen, trimmed)
+                end
+            end
+
+            if #include_dirs == 0 then
+                return nil
+            end
+
+            local flags = { "--target=" .. target }
+            for i = 1, #include_dirs do
+                flags[#flags + 1] = "-isystem"
+                flags[#flags + 1] = include_dirs[i]
+            end
+
+            return flags
+        end
+
+        local clangd_query_drivers = collect_mingw_driver_paths()
+        local clangd_query_driver_arg = nil
+        local clangd_fallback_flags = { "-ferror-limit=0" }
+
+        if #clangd_query_drivers > 0 then
+            clangd_query_driver_arg = "--query-driver=" .. table.concat(clangd_query_drivers, ",")
+
+            local gcc_driver = nil
+            for i = 1, #clangd_query_drivers do
+                if clangd_query_drivers[i]:match("[/\\]gcc%.exe$") then
+                    gcc_driver = clangd_query_drivers[i]
+                    break
+                end
+            end
+
+            local mingw_fallback_flags = extract_mingw_fallback_flags(gcc_driver or clangd_query_drivers[1])
+            if mingw_fallback_flags then
+                clangd_fallback_flags = mingw_fallback_flags
+                clangd_fallback_flags[#clangd_fallback_flags + 1] = "-ferror-limit=0"
+            end
         end
 
         -- Explicit cmd entries ensure PATH-based binaries are used, avoiding
@@ -392,16 +502,28 @@ return {
             -- so clangd's "comment" tokens have no effect. Treesitter then handles
             -- syntax highlighting normally for all code, including inactive regions.
             clangd = {
-                cmd = {
+                cmd = (function()
+                    local cmd = {
                     "clangd",
                     "--background-index",
                     "--clang-tidy",
                     "--header-insertion=iwyu",
                     "--completion-style=detailed",
-                },
+                    }
+
+                    -- On native Windows, standalone buffers have no compile_commands.json
+                    -- so clangd falls back to plain clang/MSVC probing and misses MinGW's
+                    -- CRT headers. Keep query-driver for real GCC compile commands, and
+                    -- separately seed fallbackFlags with MinGW target/include data below.
+                    if clangd_query_driver_arg then
+                        cmd[#cmd + 1] = clangd_query_driver_arg
+                    end
+
+                    return cmd
+                end)(),
                 init_options = {
                     -- Remove the default error limit (20) - show all errors
-                    fallbackFlags = { "-ferror-limit=0" },
+                    fallbackFlags = clangd_fallback_flags,
                 },
             },
 

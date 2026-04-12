@@ -1,5 +1,11 @@
 # TODOs
 
+## Clangd Windows Standard Headers (2026-04-12)
+
+- [X] Teach native Windows `clangd` fallback parsing to inherit MinGW target/include paths when a buffer has no `compile_commands.json`.
+- [~] `--query-driver` only authorizes GCC include extraction for GCC-based compile commands; standalone files still need explicit fallback flags or clangd falls back to its default Windows `clang`/MSVC probe and misses `stdio.h`/`stdlib.h`.
+- [~] Keep the MinGW fallback Windows-only so the shared config does not inject `C:/.../gcc.exe` assumptions into WSL or other runtimes.
+
 ## 2026 Dark Theme Port (2026-04-12)
 
 - [X] Port VS Code's `2026-dark` palette to the local `vscode.nvim` path without replacing the existing theme plugin.
