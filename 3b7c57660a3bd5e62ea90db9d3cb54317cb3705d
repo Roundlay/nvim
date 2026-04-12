@@ -1,0 +1,15 @@
+[CODEX]019d7fe2-2d37-7c52-966d-07762d7d0a2b
+Context:
+Native Windows clangd could not resolve stdio.h or stdlib.h for standalone buffers opened directly in Neovim. The existing config only added --query-driver for a MinGW gcc path, which is insufficient when clangd has no compile_commands.json and falls back to a generic clang/MSVC command.
+
+Rationale:
+The fix keeps query-driver limited to native Windows and derives fallbackFlags from MinGW gcc itself: target triple via -dumpmachine and system include search paths via gcc -E -xc -v -. These flags are only used for clangd fallback parsing, so real project compile commands still win. This avoids forcing a global clangd config.yaml and keeps the shared WSL/Windows Neovim config honest about runtime differences.
+
+Verification:
+- WSL headless startup: nvim --headless +q
+- Windows headless startup: winrun nvim.exe --headless +q
+- Windows headless config inspection showed clangd fallbackFlags populated with x86_64-w64-mingw32 plus MinGW include dirs and query-driver populated with gcc/g++ driver paths.
+- Live Windows Neovim headless check on a temp C buffer attached one clangd client and reported only Include Cleaner unused-header diagnostics, not missing stdio.h/stdlib.h errors.
+
+Residual risk:
+The derived fallback path currently probes gcc's C include search list. This directly fixes the user's C standard-header failure. If standalone C++ buffers later need libstdc++ fallback includes without a compilation database, we should extend the probe to merge a g++ C++ include pass as a follow-up.
