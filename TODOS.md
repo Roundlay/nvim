@@ -87,6 +87,16 @@
 - [X] Disable Treesitter markdown highlights and custom markdown highlight hooks.
 - [X] Remove Markdown parser/LSP wiring from the plugin lists.
 
+## Markdown Treesitter Crash (2026-04-16)
+
+- [X] Move `vim.g.markdown_plain_mode` initialization into `init.lua` before `require("lazy-init")` so plugin attach decisions see the intended value in both WSL and native Windows startup paths.
+- [X] Disable markdown and markdown_inline Treesitter highlighting at nvim-treesitter setup time when `vim.g.markdown_plain_mode` is enabled.
+- [X] Add an early `vim.treesitter.start()` guard for markdown buffers because some runtime/plugin code calls the core API directly and bypasses `nvim-treesitter`'s module-level `highlight.disable` gate.
+- [X] Remove the late `vim.treesitter.stop()` call from `after/ftplugin/markdown.lua` so markdown buffers do not start Treesitter work only to race a scheduled shutdown afterward.
+- [~] The config intentionally keeps markdown in plain mode, so the narrow fix is to prevent Treesitter attach for markdown up front instead of migrating the whole Treesitter stack in the middle of an unrelated bug.
+- [~] On native Windows, plugin setup alone was insufficient because startup order and direct `vim.treesitter.start()` callers still put markdown on the Treesitter path before `after/ftplugin/markdown.lua` could react.
+- [>] Revisit a full `nvim-treesitter` main-branch migration if broader Neovim/Treesitter compatibility issues show up outside markdown.
+
 ## OLS LSP Init Errors (2026-01-05)
 
 - [X] Select an executable `ols` command (PATH-first, then platform fallback) to avoid invalid cmd errors.

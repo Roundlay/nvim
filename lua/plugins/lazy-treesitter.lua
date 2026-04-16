@@ -17,6 +17,15 @@ return {
         highlight = {
             enable = true,
             additional_vim_regex_highlighting = false,
+            -- Plain-mode markdown should never attach treesitter first and
+            -- then try to tear it down in ftplugin; disable the highlighter
+            -- at the source so scheduled parser work never starts.
+            disable = function(lang)
+                if not vim.g.markdown_plain_mode then
+                    return false
+                end
+                return lang == "markdown" or lang == "markdown_inline"
+            end,
         },
     },
     config = function(_, opts)

@@ -34,6 +34,32 @@ end
 
 vim.g.is_wsl = is_wsl()
 
+-- Markdown plain mode affects Treesitter attach decisions, so it must exist
+-- before Lazy evaluates plugin setup and any FileType-driven module attach.
+vim.g.markdown_plain_mode = true
+
+do
+    local treesitter_start = vim.treesitter.start
+
+    vim.treesitter.start = function(bufnr, lang)
+        local target_bufnr = bufnr or 0
+        if target_bufnr == 0 then
+            target_bufnr = vim.api.nvim_get_current_buf()
+        end
+
+        local filetype = vim.bo[target_bufnr].filetype
+        if vim.g.markdown_plain_mode and (
+            filetype == "markdown"
+            or lang == "markdown"
+            or lang == "markdown_inline"
+        ) then
+            return
+        end
+
+        return treesitter_start(bufnr, lang)
+    end
+end
+
 require("lazy-init")
 require("settings")
 require("autocmds")
