@@ -1,0 +1,14 @@
+[CODEX]019d93ce-2647-7051-af1f-c407ac2a76db
+Context:
+Opening markdown buffers could still hit a vim.schedule Treesitter callback even though this config's intended policy is plain markdown with no Treesitter path at all. The local config only tried to react late in after/ftplugin/markdown.lua by calling vim.treesitter.stop(), which happens after FileType and after startup-order decisions have already allowed parser/highlighter work to begin.
+
+Rationale:
+The fix makes plain markdown a startup-time constraint instead of a late cleanup attempt. init.lua now defines vim.g.markdown_plain_mode before lazy/plugin setup, nvim-treesitter's highlight module explicitly disables markdown and markdown_inline when that mode is on, and init.lua wraps vim.treesitter.start() to reject markdown buffers outright for callers that bypass nvim-treesitter and invoke the core API directly. That direct-start guard turned out to matter on native Windows, where module disable alone still left markdown on the Treesitter path.
+
+Verification:
+- WSL headless open of /mnt/c/Users/Christopher/AppData/Local/nvim/TODOs.md reported filetype=markdown with no active Treesitter highlighter
+- Native Windows headless open of C:/Users/Christopher/AppData/Local/nvim/TODOs.md reported filetype=markdown with no active Treesitter highlighter
+- WSL and native Windows both opened a temporary fenced-code markdown repro file headlessly with a short dwell and no Treesitter error output
+
+Trade-off:
+This deliberately keeps markdown plain mode narrow and local instead of using this bug as a reason to migrate the whole nvim-treesitter stack. If broader Neovim/Treesitter compatibility problems appear outside markdown, a separate migration to the current nvim-treesitter line is still the right follow-up.
