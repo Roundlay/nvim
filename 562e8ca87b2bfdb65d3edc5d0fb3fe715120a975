@@ -1,0 +1,15 @@
+[CODEX]019e14ab-22c3-7680-a529-0fa422f557fa
+Context:
+The user wanted Oil to stop replacing the directory listing when opening files with Enter, and wanted dot-prefixed files/directories visible by default. The existing config already opened Oil itself in a vertical split, but Oil's buffer-local default <CR> mapping still used same-window actions.select and view_options.show_hidden was explicitly false.
+
+Rationale:
+The installed oil.nvim commit exposes actions.select_vsplit only as a deprecated wrapper around oil.select({ vertical = true }). The config now uses the current action form for both <CR> and <C-v>: actions.select with opts.vertical = true. This keeps the behavior direct, avoids custom wrappers or autocmds, and preserves the normal Oil hidden-toggle semantics by leaving is_hidden_file as the dot-prefix predicate while setting show_hidden = true.
+
+Verification:
+- WSL headless config load reported show_hidden=true, cr_vertical=true, and cv_vertical=true.
+- Native Windows headless config load reported the same values after Lazy loaded oil.nvim.
+- WSL Oil smoke test against a temp directory confirmed .hidden-dir and .hidden-file render in the Oil buffer.
+- WSL Oil smoke test selected target.txt with <CR> and observed two windows: one oil window and one target file window.
+
+Notes:
+The same Oil runtime edit was mirrored into /home/christopher/.config/nvim for WSL because local nvim reports stdpath('config') there. The git-backed canonical repo remains /mnt/c/Users/Christopher/AppData/Local/nvim. Existing unrelated dirty files in the repo were left untouched.
