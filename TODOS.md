@@ -1,5 +1,11 @@
 # TODOs
 
+## Oil Directory Defaults (2026-05-11)
+
+- [X] Make `<CR>` select entries through a vertical split so files do not replace the Oil directory buffer.
+- [X] Show dot-prefixed files and directories by default while preserving Oil's `g.` hidden-toggle behavior.
+- [~] Oil's `actions.select_vsplit` helper is deprecated in the installed plugin; use `actions.select` with `opts.vertical = true`.
+
 ## Clangd Windows Standard Headers (2026-04-12)
 
 - [X] Teach native Windows `clangd` fallback parsing to inherit MinGW target/include paths when a buffer has no `compile_commands.json`.

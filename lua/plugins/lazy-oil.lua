@@ -16,7 +16,8 @@ return {
             bufhidden = "hide",
         },
         keymaps = {
-            ["<C-v>"] = { "actions.select_vsplit", desc = "Open the entry in vertical split" },
+            ["<CR>"] = { "actions.select", opts = { vertical = true }, desc = "Open the entry in vertical split" },
+            ["<C-v>"] = { "actions.select", opts = { vertical = true }, desc = "Open the entry in vertical split" },
             ["<C-t>"] = { "actions.select", opts = { tab = true }, desc = "Open the entry in new tab" },
         },
         keymaps_help = {
@@ -30,7 +31,7 @@ return {
             },
         },
         view_options = {
-            show_hidden = false,
+            show_hidden = true,
             natural_order = "fast",
             is_hidden_file = function(name, bufnr)
                 return vim.startswith(name, ".")
