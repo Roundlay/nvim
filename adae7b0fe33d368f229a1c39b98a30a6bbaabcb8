@@ -1,0 +1,9 @@
+[CODEX]019e7e06-89a7-7d62-bfb1-6c5c92d1bc5d
+Context:
+The user had already removed redundant local project files before asking for the wslpaste move and final add/commit/push pass. These deletions were intentionally captured separately from the executable relocation.
+
+Rationale:
+.serena project metadata is local tool state rather than Neovim runtime configuration, and TODOs.md was already removed by the user as part of repository cleanup. Committing these deletions separately keeps user-initiated project hygiene distinct from the tmux helper move.
+
+Evidence:
+Only .serena/.gitignore, .serena/project.yml, and TODOs.md were staged for this checkpoint. git diff --cached --check was clean before commit.
