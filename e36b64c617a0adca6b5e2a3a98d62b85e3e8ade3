@@ -1,0 +1,9 @@
+[CODEX]019e7e06-89a7-7d62-bfb1-6c5c92d1bc5d
+Context:
+GitHub rejected the initial push because origin/main had been force-updated. After fetching, local main was ahead 206 and behind 41, so a normal merge was required to push without force.
+
+Resolution:
+All conflict files were resolved in favor of the current local config state, because the user asked to push the local untracked/unstaged work and existing local branch content. Remote-side files that merged cleanly were retained, including the perf tracing modules, vim-dark colorscheme file, pretty_line_numbers script, and scripts/wrappin.lua. The in-tree lua/projects/wrappin/wrappin.lua rename/delete conflict was resolved as deleted to preserve the standalone wrappin plugin direction already present locally.
+
+Evidence:
+The merge was completed with no unresolved paths. Staged merge result passed git diff --cached --check before commit. This avoids force-pushing while preserving both histories.
