@@ -1,0 +1,9 @@
+[CODEX]019e7e06-89a7-7d62-bfb1-6c5c92d1bc5d
+Context:
+The user asked to capture, commit, note, and push all current untracked/unstaged work in the Neovim config repo. This checkpoint records preexisting project/editor metadata changes separately from runtime Lua changes.
+
+Rationale:
+The Serena project file reflects a newer schema/comment surface and the VS Code Lua setting marks vim as a known global for diagnostics under the plugin config subtree. Keeping this as a metadata-only commit makes later runtime bisects cleaner.
+
+Verification:
+Ran git diff --check before staging and git diff --cached --check for this group. The only issue found in the whole worktree was unrelated trailing whitespace in lua/highlights.lua, fixed before any commits.
