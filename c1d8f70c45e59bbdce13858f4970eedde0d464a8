@@ -1,0 +1,9 @@
+[CODEX]019e7e06-89a7-7d62-bfb1-6c5c92d1bc5d
+Context:
+The user asked to move the wslpaste helper out of the Neovim config repo and into /home/christopher/.local/bin, then commit and push the repo changes. The existing /home/christopher/.local/bin/wslpaste was only a wrapper back to this repo.
+
+Rationale:
+wslpaste is a tmux/WSL clipboard bridge, not Neovim runtime config. Keeping the real executable in ~/.local/bin matches how /home/christopher/.tmux.conf invokes it with run-shell "wslpaste paste" and lets the Neovim repo drop its unrelated bin directory. The repo-local spec was removed with the script because it only tested the repo-local helper path.
+
+Evidence:
+Installed the repo implementation over /home/christopher/.local/bin/wslpaste with executable mode. command -v wslpaste resolves to /home/christopher/.local/bin/wslpaste. A normalize smoke test converted CRLF input to LF bytes. rg found no remaining Neovim-repo references to the old bin path. git diff --cached --check was clean before commit. Note: /home/christopher/.local/bin/wslpaste is ignored by the home settings projection, so this commit only records removal from the Neovim repo.
