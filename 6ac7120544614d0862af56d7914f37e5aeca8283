@@ -1,0 +1,9 @@
+[CODEX]019e7e06-89a7-7d62-bfb1-6c5c92d1bc5d
+Context:
+This checkpoint captures the remaining non-lockfile UI plugin changes that were already dirty: VS Code theme enablement, Roundlay colorscheme disablement, removal of the separate vscode 2026 override spec, lualine/global cleanup, highlight comment wrapping, and wrappin hyphenation options.
+
+Rationale:
+These edits all affect the presentation/plugin surface rather than dependency pins. Keeping them together preserves the local intent: prefer the active vscode.nvim path, stop applying the early roundlay colorscheme, and turn on hard-wrap hyphenation for wrappin while keeping small Lua diagnostic/style adjustments nearby.
+
+Evidence:
+Staged diff was checked with git diff --cached --check. I also removed one trailing whitespace issue in lua/highlights.lua before staging so the commit passes whitespace checks.
