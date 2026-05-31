@@ -51,8 +51,8 @@ local function clear_underline_attributes(hl)
     hl.sp = nil
 end
 
--- clangd marks inactive #if branches as semantic-token "comment", which can
--- dim real code. Clearing inactive-token groups lets Treesitter own rendering.
+-- clangd marks inactive #if branches as semantic-token "comment", which can dim
+-- real code. Clearing inactive-token groups lets Treesitter own rendering.
 api.nvim_set_hl(0, "@lsp.type.comment.c", {})
 api.nvim_set_hl(0, "@lsp.type.comment.cpp", {})
 api.nvim_set_hl(0, "@lsp.type.comment.objc", {})

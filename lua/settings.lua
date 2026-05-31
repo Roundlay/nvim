@@ -43,7 +43,7 @@ vim.o.termguicolors = true
 vim.o.redrawtime = 500
 
 -- Apply the local black-field theme early so later highlight overrides derive from it.
-vim.cmd.colorscheme('roundlay')
+-- vim.cmd.colorscheme('roundlay')
 
 -- @TODO: Consider using XDG_CONFIG_HOME and XDG_DATA_HOME? What about Windows though? Look into this.
 NVIM_STATE = vim.fn.stdpath('state')

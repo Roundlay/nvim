@@ -1,3 +1,5 @@
+local vim = vim
+
 local function truncated_mode(str)
     return str:sub(1, 1)
 end

@@ -1,5 +1,7 @@
 return {
     "Roundlay/wrappin",
     dev = true,
-    opts = {},
+    opts = {
+        hard_wrap_hyphenate = true,
+    },
 }
