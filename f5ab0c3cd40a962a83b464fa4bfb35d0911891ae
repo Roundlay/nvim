@@ -1,0 +1,9 @@
+[CODEX]019e7e06-89a7-7d62-bfb1-6c5c92d1bc5d
+Context:
+This checkpoint records the preexisting focus mode rewrite found in the dirty worktree when asked to capture all pending changes. It is kept isolated because it changes runtime rendering behavior in one Lua module.
+
+Rationale:
+The implementation moves away from per-highlight namespace rebuilding and toward a single FocusModeDim highlight plus ephemeral extmark ranges outside the active segment. It also narrows window state to cursor/change tracking and removes stale namespace cleanup work. This shape should reduce highlight-table churn and make redraw cost depend on visible rows and active segments.
+
+Evidence:
+Staged diff was checked with git diff --cached --check. No runtime smoke test was run before committing because this task is a repository capture/push pass and the change already existed locally.
