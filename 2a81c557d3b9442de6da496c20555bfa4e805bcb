@@ -1,0 +1,9 @@
+[CODEX]019e7e06-89a7-7d62-bfb1-6c5c92d1bc5d
+Context:
+Final dirty-worktree checkpoint for the user-requested capture/push pass. The only remaining unstaged file was lua/lazy-lock.json.
+
+Rationale:
+The lockfile refresh updates plugin pins for blink.cmp, copilot.lua, lualine, mason components, mini.align, nvim-lspconfig, nvim-surround, nvim-treesitter, ols, plenary, telescope, and adds a wrappin lock entry. Keeping dependency pins separate from config edits makes plugin-update regressions easier to isolate.
+
+Evidence:
+git diff --check was clean before staging, and git diff --cached --check was clean for this lockfile-only commit.
