@@ -11,9 +11,8 @@ local min = math.min
 
 local decoration_ns = api.nvim_create_namespace("focus-mode-decoration")
 
-local dim_namespace = -1
-local commands_registered = false
 local autocmd_group = nil
+local commands_registered = false
 local provider_registered = false
 
 local state_by_window = {}
@@ -30,26 +29,6 @@ local excluded_buftypes = {
     prompt = true,
     quickfix = true,
     terminal = true,
-}
-
-local passthrough_highlight_keys = {
-    "bg",
-    "blend",
-    "bold",
-    "cterm",
-    "ctermbg",
-    "ctermfg",
-    "default",
-    "italic",
-    "nocombine",
-    "reverse",
-    "standout",
-    "strikethrough",
-    "undercurl",
-    "underdashed",
-    "underdotted",
-    "underdouble",
-    "underline",
 }
 
 local sentence_punctuation = {
@@ -69,9 +48,9 @@ local sentence_trailing = {
 local sentence_leading = {
     ["'"] = true,
     ['"'] = true,
-    [")"] = true,
-    ["]"] = true,
-    ["}"] = true,
+    ["("] = true,
+    ["["] = true,
+    ["{"] = true,
     ["\n"] = true,
     ["\r"] = true,
     ["\t"] = true,
@@ -141,60 +120,25 @@ local function normalize_mode(mode)
     return "sentence"
 end
 
-local function set_active_highlight()
+local function set_dim_highlight()
     local normal = get_hl("Normal") or {}
-    local active = {}
-
-    if normal.fg then
-        active.fg = normal.fg
-    end
-    if normal.bg then
-        active.bg = normal.bg
+    if not normal.fg then
+        return
     end
 
-    api.nvim_set_hl(0, "FocusModeActive", active)
-end
+    local dimmed = {
+        fg = blend_rgb(normal.fg, normal.bg or 0x000000, get_dim_alpha()),
+    }
 
-local function rebuild_dim_namespace()
-    local normal = get_hl("Normal") or {}
-    local background = normal.bg or 0x000000
-    local alpha = get_dim_alpha()
-    local namespace = api.nvim_create_namespace("")
-
-    for _, group_name in ipairs(vim.fn.getcompletion("", "highlight")) do
-        local hl = get_hl(group_name)
-        if hl and next(hl) ~= nil then
-            local dimmed = {}
-
-            if hl.fg then
-                dimmed.fg = blend_rgb(hl.fg, background, alpha)
-            end
-            if hl.sp then
-                dimmed.sp = blend_rgb(hl.sp, background, alpha)
-            end
-
-            for _, key in ipairs(passthrough_highlight_keys) do
-                if hl[key] ~= nil then
-                    dimmed[key] = hl[key]
-                end
-            end
-
-            api.nvim_set_hl(namespace, group_name, dimmed)
-        end
-    end
-
-    dim_namespace = namespace
-    set_active_highlight()
-
-    for winid, state in pairs(state_by_window) do
-        if state.enabled and api.nvim_win_is_valid(winid) and not state.suspended then
-            api.nvim_win_set_hl_ns(winid, dim_namespace)
-        end
-    end
+    api.nvim_set_hl(0, "FocusModeDim", dimmed)
 end
 
 local function is_blank(line)
     return line == nil or line:match("^%s*$") ~= nil
+end
+
+local function is_whitespace(ch)
+    return ch == " " or ch == "\t" or ch == "\n" or ch == "\r"
 end
 
 local function window_allowed(winid)
@@ -229,13 +173,10 @@ local function buffer_allowed(bufnr)
     return true
 end
 
-local function get_current_buffer_state(winid)
+local function get_window_cursor_state(winid)
     local bufnr = api.nvim_win_get_buf(winid)
     local cursor = api.nvim_win_get_cursor(winid)
-    local row = cursor[1] - 1
-    local col = cursor[2]
-    local changedtick = api.nvim_buf_get_changedtick(bufnr)
-    return bufnr, row, col, changedtick
+    return bufnr, cursor[1] - 1, cursor[2], api.nvim_buf_get_changedtick(bufnr)
 end
 
 local function get_paragraph_bounds(bufnr, row)
@@ -279,7 +220,53 @@ local function build_offsets(lines)
         end
     end
 
-    return offsets, total
+    return offsets
+end
+
+local function is_sentence_break(text, idx)
+    local ch = text:sub(idx, idx)
+    if not sentence_punctuation[ch] then
+        return false
+    end
+
+    local next_idx = idx + 1
+    while next_idx <= #text do
+        local next_ch = text:sub(next_idx, next_idx)
+        if sentence_trailing[next_ch] then
+            next_idx = next_idx + 1
+        else
+            break
+        end
+    end
+
+    if next_idx > #text then
+        return true
+    end
+
+    return is_whitespace(text:sub(next_idx, next_idx))
+end
+
+local function get_sentence_anchor(text, cursor_offset)
+    local text_len = #text
+    if text_len == 0 then
+        return 1
+    end
+
+    local anchor = min(max(cursor_offset, 0) + 1, text_len)
+    local ch = text:sub(anchor, anchor)
+
+    if sentence_trailing[ch] then
+        while anchor > 1 do
+            local probe = text:sub(anchor - 1, anchor - 1)
+            if sentence_trailing[probe] then
+                anchor = anchor - 1
+            else
+                break
+            end
+        end
+    end
+
+    return anchor
 end
 
 local function find_sentence_bounds(text, cursor_offset)
@@ -288,12 +275,11 @@ local function find_sentence_bounds(text, cursor_offset)
         return 0, 0
     end
 
-    local start_scan = min(max(cursor_offset, 0), max(text_len - 1, 0)) + 1
+    local anchor = get_sentence_anchor(text, cursor_offset)
     local start_pos = 1
 
-    for idx = start_scan, 1, -1 do
-        local ch = text:sub(idx, idx)
-        if sentence_punctuation[ch] then
+    for idx = anchor - 1, 1, -1 do
+        if is_sentence_break(text, idx) then
             start_pos = idx + 1
             break
         end
@@ -308,15 +294,13 @@ local function find_sentence_bounds(text, cursor_offset)
     end
 
     local end_pos = text_len + 1
-    local end_scan = min(max(cursor_offset + 1, 1), text_len)
 
-    for idx = end_scan, text_len do
-        local ch = text:sub(idx, idx)
-        if sentence_punctuation[ch] then
+    for idx = anchor, text_len do
+        if is_sentence_break(text, idx) then
             end_pos = idx + 1
             while end_pos <= text_len do
-                local trailing = text:sub(end_pos, end_pos)
-                if not sentence_trailing[trailing] then
+                local ch = text:sub(end_pos, end_pos)
+                if not sentence_trailing[ch] then
                     break
                 end
                 end_pos = end_pos + 1
@@ -335,11 +319,9 @@ local function find_sentence_bounds(text, cursor_offset)
     return start_col, end_col
 end
 
-local function build_line_segments(lines, start_row, start_col, end_col)
+local function build_active_segments(lines, start_row, start_col, end_col)
     local offsets = build_offsets(lines)
     local segments = {}
-    local min_row = nil
-    local max_row = nil
 
     for i, line in ipairs(lines) do
         local row = start_row + i - 1
@@ -352,38 +334,28 @@ local function build_line_segments(lines, start_row, start_col, end_col)
             segments[row] = {
                 start_col = overlap_start - line_start,
                 end_col = overlap_end - line_start,
-                full_line = overlap_start == line_start and overlap_end == line_end,
             }
-
-            if min_row == nil or row < min_row then
-                min_row = row
-            end
-            if max_row == nil or row > max_row then
-                max_row = row
-            end
         end
     end
 
-    return segments, min_row, max_row
+    return segments
 end
 
-local function compute_focus_segments(bufnr, row, col, mode)
+local function compute_active_segments(bufnr, row, col, mode)
     local paragraph_start, paragraph_end = get_paragraph_bounds(bufnr, row)
     local lines = api.nvim_buf_get_lines(bufnr, paragraph_start, paragraph_end + 1, false)
 
     if mode == "paragraph" then
         local segments = {}
         for i, line in ipairs(lines) do
-            local line_row = paragraph_start + i - 1
             if #line > 0 then
-                segments[line_row] = {
+                segments[paragraph_start + i - 1] = {
                     start_col = 0,
                     end_col = #line,
-                    full_line = true,
                 }
             end
         end
-        return segments, paragraph_start, paragraph_end
+        return segments
     end
 
     local offsets = build_offsets(lines)
@@ -393,10 +365,10 @@ local function compute_focus_segments(bufnr, row, col, mode)
     local cursor_col = min(col, #current_line)
     local cursor_offset = (offsets[paragraph_row] or 0) + cursor_col
     local sentence_start, sentence_end = find_sentence_bounds(paragraph_text, cursor_offset)
-    local segments, min_row, max_row = build_line_segments(lines, paragraph_start, sentence_start, sentence_end)
+    local segments = build_active_segments(lines, paragraph_start, sentence_start, sentence_end)
 
     if next(segments) ~= nil then
-        return segments, min_row, max_row
+        return segments
     end
 
     if #current_line > 0 then
@@ -404,12 +376,11 @@ local function compute_focus_segments(bufnr, row, col, mode)
             [row] = {
                 start_col = 0,
                 end_col = #current_line,
-                full_line = true,
             },
-        }, row, row
+        }
     end
 
-    return {}, row, row
+    return {}
 end
 
 local function suspend_window(winid)
@@ -420,12 +391,10 @@ local function suspend_window(winid)
 
     state.suspended = true
     state.segments = {}
-    state.min_row = nil
-    state.max_row = nil
-
-    if api.nvim_win_is_valid(winid) then
-        api.nvim_win_set_hl_ns(winid, -1)
-    end
+    state.bufnr = nil
+    state.row = nil
+    state.col = nil
+    state.changedtick = nil
 end
 
 local function refresh_window(winid)
@@ -439,15 +408,10 @@ local function refresh_window(winid)
         return
     end
 
-    local bufnr, row, col, changedtick = get_current_buffer_state(winid)
+    local bufnr, row, col, changedtick = get_window_cursor_state(winid)
     if not buffer_allowed(bufnr) then
         suspend_window(winid)
-        state.bufnr = bufnr
         return
-    end
-
-    if dim_namespace < 0 then
-        rebuild_dim_namespace()
     end
 
     if state.bufnr == bufnr
@@ -459,18 +423,16 @@ local function refresh_window(winid)
         return
     end
 
-    local segments, min_row, max_row = compute_focus_segments(bufnr, row, col, state.mode)
-
     state.bufnr = bufnr
     state.row = row
     state.col = col
     state.changedtick = changedtick
-    state.segments = segments
-    state.min_row = min_row
-    state.max_row = max_row
+    state.segments = compute_active_segments(bufnr, row, col, state.mode)
     state.suspended = false
+end
 
-    api.nvim_win_set_hl_ns(winid, dim_namespace)
+local function redraw()
+    vim.cmd("redraw")
 end
 
 local function has_enabled_windows()
@@ -480,6 +442,20 @@ local function has_enabled_windows()
         end
     end
     return false
+end
+
+local function set_dim_range(bufnr, row, start_col, end_col)
+    if end_col <= start_col then
+        return
+    end
+
+    api.nvim_buf_set_extmark(bufnr, decoration_ns, row, start_col, {
+        end_row = row,
+        end_col = end_col,
+        hl_group = "FocusModeDim",
+        ephemeral = true,
+        priority = 200,
+    })
 end
 
 local function register_provider()
@@ -507,35 +483,24 @@ local function register_provider()
                 return
             end
 
+            local line = api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ""
+            local line_len = #line
+            if line_len == 0 then
+                return
+            end
+
             local segment = state.segments[row]
-            if segment and segment.full_line then
-                api.nvim_set_hl_ns_fast(0)
+            if not segment then
+                set_dim_range(bufnr, row, 0, line_len)
                 return
             end
 
-            if dim_namespace >= 0 then
-                api.nvim_set_hl_ns_fast(dim_namespace)
-            end
-
-            if not segment or segment.end_col <= segment.start_col then
-                return
-            end
-
-            api.nvim_buf_set_extmark(bufnr, decoration_ns, row, segment.start_col, {
-                end_row = row,
-                end_col = segment.end_col,
-                hl_group = "FocusModeActive",
-                ephemeral = true,
-                priority = 200,
-            })
+            set_dim_range(bufnr, row, 0, segment.start_col)
+            set_dim_range(bufnr, row, segment.end_col, line_len)
         end,
     })
 
     provider_registered = true
-end
-
-local function redraw()
-    vim.cmd("redraw")
 end
 
 local function refresh_all_windows()
@@ -544,10 +509,6 @@ local function refresh_all_windows()
             refresh_window(winid)
         end
     end
-end
-
-local function cleanup_closed_window(winid)
-    state_by_window[winid] = nil
 end
 
 local function register_autocmds()
@@ -573,8 +534,7 @@ local function register_autocmds()
     api.nvim_create_autocmd("ColorScheme", {
         group = autocmd_group,
         callback = function()
-            rebuild_dim_namespace()
-            refresh_all_windows()
+            set_dim_highlight()
             redraw()
         end,
     })
@@ -584,7 +544,7 @@ local function register_autocmds()
         callback = function(ev)
             local winid = tonumber(ev.match)
             if winid then
-                cleanup_closed_window(winid)
+                state_by_window[winid] = nil
             end
         end,
     })
@@ -613,27 +573,18 @@ end
 
 function M.disable(winid)
     winid = resolve_winid(winid)
-    local state = state_by_window[winid]
-    if not state then
+    if not state_by_window[winid] then
         return false
     end
 
-    state.enabled = false
-    state.suspended = true
-    state.segments = {}
-
-    if api.nvim_win_is_valid(winid) then
-        api.nvim_win_set_hl_ns(winid, -1)
-    end
-
+    state_by_window[winid] = nil
     redraw()
     return true
 end
 
 function M.toggle(winid)
     winid = resolve_winid(winid)
-    local state = state_by_window[winid]
-    if state and state.enabled then
+    if state_by_window[winid] and state_by_window[winid].enabled then
         return M.disable(winid)
     end
     return M.enable(winid)
@@ -689,7 +640,7 @@ function M.setup()
 
     vim.g._focus_mode_loaded = true
 
-    rebuild_dim_namespace()
+    set_dim_highlight()
     register_provider()
     register_autocmds()
     register_commands()
